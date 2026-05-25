@@ -44,6 +44,7 @@
   /* --- Text styles --- */
   .page-title {
     font: var(--text-page-title-font);
+    text-transform: var(--text-page-title-text-transform);
   }
 
   .home-subtitle {

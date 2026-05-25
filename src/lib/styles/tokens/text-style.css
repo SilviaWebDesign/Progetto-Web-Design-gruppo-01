@@ -29,6 +29,7 @@
 
   /* --- Page title (display, 150px) --- */
   --text-page-title-font: var(--font-weight-black) var(--font-size-5xl) var(--font-family-display);
+  --text-page-title-text-transform: uppercase;
 
   /* --- Section menu (display, 50px) --- */
   --text-section-menu-font: var(--font-weight-black) var(--font-size-2xl) var(--font-family-display);
