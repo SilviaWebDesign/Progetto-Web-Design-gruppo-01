@@ -7,6 +7,9 @@
    ============================================================ */
 
 :root {
+  /* --- Pure white --- */
+  --white: #FFFFFF;
+
   /* --- Neutral scale --- */
   --neutral-50:  #F9F9FA;
   --neutral-100: #EEEEEE;

@@ -13,6 +13,9 @@
 @import './primitives/units.css';
 
 /* --- Tokens (semantic values) --- */
+@import './tokens/colors.css';
 @import './tokens/spacing.css';
 @import './tokens/radius.css';
+@import './tokens/borders.css';
+@import './tokens/gradients.css';
 

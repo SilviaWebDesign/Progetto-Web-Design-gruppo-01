@@ -1,0 +1,30 @@
+/* ============================================================
+   TOKENS — COLORS
+   ============================================================
+   Semantic color tokens used by components.
+   Built on top of primitives/colors.css.
+
+   Usage rule: components must use these tokens, never raw
+   primitives like --neutral-N or --sustainability-500.
+   ============================================================ */
+
+:root {
+  /* --- Text --- */
+  --color-text-primary:   var(--neutral-900);
+  --color-text-secondary: var(--neutral-700);
+  --color-text-muted:     var(--neutral-500);
+  --color-text-inverse:   var(--neutral-50);
+
+  /* --- Background --- */
+  --color-background-page:     var(--neutral-50);
+  --color-background-card:     var(--transparent-50);
+  --color-background-inverse:  var(--neutral-900);
+
+  /* --- Border --- */
+  --color-border: var(--neutral-900);
+
+  /* --- Section --- */
+  --color-section-sustainability: var(--sustainability-500);
+  --color-section-sport:          var(--sport-500);
+  --color-section-infrastructure: var(--infrastructure-500);
+}

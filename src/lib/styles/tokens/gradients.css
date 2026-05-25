@@ -1,0 +1,57 @@
+/* ============================================================
+   TOKENS — GRADIENTS
+   ============================================================
+   Semantic gradient tokens used as backgrounds.
+
+   Two families:
+   - Section gradients: used on section cards (e.g. hover state
+     of section choice cards on home). Fade to --transparent-50.
+   - Comment gradients: used on comment cards (hover/clicked
+     states). Fade to pure white (--white).
+
+   All gradients are radial, centered, with color stop at 60%.
+
+    NOTE: gradient values (color stop position, radius shape,
+   final stop) may need fine-tuning once applied to the real
+   card components. Current values are first approximation.
+   ============================================================ */
+
+:root {
+  /* --- Section gradients (fade to translucent neutral-50) --- */
+  --gradient-section-sustainability: radial-gradient(
+    circle at center,
+    var(--sustainability-500) 0%,
+    var(--transparent-50) 60%
+  );
+
+  --gradient-section-sport: radial-gradient(
+    circle at center,
+    var(--sport-500) 0%,
+    var(--transparent-50) 60%
+  );
+
+  --gradient-section-infrastructure: radial-gradient(
+    circle at center,
+    var(--infrastructure-500) 0%,
+    var(--transparent-50) 60%
+  );
+
+  /* --- Comment gradients (fade to pure white) --- */
+  --gradient-comment-sustainability: radial-gradient(
+    circle at center,
+    var(--sustainability-500) 0%,
+    var(--white) 60%
+  );
+
+  --gradient-comment-sport: radial-gradient(
+    circle at center,
+    var(--sport-500) 0%,
+    var(--white) 60%
+  );
+
+  --gradient-comment-infrastructure: radial-gradient(
+    circle at center,
+    var(--infrastructure-500) 0%,
+    var(--white) 60%
+  );
+}
