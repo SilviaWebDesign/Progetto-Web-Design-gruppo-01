@@ -1,0 +1,29 @@
+/* ============================================================
+   PRIMITIVES — COLORS
+   ============================================================
+   Raw color values. 
+   ! These should never be used directly in components. !
+   Use semantic tokens (defined in styles/tokens/) instead.
+   ============================================================ */
+
+:root {
+  /* --- Neutral scale --- */
+  --neutral-50:  #F9F9FA;
+  --neutral-100: #EEEEEE;
+  --neutral-200: #D5D5D5;
+  --neutral-300: #BDBDBD;
+  --neutral-400: #A5A5A5;
+  --neutral-500: #8B8B8B;
+  --neutral-600: #686868;
+  --neutral-700: #4C4C4C;
+  --neutral-800: #333333;
+  --neutral-900: #161A1F;
+
+  /* --- Transparent --- */
+  --transparent-50: rgba(249, 249, 250, 0.5); /* --neutral-50 at 50% opacity */
+
+  /* --- Section colors --- */
+  --sustainability-500: #47D08E;
+  --sport-500:          #89BAFF;
+  --infrastructure-500: #FF834C;
+}

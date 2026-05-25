@@ -1,0 +1,11 @@
+/* ============================================================
+   APP.CSS — Design system entry point
+   ============================================================
+   This file aggregates all global styles of the design system.
+   Imported once by the root layout.
+   ============================================================ */
+
+/* Primitives */
+@import './primitives/colors.css';
+
+
