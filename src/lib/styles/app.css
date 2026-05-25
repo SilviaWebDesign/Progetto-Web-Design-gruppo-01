@@ -3,9 +3,16 @@
    ============================================================
    This file aggregates all global styles of the design system.
    Imported once by the root layout.
+
+   Order matters: primitives must be imported before tokens,
+   because tokens reference primitives.
    ============================================================ */
 
-/* Primitives */
+/* --- Primitives (raw values) --- */
 @import './primitives/colors.css';
+@import './primitives/units.css';
 
+/* --- Tokens (semantic values) --- */
+@import './tokens/spacing.css';
+@import './tokens/radius.css';
 

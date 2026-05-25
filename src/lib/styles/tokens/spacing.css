@@ -1,0 +1,21 @@
+/* ============================================================
+   TOKENS — SPACING
+   ============================================================
+   Semantic spacing scale used by components.
+   T-shirt sizing (3xs to 3xl), built on primitives/units.css.
+
+   Usage rule: components should always use these tokens,
+   never raw --unit-N values.
+   ============================================================ */
+
+:root {
+  --spacing-3xs: var(--unit-2);
+  --spacing-2xs: var(--unit-4);
+  --spacing-xs:  var(--unit-10);
+  --spacing-sm:  var(--unit-15);
+  --spacing-md:  var(--unit-20);
+  --spacing-lg:  var(--unit-30);
+  --spacing-xl:  var(--unit-40);
+  --spacing-2xl: var(--unit-45);
+  --spacing-3xl: var(--unit-90);
+}

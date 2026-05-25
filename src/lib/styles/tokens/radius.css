@@ -1,0 +1,14 @@
+/* ============================================================
+   TOKENS — BORDER RADIUS
+   ============================================================
+   Semantic radius scale used by components.
+   Built on top of primitives/units.css.
+   Use T-shirt sizing for naming: none, xs, sm, md, lg, xl.
+   ============================================================ */
+
+:root {
+  --radius-none: var(--unit-0);
+  --radius-xs:   var(--unit-12);
+  --radius-sm:   var(--unit-30);
+  --radius-md:   var(--unit-32);
+}
