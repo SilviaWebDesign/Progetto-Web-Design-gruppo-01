@@ -1,0 +1,77 @@
+/* ============================================================
+   TOKENS — TEXT STYLES
+   ============================================================
+   "By role" text style tokens. Each token bundles the full
+   typographic recipe for a specific UI role: font family,
+   weight, size, line-height, letter-spacing, transform.
+
+   Naming convention: --text-<role>
+   Components should consume these tokens as their primary
+   typography reference.
+
+   IMPORTANT: text styles are applied via the CSS shorthand
+   "font:" [style] [weight] [size]/[line-height] [family] plus separate properties (text-transform, letter-spacing,
+   line-height when not bundled).
+   ============================================================ */
+
+:root {
+
+  /* ============================================================
+     SECTION TITLES (display, 260px, one per section)
+     ============================================================
+     Letter-spacing varies per section by design choice.
+     ============================================================ */
+
+  --text-section-title-font:           var(--font-weight-black) var(--font-size-6xl) / var(--line-height-normal) var(--font-family-display);
+  --text-section-title-letter-spacing-sustainability: var(--letter-spacing-wide);   /* 7% */
+  --text-section-title-letter-spacing-sport:          var(--letter-spacing-wider);  /* 88% */
+  --text-section-title-letter-spacing-infrastructure: var(--letter-spacing-none);   /* 0 */
+
+  /* --- Page title (display, 150px) --- */
+  --text-page-title-font: var(--font-weight-black) var(--font-size-5xl) var(--font-family-display);
+
+  /* --- Section menu (display, 50px) --- */
+  --text-section-menu-font: var(--font-weight-black) var(--font-size-2xl) var(--font-family-display);
+
+  /* --- Header (display, 20px) --- */
+  --text-header-font: var(--font-weight-black) var(--font-size-lg) var(--font-family-display);
+
+
+  /* ============================================================
+     INTROS / LEAD TEXTS (body, 56-68px, bold)
+     ============================================================ */
+
+  /* --- Section intro (body bold, 68px, line-height 110%) --- */
+  --text-section-intro-font: var(--font-weight-bold) var(--font-size-4xl) / var(--line-height-tight) var(--font-family-body);
+
+  /* --- Home intro (body bold, 56px) --- */
+  --text-home-intro-font: var(--font-weight-bold) var(--font-size-3xl) var(--font-family-body);
+
+
+  /* ============================================================
+     CARDS (body, 14-22px)
+     ============================================================ */
+
+  /* --- Card body (body extrabold, 22px, line-height 110%) --- */
+  --text-card-body-font: var(--font-weight-extrabold) var(--font-size-xl) / var(--line-height-tight) var(--font-family-body);
+
+  /* --- Card footer (body extrabold, 18px, UPPERCASE) --- */
+  --text-card-footer-font:           var(--font-weight-extrabold) var(--font-size-md) var(--font-family-body);
+  --text-card-footer-text-transform: uppercase;
+
+  /* --- Card id (body extrabold, 14px, UPPERCASE) --- */
+  --text-card-id-font:           var(--font-weight-extrabold) var(--font-size-xs) var(--font-family-body);
+  --text-card-id-text-transform: uppercase;
+
+
+  /* ============================================================
+     OTHER (body, regular/medium/bold)
+     ============================================================ */
+
+  /* --- Comment body (body medium, 18px) --- */
+  --text-comment-body-font: var(--font-weight-medium) var(--font-size-md) var(--font-family-body);
+
+  /* --- Home subtitle (body bold, 16px) --- */
+  --text-home-subtitle-font: var(--font-weight-bold) var(--font-size-sm) var(--font-family-body);
+
+}

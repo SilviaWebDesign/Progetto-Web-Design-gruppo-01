@@ -1,0 +1,26 @@
+/* ============================================================
+   TOKENS — FONT SIZE
+   ============================================================
+   T-shirt sized font-size scale, derived from primitives/units.css.
+
+   These tokens are an intermediate technical layer. Components
+   should normally NOT use them directly — they should use
+   text-style tokens (--text-*) instead, which combine font-size
+   with family, weight, line-height, etc.
+
+   font-size tokens are exposed here for the rare case where
+   only the size is needed.
+   ============================================================ */
+
+:root {
+  --font-size-xs:  var(--unit-14);   /* 14 — card-id */
+  --font-size-sm:  var(--unit-16);   /* 16 — home-subtitle */
+  --font-size-md:  var(--unit-18);   /* 18 — comment-body, card-footer */
+  --font-size-lg:  var(--unit-20);   /* 20 — header */
+  --font-size-xl:  var(--unit-22);   /* 22 — card-body */
+  --font-size-2xl: var(--unit-50);   /* 50 — section-menu */
+  --font-size-3xl: var(--unit-56);   /* 56 — home-intro */
+  --font-size-4xl: var(--unit-68);   /* 68 — section-intro */
+  --font-size-5xl: var(--unit-150);  /* 150 — page-title */
+  --font-size-6xl: var(--unit-260);  /* 260 — section-title */
+}

@@ -19,4 +19,6 @@
 @import './tokens/radius.css';
 @import './tokens/borders.css';
 @import './tokens/gradients.css';
+@import './tokens/font-size.css';
+@import './tokens/text-style.css';
 
