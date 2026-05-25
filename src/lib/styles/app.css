@@ -11,6 +11,7 @@
 /* --- Primitives (raw values) --- */
 @import './primitives/colors.css';
 @import './primitives/units.css';
+@import './primitives/typography.css';
 
 /* --- Tokens (semantic values) --- */
 @import './tokens/colors.css';

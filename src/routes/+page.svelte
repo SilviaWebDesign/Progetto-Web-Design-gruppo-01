@@ -104,4 +104,16 @@
   .gradient-comment-infrastructure {
     background: var(--gradient-comment-infrastructure);
   }
+
+  /* --- TEMP: test font loading --- */
+    h1, h2 {
+    font-family: var(--font-family-display);
+    font-weight: var(--font-weight-black);
+    }
+
+    .intro, p {
+    font-family: var(--font-family-body);
+    }
+
+
 </style>
