@@ -22,3 +22,6 @@
 @import './tokens/font-size.css';
 @import './tokens/text-style.css';
 
+/* --- Global (base styles for the document) --- */
+@import './global/reset.css';
+@import './global/base.css';

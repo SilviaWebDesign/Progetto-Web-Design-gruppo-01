@@ -1,0 +1,35 @@
+/* ============================================================
+   GLOBAL — BASE
+   ============================================================
+   Base styles applied to the document root.
+   Defines the default typography and color foundation for the site.
+   Everything inherits from here unless explicitly overridden.
+   ============================================================ */
+
+html {
+  /* Anchor scroll behavior + smooth jumps */
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Default typography: body font, regular weight, 16px */
+  font-family: var(--font-family-body);
+  font-weight: var(--font-weight-regular);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-loose);
+
+  /* Default colors */
+  color: var(--color-text-primary);
+  background-color: var(--color-background-page);
+}
+
+/* Links inherit color and weight; underline only on hover.
+   Style refined later when we build the Link primitive. */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

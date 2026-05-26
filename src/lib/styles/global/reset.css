@@ -1,0 +1,70 @@
+/* ============================================================
+   GLOBAL — RESET
+   ============================================================
+   Minimal modern CSS reset.
+   Based on Andy Bell's "A modern CSS reset" (2020). https://piccalil.li/blog/a-more-modern-css-reset/  
+   Removes common browser defaults that get in the way without
+   being overly aggressive.
+   for more info: https://kilianvalkhof.com/2022/css-html/your-css-reset-needs-text-size-adjust-probably/
+   ============================================================ */
+
+/* Box-sizing: include border and padding in element width/height.
+   This is the modern default everyone expects. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Remove default margin on common elements. We add spacing
+   intentionally via spacing tokens, not by accident. */
+body,
+h1, h2, h3, h4, h5, h6,
+p, figure, blockquote, dl, dd {
+  margin: 0;
+}
+
+/* Make body fill the viewport vertically by default. */
+html, body {
+  min-height: 100vh;
+}
+
+/* Improve text rendering on retina/HiDPI displays. */
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Images/media should be responsive by default and stop at parent width. */
+img, picture, svg, video, canvas {
+  max-width: 100%;
+  display: block;
+}
+
+/* Lists used as semantic containers shouldn't have bullets by default.
+   When you want bullets, add them deliberately on the list. */
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+  padding: 0;
+}
+
+/* Buttons inherit font from parent (browsers default to a system font). */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Don't trip animations for users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

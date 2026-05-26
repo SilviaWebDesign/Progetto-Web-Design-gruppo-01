@@ -26,47 +26,36 @@
   Comment body: medium 18px. Testo di un commento d'esempio.
 </p>
 
+<p>
+  Questo è un paragrafo senza classe: usa lo stile di default del body
+  (Supreme regular 16px). Non serve aggiungere font, weight, color: tutto
+  ereditato dal body.
+</p>
+
 <h2 class="section-title sustainability">SOSTENIBILITÀ</h2>
 <h2 class="section-title sport">SPORT</h2>
 <h2 class="section-title infrastructure">INFRASTRUTTURE</h2>
 
 <style>
-  /* --- Page-level layout --- */
+  /* --- Page-level layout (test page only, just for breathing room) --- */
   :global(body) {
     padding: var(--spacing-xl);
-    color: var(--color-text-primary);
   }
 
+  /* --- Spacing tra blocchi --- */
   h1, h2, h3, p {
-    margin: 0 0 var(--spacing-md) 0;
+    margin-bottom: var(--spacing-md);
   }
 
   /* --- Text styles --- */
-  .page-title {
-    font: var(--text-page-title-font);
-    text-transform: var(--text-page-title-text-transform);
-  }
-
-  .home-subtitle {
-    font: var(--text-home-subtitle-font);
-    color: var(--color-text-secondary);
-  }
-
-  .section-menu {
-    font: var(--text-section-menu-font);
-  }
-
-  .home-intro {
-    font: var(--text-home-intro-font);
-  }
-
-  .section-intro {
-    font: var(--text-section-intro-font);
-  }
-
-  .header {
-    font: var(--text-header-font);
-  }
+  .page-title       { font: var(--text-page-title-font); 
+                    text-transform: var(--text-page-title-text-transform);}
+  .home-subtitle    { font: var(--text-home-subtitle-font); color: var(--color-text-secondary); }
+  .section-menu     { font: var(--text-section-menu-font); 
+                    text-transform: var(--text-page-title-text-transform);}
+  .home-intro       { font: var(--text-home-intro-font); }
+  .section-intro    { font: var(--text-section-intro-font); }
+  .header           { font: var(--text-header-font); }
 
   .card-test {
     border: var(--border-thin);
@@ -80,11 +69,9 @@
     font: var(--text-card-id-font);
     text-transform: var(--text-card-id-text-transform);
   }
-
   .card-body {
     font: var(--text-card-body-font);
   }
-
   .card-footer {
     font: var(--text-card-footer-font);
     text-transform: var(--text-card-footer-text-transform);
@@ -94,22 +81,19 @@
     font: var(--text-comment-body-font);
   }
 
-  /* --- Section titles (one font, three letter-spacings) --- */
+  /* --- Section titles --- */
   .section-title {
     font: var(--text-section-title-font);
     margin-bottom: var(--spacing-lg);
   }
-
   .section-title.sustainability {
     letter-spacing: var(--text-section-title-letter-spacing-sustainability);
     color: var(--color-section-sustainability);
   }
-
   .section-title.sport {
     letter-spacing: var(--text-section-title-letter-spacing-sport);
     color: var(--color-section-sport);
   }
-
   .section-title.infrastructure {
     letter-spacing: var(--text-section-title-letter-spacing-infrastructure);
     color: var(--color-section-infrastructure);
