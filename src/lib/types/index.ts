@@ -11,6 +11,14 @@
    https://www.typescriptlang.org/#:~:text=TypeScript%20is%20JavaScript%20with%20syntax,better%20tooling%20at%20any%20scale.
    https://www.w3schools.com/typescript/typescript_intro.php 
 
+
+   ⚠️ TODO: This typing reflects the initial feedback algorithm
+   (NEUTRAL / ALL_POSITIVE / ALL_NEGATIVE / MOSTLY_POSITIVE /
+   MOSTLY_NEGATIVE). The algorithm and state model will likely
+   be revised after the first components are prototyped.
+   Revisit this type along with utils/getState and utils/getScore
+   once the design of the 3D object's visual states is finalized.
+   
    ============================================================ */
 
 
