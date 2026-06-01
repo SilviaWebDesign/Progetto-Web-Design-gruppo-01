@@ -57,9 +57,8 @@ export type OpinionState =
 
 export interface Comment {
   id: string;
-  author: string; /* if we don't use it we can remove it from her */
-  body: string;
   sentiment: 'positive' | 'negative';
+  body: string;
 }
 
 
