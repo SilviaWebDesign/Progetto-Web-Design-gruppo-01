@@ -1,101 +1,50 @@
-<h1 class="page-title">Quante facce ha una medaglia</h1>
+<script lang="ts">
+  import CommentCard from '$lib/components/cards/CommentCard.svelte';
+  import { sustainabilitySection } from '$lib/data/sustainability';
 
-<p class="home-subtitle">Test typography del design system</p>
+  /* Pull the first comment of the first topic from real data. */
+  const testComment = sustainabilitySection.topics[0].comments[0];
 
-<h2 class="section-menu">Section menu (50px)</h2>
+  /* Local like state owned by this page (controlled pattern). */
+  let liked = $state(false);
 
-<p class="home-intro">
-  Home intro: body bold 56px.<br>
-  Per testare un testo introduttivo dell'homepage.
+  function handleToggleLike() {
+    liked = !liked;
+  }
+</script>
+
+
+<h1 class="page-title">Test CommentCard — Fase A</h1>
+
+<p>Clicca sul cuore per testare il toggle:</p>
+
+<CommentCard
+  comment={testComment}
+  sectionId="sustainability"
+  {liked}
+  onToggleLike={handleToggleLike}
+/>
+
+<p class="status">
+  Stato del like: <strong>{liked ? '✅ liked' : '⚪ non liked'}</strong>
 </p>
 
-<p class="section-intro">
-  Section intro: body bold 68px line-height 110%.<br>
-  Esempio di testo introduttivo di una sezione.
-</p>
-
-<h3 class="header">Header (20px display)</h3>
-
-<div class="card-test">
-  <p class="card-id">card id 14px uppercase</p>
-  <p class="card-body">Card body: extrabold 22px line-height 110%. Esempio di testo body in una card.</p>
-  <p class="card-footer">card footer uppercase</p>
-</div>
-
-<p class="comment-body">
-  Comment body: medium 18px. Testo di un commento d'esempio.
-</p>
-
-<p>
-  Questo è un paragrafo senza classe: usa lo stile di default del body
-  (Supreme regular 16px). Non serve aggiungere font, weight, color: tutto
-  ereditato dal body.
-</p>
-
-<h2 class="section-title sustainability">SOSTENIBILITÀ</h2>
-<h2 class="section-title sport">SPORT</h2>
-<h2 class="section-title infrastructure">INFRASTRUTTURE</h2>
 
 <style>
-  /* --- Page-level layout (test page only, just for breathing room) --- */
   :global(body) {
     padding: var(--spacing-xl);
   }
 
-  /* --- Spacing tra blocchi --- */
-  h1, h2, h3, p {
+  .page-title {
+    font: var(--text-page-title-font);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  p {
     margin-bottom: var(--spacing-md);
   }
 
-  /* --- Text styles --- */
-  .page-title       { font: var(--text-page-title-font); 
-                    text-transform: var(--text-page-title-text-transform);}
-  .home-subtitle    { font: var(--text-home-subtitle-font); color: var(--color-text-secondary); }
-  .section-menu     { font: var(--text-section-menu-font); 
-                    text-transform: var(--text-page-title-text-transform);}
-  .home-intro       { font: var(--text-home-intro-font); }
-  .section-intro    { font: var(--text-section-intro-font); }
-  .header           { font: var(--text-header-font); }
-
-  .card-test {
-    border: var(--border-thin);
-    border-radius: var(--radius-sm);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-    background-color: var(--color-background-card);
-  }
-
-  .card-id {
-    font: var(--text-card-id-font);
-    text-transform: var(--text-card-id-text-transform);
-  }
-  .card-body {
-    font: var(--text-card-body-font);
-  }
-  .card-footer {
-    font: var(--text-card-footer-font);
-    text-transform: var(--text-card-footer-text-transform);
-  }
-
-  .comment-body {
-    font: var(--text-comment-body-font);
-  }
-
-  /* --- Section titles --- */
-  .section-title {
-    font: var(--text-section-title-font);
-    margin-bottom: var(--spacing-lg);
-  }
-  .section-title.sustainability {
-    letter-spacing: var(--text-section-title-letter-spacing-sustainability);
-    color: var(--color-section-sustainability);
-  }
-  .section-title.sport {
-    letter-spacing: var(--text-section-title-letter-spacing-sport);
-    color: var(--color-section-sport);
-  }
-  .section-title.infrastructure {
-    letter-spacing: var(--text-section-title-letter-spacing-infrastructure);
-    color: var(--color-section-infrastructure);
+  .status {
+    margin-top: var(--spacing-lg);
   }
 </style>
