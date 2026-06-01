@@ -1,6 +1,7 @@
 <script lang="ts">
   import CommentCard from '$lib/components/cards/CommentCard.svelte';
   import CommentCardGlass from '$lib/components/cards/CommentCardGlass.svelte';
+  import CommentCardGradient from '$lib/components/cards/CommentCardGradient.svelte';
   import { sustainabilitySection } from '$lib/data/sustainability';
 
   const comments = sustainabilitySection.topics[0].comments;
@@ -16,11 +17,10 @@
 
 
 <header class="test-header">
-  <h1>CommentCard — A/B test</h1>
+  <h1>CommentCard — confronto A / B / C</h1>
   <p>
-    Confronto tra l'effetto attuale (glow esterno) e la variante glass
-    (backdrop-blur + orb di luce interna + micro-lift).
-    Hover su entrambe per percepire la differenza.
+    Tre varianti dello stesso componente, identico comportamento,
+    diverso effetto di hover / liked.
   </p>
 </header>
 
@@ -28,7 +28,7 @@
 <main class="test-layout">
 
   <section class="card-stack">
-    <h2>A — Glow esterno (attuale)</h2>
+    <h2>A — Glow esterno</h2>
     {#each comments as comment (comment.id)}
       <CommentCard
         {comment}
@@ -41,7 +41,7 @@
   </section>
 
   <section class="card-stack">
-    <h2>B — Glass + orb (nuova)</h2>
+    <h2>B — Glass + orb + lift</h2>
     {#each comments as comment (comment.id)}
       <CommentCardGlass
         {comment}
@@ -49,6 +49,19 @@
         size="sm"
         liked={likes[`b-${comment.id}`] ?? false}
         onToggleLike={toggleLike(`b-${comment.id}`)}
+      />
+    {/each}
+  </section>
+
+  <section class="card-stack">
+    <h2>C — Gradient interno + cuore</h2>
+    {#each comments as comment (comment.id)}
+      <CommentCardGradient
+        {comment}
+        sectionId="sustainability"
+        size="sm"
+        liked={likes[`c-${comment.id}`] ?? false}
+        onToggleLike={toggleLike(`c-${comment.id}`)}
       />
     {/each}
   </section>
