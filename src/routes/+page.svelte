@@ -1,12 +1,10 @@
 <script lang="ts">
   import CommentCard from '$lib/components/cards/CommentCard.svelte';
+  import CommentCardGlass from '$lib/components/cards/CommentCardGlass.svelte';
   import { sustainabilitySection } from '$lib/data/sustainability';
 
-  /* Pull all 4 comments from the first topic of sustainability. */
-  const topic = sustainabilitySection.topics[0];
-  const comments = topic.comments;
+  const comments = sustainabilitySection.topics[0].comments;
 
-  /* One like state per card, keyed by size + comment id. */
   let likes = $state<Record<string, boolean>>({});
 
   function toggleLike(key: string) {
@@ -18,11 +16,11 @@
 
 
 <header class="test-header">
-  <h1>Test CommentCard — Fase B.1</h1>
+  <h1>CommentCard — A/B test</h1>
   <p>
-    Hover → glow del colore della sezione. Click cuore → border e cuore
-    si tingono del colore della sezione. Sfondo di test colorato per
-    valutare la translucenza della card.
+    Confronto tra l'effetto attuale (glow esterno) e la variante glass
+    (backdrop-blur + orb di luce interna + micro-lift).
+    Hover su entrambe per percepire la differenza.
   </p>
 </header>
 
@@ -30,27 +28,27 @@
 <main class="test-layout">
 
   <section class="card-stack">
-    <h2>Size <code>sm</code> (356 × 82)</h2>
+    <h2>A — Glow esterno (attuale)</h2>
     {#each comments as comment (comment.id)}
       <CommentCard
         {comment}
         sectionId="sustainability"
         size="sm"
-        liked={likes[`sm-${comment.id}`] ?? false}
-        onToggleLike={toggleLike(`sm-${comment.id}`)}
+        liked={likes[`a-${comment.id}`] ?? false}
+        onToggleLike={toggleLike(`a-${comment.id}`)}
       />
     {/each}
   </section>
 
   <section class="card-stack">
-    <h2>Size <code>lg</code> (426 × 96)</h2>
+    <h2>B — Glass + orb (nuova)</h2>
     {#each comments as comment (comment.id)}
-      <CommentCard
+      <CommentCardGlass
         {comment}
         sectionId="sustainability"
-        size="lg"
-        liked={likes[`lg-${comment.id}`] ?? false}
-        onToggleLike={toggleLike(`lg-${comment.id}`)}
+        size="sm"
+        liked={likes[`b-${comment.id}`] ?? false}
+        onToggleLike={toggleLike(`b-${comment.id}`)}
       />
     {/each}
   </section>
@@ -59,25 +57,18 @@
 
 
 <style>
-  /* ============================================================
-     TEST PAGE — coloured backdrop to evaluate glass feel
-     ============================================================ */
-
   :global(body) {
-  /* Snow mountain background at 25% opacity to simulate the final design.
-     The white base underneath keeps text readable while the mountain
-     adds depth and a non-flat backdrop to evaluate the card's translucency. */
-  background-color: var(--color-background-page);
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)),
-    url('/images/mountain-test-bg.avif');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+    background-color: var(--color-background-page);
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)),
+      url('/images/mountain-test-bg.avif');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
 
-  min-height: 100vh;
-  padding: var(--spacing-xl);
-}
+    min-height: 100vh;
+    padding: var(--spacing-xl);
+  }
 
   .test-header {
     margin-bottom: var(--spacing-2xl);
@@ -104,18 +95,11 @@
   .card-stack {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xl); /* 40px ≈ requested 35 */
+    gap: var(--spacing-xl);
   }
 
   .card-stack h2 {
     font: var(--text-header-font);
     margin-bottom: var(--spacing-sm);
-  }
-
-  code {
-    font-family: monospace;
-    background: rgba(255, 255, 255, 0.6);
-    padding: 0 var(--spacing-3xs);
-    border-radius: var(--radius-xs);
   }
 </style>
