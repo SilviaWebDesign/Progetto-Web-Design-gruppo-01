@@ -90,6 +90,7 @@ export interface Section {
   title: string;
   description: string;
   object3D: '3d-tree' | '3d-skater' | '3d-crane';
+  glbPath: string;  // path to the .glb file in static/ (e.g. '/models/tree.glb')
   topics: Topic[];
 }
 
