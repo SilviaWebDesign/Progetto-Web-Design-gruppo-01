@@ -35,15 +35,12 @@
 </script>
 
 
-<div class="glass-wrapper" data-section={sectionId} data-size={size}>
-  <!-- Interior glow orb (persistent) -->
-  <div class="glass-wrapper__orb" aria-hidden="true"></div>
-
-  <article
-    class="comment-card-glass"
-    data-section={sectionId}
-    data-liked={liked}
-  >
+<article
+  class="comment-card-glass"
+  data-section={sectionId}
+  data-liked={liked}
+  data-size={size}
+>
     <p class="comment-card-glass__body">{comment.body}</p>
 
     <button
@@ -72,73 +69,18 @@
         />
       </svg>
     </button>
-  </article>
-</div>
+</article>
+
 
 
 <style>
   /* ============================================================
-     WRAPPER — provides stacking context for orb + card layering
-     ============================================================ */
-
-  .glass-wrapper {
-    position: relative;
-    width: 100%;
-    isolation: isolate;
-  }
-
-  .glass-wrapper[data-size='sm'] {
-    max-width: 356px;
-  }
-
-  .glass-wrapper[data-size='lg'] {
-    max-width: 426px;
-  }
-
-
-  /* ============================================================
-     GLOW ORB — persistent interior light, section-colored
-     ============================================================
-     Always visible, sitting behind the card to give a sense of
-     internal illumination through the glass surface.
-     ============================================================ */
-
-  .glass-wrapper__orb {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-
-    border-radius: var(--radius-xs);
-    filter: blur(30px);
-
-    /* Hidden by default; revealed on hover or when liked. */
-    opacity: 0;
-
-    pointer-events: none;
-    transition: opacity 300ms ease;
-  }
-
- /* Single neutral white orb — same for all sections.
-     The section color is signalled by border + outline + heart + shadow,
-     while the orb provides a soft, neutral inner glow that doesn't tint
-     the card with the section hue. */
-  .glass-wrapper__orb {
-    background: radial-gradient(
-      ellipse 100% 80% at center,
-      rgba(255, 255, 255, 0.50) 18%,
-      rgba(255, 255, 255, 0.20) 65%,
-      rgba(255, 255, 255, 0)   100%
-    );
-  }
-
-
-  /* ============================================================
-     CARD — true glass on top of the orb
+     STRUCTURE
      ============================================================ */
 
   .comment-card-glass {
     position: relative;
-    z-index: 1;
+    isolation: isolate;
 
     display: flex;
     align-items: center;
@@ -156,11 +98,11 @@
     border-radius: var(--radius-xs);
     color: var(--color-text-primary);
 
-    /* Transparent outline reserved for hover/liked (visual 2px without layout shift). */
+    /* Reserved outline for hover/liked (visual 2px without layout shift). */
     outline: var(--border-width-thin) solid transparent;
     outline-offset: 0;
 
-    /* Subtle inner highlight to enhance glass feel. */
+    /* Default: inner highlight + subtle outer shadow. */
     box-shadow:
       0 6px 20px rgba(0, 0, 0, 0.08),
       inset 0 1px 1px rgba(255, 255, 255, 0.4);
@@ -173,27 +115,97 @@
       box-shadow 300ms ease;
   }
 
-  .glass-wrapper[data-size='sm'] .comment-card-glass {
+  .comment-card-glass[data-size='sm'] {
+    max-width: 356px;
     min-height: 82px;
   }
 
-  .glass-wrapper[data-size='lg'] .comment-card-glass {
+  .comment-card-glass[data-size='lg'] {
+    max-width: 426px;
     min-height: 96px;
   }
 
-
-  /* ============================================================
-     HOVER STATE
+ /* ============================================================
+     ANIMATED SWEEP GRADIENT (::before, behind everything)
      ============================================================
-     - Background brightens slightly.
-     - Border takes section color.
-     - Micro-lift (-1px translateY).
-     - Outer shadow intensifies softly.
+     A wide linear gradient slides across the card on hover entry,
+     then comes to rest off-screen. Liked state keeps a subtle
+     gradient visible.
      ============================================================ */
 
-   .glass-wrapper:hover .glass-wrapper__orb,
-  .glass-wrapper:has(.comment-card-glass[data-liked='true']) .glass-wrapper__orb {
+  .comment-card-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 400ms ease;
+
+    pointer-events: none;
+    filter: blur(20px);
+
+    /* The gradient is 300% wide so it can sweep across.
+       Default position: way off to the right (invisible). */
+    background-size: 300% 100%;
+    background-position: 100% 50%;
+    background-repeat: no-repeat;
+  }
+
+  /* Gradient direction: section color → transparent → transparent
+     The "color band" is only on the left portion of the 300%-wide gradient. */
+  .comment-card-glass[data-section='sustainability']::before {
+    background-image: linear-gradient(
+      to right,
+      var(--color-section-sustainability) 0%,
+      rgba(255, 255, 255, 0) 50%
+    );
+  }
+  .comment-card-glass[data-section='sport']::before {
+    background-image: linear-gradient(
+      to right,
+      var(--color-section-sport) 0%,
+      rgba(255, 255, 255, 0) 50%
+    );
+  }
+  .comment-card-glass[data-section='infrastructure']::before {
+    background-image: linear-gradient(
+      to right,
+      var(--color-section-infrastructure) 0%,
+      rgba(255, 255, 255, 0) 50%
+    );
+  }
+
+  /* HOVER: sweep animation runs once on entry. */
+  .comment-card-glass:hover::before {
     opacity: 1;
+    animation: sweep 800ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+
+  /* LIKED: keep a subtle gradient visible (no animation). */
+  .comment-card-glass[data-liked='true']::before {
+    opacity: 0.6;
+    background-position: 50% 50%; /* gradient settled at center */
+  }
+
+  /* Keyframes for the sweep: gradient travels from right to left. */
+  @keyframes sweep {
+    from {
+      background-position: 100% 50%;
+    }
+    to {
+      background-position: 0% 50%;
+    }
+  }
+  
+
+  /* ============================================================
+     HOVER — lift, border, outline, layered glow
+     ============================================================ */
+
+  .comment-card-glass:hover {
+    transform: translateY(-1px);
   }
 
   .comment-card-glass[data-section='sustainability']:hover {
@@ -201,7 +213,7 @@
     outline-color: var(--color-section-sustainability);
     box-shadow:
       0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 40px rgba(71, 208, 142, 0.25),
+      0 0 24px rgba(71, 208, 142, 0.25),
       inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
   .comment-card-glass[data-section='sport']:hover {
@@ -209,7 +221,7 @@
     outline-color: var(--color-section-sport);
     box-shadow:
       0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 40px rgba(137, 186, 255, 0.30),
+      0 0 24px rgba(137, 186, 255, 0.30),
       inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
   .comment-card-glass[data-section='infrastructure']:hover {
@@ -217,13 +229,13 @@
     outline-color: var(--color-section-infrastructure);
     box-shadow:
       0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 40px rgba(255, 131, 76, 0.28),
+      0 0 24px rgba(255, 131, 76, 0.28),
       inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
 
 
   /* ============================================================
-     LIKED STATE — border colored, heart filled
+     LIKED STATE — border + outline section-colored (no glow)
      ============================================================ */
 
   .comment-card-glass[data-section='sustainability'][data-liked='true'] {
@@ -249,11 +261,11 @@
     margin: 0;
   }
 
-  .glass-wrapper[data-size='sm'] .comment-card-glass__body {
+  .comment-card-glass[data-size='sm'] .comment-card-glass__body {
     font: var(--text-comment-body-sm-font);
   }
 
-  .glass-wrapper[data-size='lg'] .comment-card-glass__body {
+  .comment-card-glass[data-size='lg'] .comment-card-glass__body {
     font: var(--text-comment-body-lg-font);
   }
 

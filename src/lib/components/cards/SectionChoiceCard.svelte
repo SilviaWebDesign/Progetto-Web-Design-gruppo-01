@@ -79,37 +79,51 @@
     max-width: 354px;
     aspect-ratio: 354 / 572;
 
-    background-color: var(--color-background-card);
+    /* True glassmorphism. */
+    background-color: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+
     border: var(--border-thin);
     border-radius: var(--radius-md);
 
     color: var(--color-text-primary);
 
+    /* Inner highlight + subtle outer shadow (default state). */
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.08),
+      inset 0 1px 1px rgba(255, 255, 255, 0.4);
+
     overflow: hidden;
 
-    transition: border-color 250ms ease;
+    /* Reserved 1px outline for hover (no layout shift). */
+    outline: var(--border-width-thin) solid transparent;
+    outline-offset: 0;
+
+    transition:
+      transform 300ms cubic-bezier(0.25, 1, 0.5, 1),
+      border-color 200ms ease,
+      outline-color 200ms ease,
+      box-shadow 300ms ease;
   }
 
 
   /* ============================================================
-     DIFFUSE GRADIENT (::before, behind everything)
-     ============================================================
-     Radial gradient of the section color, centered on the card,
-     softly diffused. Hidden by default, fades in on hover.
+     DIFFUSE GRADIENT INSIDE (::before, behind everything)
      ============================================================ */
 
   .section-choice-card::before {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: -1; /* sits behind the 3D scene */
+    z-index: -1;
 
     border-radius: inherit;
     opacity: 0;
     transition: opacity 400ms ease;
 
     pointer-events: none;
-    filter: blur(20px); /* extra softness on top of the gradient stops */
+    filter: blur(20px);
   }
 
   .section-choice-card[data-section='sustainability']::before {
@@ -134,24 +148,42 @@
     );
   }
 
-  /* Reveal the gradient on hover. */
   .section-choice-card:hover::before {
     opacity: 1;
   }
 
 
   /* ============================================================
-     HOVER — border takes section color
+     HOVER — lift, border, outline, layered glow
      ============================================================ */
+
+  .section-choice-card:hover {
+    transform: translateY(-1px);
+  }
 
   .section-choice-card[data-section='sustainability']:hover {
     border-color: var(--color-section-sustainability);
+    outline-color: var(--color-section-sustainability);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.10),
+      0 0 24px rgba(71, 208, 142, 0.25),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
   .section-choice-card[data-section='sport']:hover {
     border-color: var(--color-section-sport);
+    outline-color: var(--color-section-sport);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.10),
+      0 0 24px rgba(137, 186, 255, 0.30),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
   .section-choice-card[data-section='infrastructure']:hover {
     border-color: var(--color-section-infrastructure);
+    outline-color: var(--color-section-infrastructure);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.10),
+      0 0 24px rgba(255, 131, 76, 0.28),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
 
 
