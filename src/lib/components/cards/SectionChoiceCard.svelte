@@ -2,17 +2,13 @@
   ============================================================
   SECTION CHOICE CARD
   ============================================================
-  A large card representing one of the three main sections
-  (sustainability, sport, infrastructure).
+  A large card representing one of the three main sections.
 
-  Uses the "stretched link" pattern: the card is an <article>,
-  and an invisible <a> overlays the whole surface. This keeps
-  the <a> free of complex/interactive child markup (which can
-  trip strict HTML5 / Svelte validation).
-
-  Renders a 3D model with a centered title overlay.
-  Hover effects (color gradient, paused rotation) come in a
-  follow-up step.
+  Hover behaviour:
+  - Border takes the section color
+  - A diffuse radial gradient of the section color fades in
+    inside the card (clipped to the card's rounded corners)
+  - The 3D model stops rotating, so the user can take in the shape
   ============================================================
 -->
 
@@ -29,17 +25,25 @@
   let { section, href }: Props = $props();
 
   let computedHref = $derived(href ?? `/sezioni/${section.id}`);
+
+  /* Hover state — drives the gradient appearance and pauses the 3D rotation. */
+  let isHovered = $state(false);
 </script>
 
 
-<article class="section-choice-card" data-section={section.id}>
+<article
+  class="section-choice-card"
+  data-section={section.id}
+  onmouseenter={() => (isHovered = true)}
+  onmouseleave={() => (isHovered = false)}
+>
   <!-- 3D scene fills the entire card. -->
   <div class="section-choice-card__scene" aria-hidden="true">
     <Canvas>
       <T.PerspectiveCamera
         makeDefault
-        position={[0, 0, 5]}
-        fov={45}
+        position={[0, 0, 3.5]}
+        fov={35}
         oncreate={(ref) => {
           ref.lookAt(0, 0, 0);
         }}
@@ -48,7 +52,7 @@
       <T.AmbientLight intensity={1.5} />
       <T.DirectionalLight position={[5, 5, 5]} intensity={1.5} />
 
-      <SectionModel url={section.glbPath} />
+      <SectionModel url={section.glbPath} paused={isHovered} />
     </Canvas>
   </div>
 
@@ -69,6 +73,7 @@
 
   .section-choice-card {
     position: relative;
+    isolation: isolate;
 
     width: 100%;
     max-width: 354px;
@@ -82,9 +87,71 @@
 
     overflow: hidden;
 
-    transition:
-      border-color 200ms ease,
-      box-shadow 300ms ease;
+    transition: border-color 250ms ease;
+  }
+
+
+  /* ============================================================
+     DIFFUSE GRADIENT (::before, behind everything)
+     ============================================================
+     Radial gradient of the section color, centered on the card,
+     softly diffused. Hidden by default, fades in on hover.
+     ============================================================ */
+
+  .section-choice-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1; /* sits behind the 3D scene */
+
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 400ms ease;
+
+    pointer-events: none;
+    filter: blur(20px); /* extra softness on top of the gradient stops */
+  }
+
+  .section-choice-card[data-section='sustainability']::before {
+    background: radial-gradient(
+      circle at center,
+      var(--color-section-sustainability) 0%,
+      rgba(255, 255, 255, 0) 80%
+    );
+  }
+  .section-choice-card[data-section='sport']::before {
+    background: radial-gradient(
+      circle at center,
+      var(--color-section-sport) 0%,
+      rgba(255, 255, 255, 0) 80%
+    );
+  }
+  .section-choice-card[data-section='infrastructure']::before {
+    background: radial-gradient(
+      circle at center,
+      var(--color-section-infrastructure) 0%,
+      rgba(255, 255, 255, 0) 80%
+    );
+  }
+
+  /* Reveal the gradient on hover. */
+  .section-choice-card:hover::before {
+    opacity: 1;
+  }
+
+
+  /* ============================================================
+     HOVER — border takes section color
+     ============================================================ */
+
+  .section-choice-card[data-section='sustainability']:hover {
+    border-color: var(--color-section-sustainability);
+  }
+  .section-choice-card[data-section='sport']:hover {
+    border-color: var(--color-section-sport);
+  }
+  .section-choice-card[data-section='infrastructure']:hover {
+    border-color: var(--color-section-infrastructure);
   }
 
 
@@ -123,7 +190,7 @@
 
 
   /* ============================================================
-     STRETCHED LINK — invisible, covers the entire card
+     STRETCHED LINK
      ============================================================ */
 
   .section-choice-card__link {
@@ -131,7 +198,6 @@
     inset: 0;
     z-index: 2;
 
-    /* Make the link fully transparent but cover the whole area. */
     display: block;
     color: transparent;
     text-decoration: none;
@@ -139,12 +205,12 @@
 
   .section-choice-card__link:focus-visible {
     outline: 2px solid var(--color-border);
-    outline-offset: -2px; /* keeps focus ring inside the card. */
+    outline-offset: -2px;
   }
 
 
   /* ============================================================
-     UTILS — screen-reader-only text
+     UTILS
      ============================================================ */
 
   .visually-hidden {
