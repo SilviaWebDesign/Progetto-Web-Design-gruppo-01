@@ -1,71 +1,22 @@
 <script lang="ts">
-  import CommentCard from '$lib/components/cards/CommentCard.svelte';
-  import CommentCardGlass from '$lib/components/cards/CommentCardGlass.svelte';
-  import CommentCardGradient from '$lib/components/cards/CommentCardGradient.svelte';
-  import { sustainabilitySection } from '$lib/data/sustainability';
-
-  const comments = sustainabilitySection.topics[0].comments;
-
-  let likes = $state<Record<string, boolean>>({});
-
-  function toggleLike(key: string) {
-    return () => {
-      likes[key] = !likes[key];
-    };
-  }
+  import SectionChoiceCard from '$lib/components/cards/SectionChoiceCard.svelte';
+  import { sections } from '$lib/data/sections';
 </script>
 
 
 <header class="test-header">
-  <h1>CommentCard — confronto A / B / C</h1>
+  <h1>SectionChoiceCard — Fase D</h1>
   <p>
-    Tre varianti dello stesso componente, identico comportamento,
-    diverso effetto di hover / liked.
+    Struttura base con 3D, titolo centrato e link dinamico.
+    Hover effect in Fase E.
   </p>
 </header>
 
 
-<main class="test-layout">
-
-  <section class="card-stack">
-    <h2>A — Glow esterno</h2>
-    {#each comments as comment (comment.id)}
-      <CommentCard
-        {comment}
-        sectionId="sustainability"
-        size="sm"
-        liked={likes[`a-${comment.id}`] ?? false}
-        onToggleLike={toggleLike(`a-${comment.id}`)}
-      />
-    {/each}
-  </section>
-
-  <section class="card-stack">
-    <h2>B — Glass + orb + lift</h2>
-    {#each comments as comment (comment.id)}
-      <CommentCardGlass
-        {comment}
-        sectionId="sustainability"
-        size="sm"
-        liked={likes[`b-${comment.id}`] ?? false}
-        onToggleLike={toggleLike(`b-${comment.id}`)}
-      />
-    {/each}
-  </section>
-
-  <section class="card-stack">
-    <h2>C — Gradient interno + cuore</h2>
-    {#each comments as comment (comment.id)}
-      <CommentCardGradient
-        {comment}
-        sectionId="sustainability"
-        size="sm"
-        liked={likes[`c-${comment.id}`] ?? false}
-        onToggleLike={toggleLike(`c-${comment.id}`)}
-      />
-    {/each}
-  </section>
-
+<main class="card-grid">
+  {#each sections as section (section.id)}
+    <SectionChoiceCard {section} />
+  {/each}
 </main>
 
 
@@ -98,21 +49,10 @@
     margin: 0;
   }
 
-  .test-layout {
+  .card-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-2xl);
-    align-items: flex-start;
-  }
-
-  .card-stack {
-    display: flex;
-    flex-direction: column;
     gap: var(--spacing-xl);
-  }
-
-  .card-stack h2 {
-    font: var(--text-header-font);
-    margin-bottom: var(--spacing-sm);
+    align-items: flex-start;
   }
 </style>
