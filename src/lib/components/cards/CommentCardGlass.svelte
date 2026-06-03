@@ -155,24 +155,24 @@
 
   /* Gradient direction: section color → transparent → transparent
      The "color band" is only on the left portion of the 300%-wide gradient. */
-  .comment-card-glass[data-section='sustainability']::before {
+ .comment-card-glass[data-section='sustainability']::before {
     background-image: linear-gradient(
       to right,
-      var(--color-section-sustainability) 0%,
+      color-mix(in srgb, var(--color-section-sustainability) 60%, transparent) 0%,
       rgba(255, 255, 255, 0) 50%
     );
   }
   .comment-card-glass[data-section='sport']::before {
     background-image: linear-gradient(
       to right,
-      var(--color-section-sport) 0%,
+      color-mix(in srgb, var(--color-section-sport) 60%, transparent) 0%,
       rgba(255, 255, 255, 0) 50%
     );
   }
   .comment-card-glass[data-section='infrastructure']::before {
     background-image: linear-gradient(
       to right,
-      var(--color-section-infrastructure) 0%,
+      color-mix(in srgb, var(--color-section-infrastructure) 60%, transparent) 0%,
       rgba(255, 255, 255, 0) 50%
     );
   }
@@ -184,9 +184,9 @@
   }
 
   /* LIKED: keep a subtle gradient visible (no animation). */
-  .comment-card-glass[data-liked='true']::before {
-    opacity: 0.6;
-    background-position: 50% 50%; /* gradient settled at center */
+.comment-card-glass[data-liked='true']::before {
+    opacity: 0.4;
+    background-position: 50% 50%;
   }
 
   /* Keyframes for the sweep: gradient travels from right to left. */

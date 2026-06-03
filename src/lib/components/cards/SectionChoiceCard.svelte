@@ -202,9 +202,9 @@
      TITLE — centered absolutely above the 3D scene
      ============================================================ */
 
-  .section-choice-card__title {
+.section-choice-card__title {
     position: absolute;
-    inset: 0;
+    inset: auto 0 0 0; /* anchored to bottom, full width */
     z-index: 1;
 
     display: flex;
@@ -213,9 +213,10 @@
     text-align: center;
 
     margin: 0;
-    padding: 0 var(--spacing-md);
+    padding: var(--spacing-xl) var(--spacing-md);
 
     font: var(--text-section-menu-font);
+    text-transform: uppercase;
 
     pointer-events: none;
   }
