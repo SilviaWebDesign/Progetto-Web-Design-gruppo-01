@@ -14,7 +14,7 @@
 
 <script lang="ts">
   import { Canvas, T } from '@threlte/core';
-  import SectionModel from '$lib/components/3d/SectionModel.svelte';
+  import SectionModel from '$lib/_archive/SectionModel.svelte';
   import type { Section } from '$lib/types';
 
   interface Props {
