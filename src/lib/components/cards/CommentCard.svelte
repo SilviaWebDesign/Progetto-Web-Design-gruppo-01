@@ -141,21 +141,21 @@
   .comment-card[data-section='sustainability']::before {
     background-image: linear-gradient(
       to right,
-      color-mix(in srgb, var(--color-section-sustainability) 60%, transparent) 0%,
+      var(--color-section-sustainability) 0%,
       rgba(255, 255, 255, 0) 50%
     );
   }
   .comment-card[data-section='sport']::before {
     background-image: linear-gradient(
       to right,
-      color-mix(in srgb, var(--color-section-sport) 60%, transparent) 0%,
+      var(--color-section-sport) 0%,
       rgba(255, 255, 255, 0) 50%
     );
   }
   .comment-card[data-section='infrastructure']::before {
     background-image: linear-gradient(
       to right,
-      color-mix(in srgb, var(--color-section-infrastructure) 60%, transparent) 0%,
+      var(--color-section-infrastructure) 0%,
       rgba(255, 255, 255, 0) 50%
     );
   }
@@ -166,7 +166,7 @@
   }
 
   .comment-card[data-liked='true']::before {
-    opacity: 0.4;
+    opacity: 0.6;
     background-position: 50% 50%;
   }
 

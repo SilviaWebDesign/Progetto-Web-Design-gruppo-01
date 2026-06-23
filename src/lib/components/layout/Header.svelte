@@ -229,6 +229,13 @@
     outline-offset: 4px;
   }
 
+  /* When the menu is open, the icon sits over the dark overlay → white. */
+  .header__menu-button[aria-expanded='true'] {
+    color: var(--white, #ffffff);
+    position: relative;
+    z-index: 200; /* keep the button above the overlay so it stays clickable */
+  }
+
   /* ============================================================
      BURGER → X morph (Strada B: 3 lines that reposition)
      ============================================================
