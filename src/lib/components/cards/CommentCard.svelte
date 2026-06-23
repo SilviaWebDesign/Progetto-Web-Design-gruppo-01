@@ -2,8 +2,12 @@
   ============================================================
   COMMENT CARD
   ============================================================
-  TODO: rename internal BEM classes from .comment-card-glass to
-  .comment-card for consistency (deferred to avoid churn now).
+  Glass card showing an opinion. The whole card is the like
+  toggle (click anywhere, or Enter/Space when focused). The
+  heart is a decorative indicator that fills when liked.
+
+  Behaviour aligned with the final prototype: the card itself
+  is the button (larger, touch-friendly target).
   ============================================================
 -->
 
@@ -25,53 +29,54 @@
     onToggleLike,
     size = 'sm'
   }: Props = $props();
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onToggleLike();
+    }
+  }
 </script>
 
 
+<!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
 <article
-  class="comment-card-glass"
+  class="comment-card"
   data-section={sectionId}
   data-liked={liked}
   data-size={size}
+  role="button"
+  tabindex="0"
+  aria-pressed={liked}
+  aria-label={liked ? 'Rimuovi like dal commento' : 'Metti like al commento'}
+  onclick={onToggleLike}
+  onkeydown={handleKeydown}
 >
-    <p class="comment-card-glass__body">{comment.body}</p>
+  <p class="comment-card__body">{comment.body}</p>
 
-    <button
-      type="button"
-      class="comment-card-glass__like-button"
-      aria-pressed={liked}
-      aria-label={liked ? 'Rimuovi like dal commento' : 'Metti like al commento'}
-      onclick={onToggleLike}
-    >
-      <svg
-        class="comment-card-glass__heart"
-        viewBox="0 0 44 44"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <path
-          class="comment-card-glass__heart-circle"
-          d="M21.5117 0.5C33.109 0.5 42.5244 10.0547 42.5244 21.8574C42.5243 33.66 33.1089 43.2139 21.5117 43.2139C9.91479 43.2136 0.500153 33.6599 0.5 21.8574C0.5 10.0548 9.91469 0.500262 21.5117 0.5Z"
-          stroke="currentColor"
-        />
-        <path
-          class="comment-card-glass__heart-shape"
-          d="M12.4194 15.7227C14.8602 13.2819 18.8175 13.2819 21.2583 15.7227L22.1421 16.6066L23.026 15.7227C25.4668 13.2819 29.4241 13.2819 31.8649 15.7227C34.3055 18.1634 34.3056 22.1208 31.8649 24.5615L22.1421 34.2842L12.4194 24.5615C9.97876 22.1208 9.97896 18.1635 12.4194 15.7227Z"
-          stroke="currentColor"
-        />
-      </svg>
-    </button>
+  <svg
+    class="comment-card__heart"
+    viewBox="10 12 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      class="comment-card__heart-shape"
+      d="M12.4194 15.7227C14.8602 13.2819 18.8175 13.2819 21.2583 15.7227L22.1421 16.6066L23.026 15.7227C25.4668 13.2819 29.4241 13.2819 31.8649 15.7227C34.3055 18.1634 34.3056 22.1208 31.8649 24.5615L22.1421 34.2842L12.4194 24.5615C9.97876 22.1208 9.97896 18.1635 12.4194 15.7227Z"
+      stroke="currentColor"
+      fill="none"
+    />
+  </svg>
 </article>
-
 
 
 <style>
   /* ============================================================
-     STRUCTURE
+     STRUCTURE — the whole card is the like button
      ============================================================ */
 
-  .comment-card-glass {
+  .comment-card {
     position: relative;
     isolation: isolate;
 
@@ -82,7 +87,6 @@
     width: 100%;
     padding: var(--spacing-md);
 
-    /* True glassmorphism. */
     background: rgba(255, 255, 255, 0.18);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -91,14 +95,14 @@
     border-radius: var(--radius-xs);
     color: var(--color-text-primary);
 
-    /* Reserved outline for hover/liked (visual 2px without layout shift). */
     outline: var(--border-width-thin) solid transparent;
     outline-offset: 0;
 
-    /* Default: inner highlight + subtle outer shadow. */
     box-shadow:
       0 6px 20px rgba(0, 0, 0, 0.08),
       inset 0 1px 1px rgba(255, 255, 255, 0.4);
+
+    cursor: pointer;
 
     transition:
       transform 300ms cubic-bezier(0.25, 1, 0.5, 1),
@@ -108,25 +112,15 @@
       box-shadow 300ms ease;
   }
 
-  .comment-card-glass[data-size='sm'] {
-    max-width: 356px;
-    min-height: 82px;
-  }
+  .comment-card[data-size='sm'] { max-width: 356px; min-height: 82px; }
+  .comment-card[data-size='lg'] { max-width: 426px; min-height: 96px; }
 
-  .comment-card-glass[data-size='lg'] {
-    max-width: 426px;
-    min-height: 96px;
-  }
 
- /* ============================================================
-     ANIMATED SWEEP GRADIENT (::before, behind everything)
-     ============================================================
-     A wide linear gradient slides across the card on hover entry,
-     then comes to rest off-screen. Liked state keeps a subtle
-     gradient visible.
+  /* ============================================================
+     ANIMATED SWEEP GRADIENT (::before)
      ============================================================ */
 
-  .comment-card-glass::before {
+  .comment-card::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -139,30 +133,26 @@
     pointer-events: none;
     filter: blur(20px);
 
-    /* The gradient is 300% wide so it can sweep across.
-       Default position: way off to the right (invisible). */
     background-size: 300% 100%;
     background-position: 100% 50%;
     background-repeat: no-repeat;
   }
 
-  /* Gradient direction: section color → transparent → transparent
-     The "color band" is only on the left portion of the 300%-wide gradient. */
- .comment-card-glass[data-section='sustainability']::before {
+  .comment-card[data-section='sustainability']::before {
     background-image: linear-gradient(
       to right,
       color-mix(in srgb, var(--color-section-sustainability) 60%, transparent) 0%,
       rgba(255, 255, 255, 0) 50%
     );
   }
-  .comment-card-glass[data-section='sport']::before {
+  .comment-card[data-section='sport']::before {
     background-image: linear-gradient(
       to right,
       color-mix(in srgb, var(--color-section-sport) 60%, transparent) 0%,
       rgba(255, 255, 255, 0) 50%
     );
   }
-  .comment-card-glass[data-section='infrastructure']::before {
+  .comment-card[data-section='infrastructure']::before {
     background-image: linear-gradient(
       to right,
       color-mix(in srgb, var(--color-section-infrastructure) 60%, transparent) 0%,
@@ -170,38 +160,29 @@
     );
   }
 
-  /* HOVER: sweep animation runs once on entry. */
-  .comment-card-glass:hover::before {
+  .comment-card:hover::before {
     opacity: 1;
     animation: sweep 800ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
 
-  /* LIKED: keep a subtle gradient visible (no animation). */
-.comment-card-glass[data-liked='true']::before {
+  .comment-card[data-liked='true']::before {
     opacity: 0.4;
     background-position: 50% 50%;
   }
 
-  /* Keyframes for the sweep: gradient travels from right to left. */
   @keyframes sweep {
-    from {
-      background-position: 100% 50%;
-    }
-    to {
-      background-position: 0% 50%;
-    }
+    from { background-position: 100% 50%; }
+    to   { background-position: 0% 50%; }
   }
-  
+
 
   /* ============================================================
-     HOVER — lift, border, outline, layered glow
+     HOVER — lift, border, outline, glow
      ============================================================ */
 
-  .comment-card-glass:hover {
-    transform: translateY(-1px);
-  }
+  .comment-card:hover { transform: translateY(-1px); }
 
-  .comment-card-glass[data-section='sustainability']:hover {
+  .comment-card[data-section='sustainability']:hover {
     border-color: var(--color-section-sustainability);
     outline-color: var(--color-section-sustainability);
     box-shadow:
@@ -209,7 +190,7 @@
       0 0 24px rgba(71, 208, 142, 0.25),
       inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
-  .comment-card-glass[data-section='sport']:hover {
+  .comment-card[data-section='sport']:hover {
     border-color: var(--color-section-sport);
     outline-color: var(--color-section-sport);
     box-shadow:
@@ -217,7 +198,7 @@
       0 0 24px rgba(137, 186, 255, 0.30),
       inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
-  .comment-card-glass[data-section='infrastructure']:hover {
+  .comment-card[data-section='infrastructure']:hover {
     border-color: var(--color-section-infrastructure);
     outline-color: var(--color-section-infrastructure);
     box-shadow:
@@ -228,101 +209,76 @@
 
 
   /* ============================================================
-     LIKED STATE — border + outline section-colored (no glow)
+     LIKED — border + outline section-colored
      ============================================================ */
 
-  .comment-card-glass[data-section='sustainability'][data-liked='true'] {
+  .comment-card[data-section='sustainability'][data-liked='true'] {
     border-color: var(--color-section-sustainability);
     outline-color: var(--color-section-sustainability);
   }
-  .comment-card-glass[data-section='sport'][data-liked='true'] {
+  .comment-card[data-section='sport'][data-liked='true'] {
     border-color: var(--color-section-sport);
     outline-color: var(--color-section-sport);
   }
-  .comment-card-glass[data-section='infrastructure'][data-liked='true'] {
+  .comment-card[data-section='infrastructure'][data-liked='true'] {
     border-color: var(--color-section-infrastructure);
     outline-color: var(--color-section-infrastructure);
   }
 
 
   /* ============================================================
-     BODY TEXT
+     BODY
      ============================================================ */
 
-  .comment-card-glass__body {
-    flex: 1;
-    margin: 0;
-  }
+  .comment-card__body { flex: 1; margin: 0; }
 
-  .comment-card-glass[data-size='sm'] .comment-card-glass__body {
+  .comment-card[data-size='sm'] .comment-card__body {
     font: var(--text-comment-body-sm-font);
   }
-
-  .comment-card-glass[data-size='lg'] .comment-card-glass__body {
+  .comment-card[data-size='lg'] .comment-card__body {
     font: var(--text-comment-body-lg-font);
   }
 
-  .comment-card-glass__body::before { content: '“'; }
-  .comment-card-glass__body::after  { content: '”'; }
+  .comment-card__body::before { content: '\201C'; }
+  .comment-card__body::after  { content: '\201D'; }
 
 
   /* ============================================================
-     LIKE BUTTON + HEART
+     FOCUS (keyboard)
      ============================================================ */
 
-  .comment-card-glass__like-button {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-text-primary);
-
-    transition: transform 150ms ease;
-  }
-
-  .comment-card-glass__like-button:hover,
-  .comment-card-glass__like-button:focus-visible {
-    transform: scale(1.08);
-  }
-
-  .comment-card-glass__like-button:active {
-    transform: scale(0.92);
-  }
-
-  .comment-card-glass__like-button:focus-visible {
+  .comment-card:focus-visible {
     outline: 2px solid var(--color-border);
-    outline-offset: 2px;
-    border-radius: 50%;
+    outline-offset: 4px;
   }
 
-  .comment-card-glass__heart {
+
+  /* ============================================================
+     HEART (decorative indicator)
+     ============================================================ */
+
+  .comment-card__heart {
     display: block;
-    width: 100%;
-    height: 100%;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
     transition: color 200ms ease;
   }
 
-  .comment-card-glass__heart-shape {
+  .comment-card__heart-shape {
     fill: none;
     transition: fill 200ms ease, stroke 200ms ease;
   }
 
-
-  /* --- Heart fills with section color on liked --- */
-
-  .comment-card-glass[data-section='sustainability'][data-liked='true'] .comment-card-glass__heart-shape {
+  .comment-card[data-section='sustainability'][data-liked='true'] .comment-card__heart-shape {
     fill: var(--color-section-sustainability);
     stroke: var(--color-section-sustainability);
   }
-  .comment-card-glass[data-section='sport'][data-liked='true'] .comment-card-glass__heart-shape {
+  .comment-card[data-section='sport'][data-liked='true'] .comment-card__heart-shape {
     fill: var(--color-section-sport);
     stroke: var(--color-section-sport);
   }
-  .comment-card-glass[data-section='infrastructure'][data-liked='true'] .comment-card-glass__heart-shape {
+  .comment-card[data-section='infrastructure'][data-liked='true'] .comment-card__heart-shape {
     fill: var(--color-section-infrastructure);
     stroke: var(--color-section-infrastructure);
   }

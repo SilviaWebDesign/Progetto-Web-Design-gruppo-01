@@ -81,7 +81,7 @@
   <div class="header__inner">
     <a class="header__logo" href="/">Quante facce ha una medaglia?</a>
 
-    <button
+  <button
       type="button"
       class="header__menu-button"
       aria-expanded={menuOpen}
@@ -89,18 +89,11 @@
       aria-label={menuOpen ? 'Chiudi menu' : 'Apri menu'}
       onclick={toggleMenu}
     >
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <path d="M3 6H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-        <path d="M3 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-        <path d="M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-      </svg>
+      <span class="header__burger" class:is-open={menuOpen} aria-hidden="true">
+        <span class="header__burger-line"></span>
+        <span class="header__burger-line"></span>
+        <span class="header__burger-line"></span>
+      </span>
     </button>
   </div>
 </header>
@@ -236,6 +229,58 @@
     outline-offset: 4px;
   }
 
+  /* ============================================================
+     BURGER → X morph (Strada B: 3 lines that reposition)
+     ============================================================
+     Three lines stacked vertically. On open:
+     - top line moves to center and rotates 45deg
+     - middle line fades out
+     - bottom line moves to center and rotates -45deg
+     The two remaining lines cross into an X.
+     ============================================================ */
+
+  .header__burger {
+    position: relative;
+    display: block;
+    width: var(--control-height);
+    height: var(--control-height);
+  }
+
+  .header__burger-line {
+    position: absolute;
+    left: 50%;
+    width: 18px;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 2px;
+
+    /* Center each line horizontally; vertical position set per line below. */
+    transform: translateX(-50%);
+
+    transition:
+      top 300ms cubic-bezier(0.25, 1, 0.5, 1),
+      opacity 200ms ease,
+      transform 300ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  /* Resting positions: three evenly-spaced horizontal lines.
+     control-height is 24px, lines are 2px tall. */
+  .header__burger-line:nth-child(1) { top: 7px; }
+  .header__burger-line:nth-child(2) { top: 11px; }
+  .header__burger-line:nth-child(3) { top: 15px; }
+
+  /* Open state → X */
+  .header__burger.is-open .header__burger-line:nth-child(1) {
+    top: 11px;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .header__burger.is-open .header__burger-line:nth-child(2) {
+    opacity: 0;
+  }
+  .header__burger.is-open .header__burger-line:nth-child(3) {
+    top: 11px;
+    transform: translateX(-50%) rotate(-45deg);
+  }
 
   /* ============================================================
      MENU OVERLAY (right-side drawer)
