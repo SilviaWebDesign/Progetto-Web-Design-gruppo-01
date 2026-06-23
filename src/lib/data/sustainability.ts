@@ -20,6 +20,7 @@ export const sustainabilitySection: Section = {
       title: 'Riuso delle sedi',
       description:
         'Milano-Cortina 2026 è stata progettata intorno a un uso esteso di sedi già esistenti o temporanee, al fine di non lasciare “cattedrali nel deserto”, come spesso accade. Secondo la comunicazione ufficiale, circa il 90% delle sedi di gara rientra in questa logica di riuso. Alcuni degli esempi sono lo stadio di San Siro, l’Unipol Forum, e Rho Fiera.',
+        
       comments: [
         {
           id: 'venue-reuse-pos-1',
