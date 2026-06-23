@@ -9,9 +9,9 @@
   <h1>Quante facce ha una medaglia?</h1>
   <p>Home page in costruzione. Le sezioni sono raggiungibili via URL diretto:</p>
   <nav>
-    <a href="/sezioni/infrastructure">→ Infrastrutture</a>
-    <a href="/sezioni/sport">→ Sport</a>
-    <a href="/sezioni/sustainability">→ Sostenibilità</a>
+    <a href="/sections/infrastructure">→ Infrastrutture</a>
+    <a href="/sections/sport">→ Sport</a>
+    <a href="/sections/sustainability">→ Sostenibilità</a>
   </nav>
 </main>
 
