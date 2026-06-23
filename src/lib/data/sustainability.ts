@@ -2,7 +2,7 @@
    DATA — SUSTAINABILITY SECTION
    ============================================================
    Content for the Sostenibilità section.
-   3 topics × 4 comments (2 positive + 2 negative).
+   3 topics × 6 comments (3 positive + 3 negative).
    ============================================================ */
 
 import type { Section } from '$lib/types';
@@ -33,6 +33,11 @@ export const sustainabilitySection: Section = {
           body: 'In questo modo si evitano investimenti eccessivi in nuove infrastrutture destinate a restare inutilizzate.'
         },
         {
+          id: 'venue-reuse-pos-3',
+          sentiment: 'positive',
+          body: 'Usare sedi esistenti è una scelta molto più sensata che costruire tutto da zero, l’impatto ambientale è ridotto significativamente.'
+        },
+        {
           id: 'venue-reuse-neg-1',
           sentiment: 'negative',
           body: 'Le Olimpiadi potevano essere un’occasione per costruire nuovi impianti più moderni nelle sedi coinvolte, per restare al passo coi tempi.'
@@ -41,7 +46,13 @@ export const sustainabilitySection: Section = {
           id: 'venue-reuse-neg-2',
           sentiment: 'negative',
           body: 'La comunicazione riguardo al riuso delle strutture non è stata trasparente, era solo una strategia di marketing e green-washing.'
+        },
+        {
+          id: 'venue-reuse-neg-3',
+          sentiment: 'negative',
+          body: 'Molti impianti esistenti rischiano di non essere davvero adeguati agli standard richiesti per le competizioni olimpiche.'
         }
+
       ]
     },
     {
@@ -61,6 +72,11 @@ export const sustainabilitySection: Section = {
           body: 'È ammirevole che vengano rilasciate pubblicamente queste informazioni: Olimpiadi trasparenti e sostenibili!'
         },
         {
+          id: 'climate-impact-pos-3',
+          sentiment: 'positive',
+          body: 'Suddividere le emissioni per fasi consente di individuare con precisione le aree su cui intervenire per ridurre l’impatto ambientale.'
+        },
+        {
           id: 'climate-impact-neg-1',
           sentiment: 'negative',
           body: 'Un milione di tonnellate di CO₂ sono ancora troppe per poter chiamare queste Olimpiadi “sostenibili”.'
@@ -69,6 +85,11 @@ export const sustainabilitySection: Section = {
           id: 'climate-impact-neg-2',
           sentiment: 'negative',
           body: 'Possono spacciarla come una conquista, ma bisogna vedere cosa viene considerato nel conteggio, conviene diffidare.'
+        },
+       {
+          id: 'climate-impact-neg-3',
+          sentiment: 'negative',
+          body: 'Un report di sostenibilità non garantisce che le emissioni vengano realmente ridotte nelle fasi operative dell’evento.'
         }
       ]
     },
@@ -89,6 +110,11 @@ export const sustainabilitySection: Section = {
           body: 'La scelta di investire nella neve artificiale dimostra la volontà di adattare gli eventi sportivi al cambiamento climatico.'
         },
         {
+          id: 'artificial-snow-pos-3',
+          sentiment: 'positive',
+          body: 'La neve tecnica è l’unica soluzione concreta per mantenere vive le località alpine legate agli sport invernali.'
+        },
+        {
           id: 'artificial-snow-neg-1',
           sentiment: 'negative',
           body: 'Produrre una tale quantità di metri cubi di neve artificiale comporta un enorme consumo di acqua ed energia.'
@@ -97,6 +123,11 @@ export const sustainabilitySection: Section = {
           id: 'artificial-snow-neg-2',
           sentiment: 'negative',
           body: 'La necessità di produrre neve artificiale è indicatore di un’edizione dei Giochi poco sostenibile.'
+        },
+        {
+          id: 'artificial-snow-neg-3',
+          sentiment: 'negative',
+          body: 'Affidarsi alla neve tecnica per le competizioni renderà sempre meno naturale l’esperienza degli sport invernali.'
         }
       ]
     }

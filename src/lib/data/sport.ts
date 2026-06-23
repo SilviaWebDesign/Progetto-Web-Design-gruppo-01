@@ -2,7 +2,7 @@
    DATA — SPORT SECTION
    ============================================================
    Content for the Sport section.
-   3 topics × 4 comments (2 positive + 2 negative).
+   3 topics × 6 comments (3 positive + 3 negative).
    ============================================================ */
 
 import type { Section } from '$lib/types';
@@ -32,6 +32,11 @@ export const sportSection: Section = {
           body: 'Il suo ritorno in gara dopo il ritiro la rende una delle storie sportive più ispiranti dei Giochi, Alysa è un simbolo di rinascita.'
         },
         {
+          id: 'alysa-liu-pos-3',
+          sentiment: 'positive',
+          body: 'Il suo atteggiamento “senza pressione” rompe gli schemi tradizionali del pattinaggio, rendendo lo sport più moderno e pop.'
+        },
+        {
           id: 'alysa-liu-neg-1',
           sentiment: 'negative',
           body: 'La sua storia di discontinuità con lo sport dimostra che non prende sul serio la sua disciplina.'
@@ -40,6 +45,11 @@ export const sportSection: Section = {
           id: 'alysa-liu-neg-2',
           sentiment: 'negative',
           body: 'La sua performance al Gala Olimpico è stata un insulto al pattinaggio artistico, avrebbe dovuto esibirsi su musica classica, non pop.'
+        },
+        {
+          id: 'alysa-liu-neg-3',
+          sentiment: 'negative',
+          body: 'È solo un’atleta come le altre, ma ha ricevuto un’attenzione esagerata da parte dei media, si sentiva parlare solo di lei.'
         }
       ]
     },
@@ -60,6 +70,11 @@ export const sportSection: Section = {
           body: 'Gli atleti dovrebbero avere la possibilità di esprimersi anche riguardo a temi non relazionati allo sport, in quanto personaggi pubblici la loro voce fa la differenza.'
         },
         {
+          id: 'vladyslav-heraskevych-pos-3',
+          sentiment: 'positive',
+          body: 'Gesti come questo rendono le Olimpiadi più autentiche, perché mostrano il lato umano dietro la competizione.'
+        },
+        {
           id: 'vladyslav-heraskevych-neg-1',
           sentiment: 'negative',
           body: 'È stato ingenuo da parte di Heraskevych pensare di poter raggirare il regolamento olimpico senza subirne le conseguenze.'
@@ -68,6 +83,11 @@ export const sportSection: Section = {
           id: 'vladyslav-heraskevych-neg-2',
           sentiment: 'negative',
           body: 'Accettare simboli legati a conflitti in corso rende molto difficile mantenere il principio di neutralità olimpica, la squalifica era necessaria.'
+        },
+        {
+          id: 'vladyslav-heraskevych-neg-3',
+          sentiment: 'negative',
+          body: 'Il Comitato Olimpico ha agito correttamente, un’eccezione avrebbe causato più difficoltà a far rispettare la stessa regola in altri casi.'
         }
       ]
     },
@@ -88,6 +108,11 @@ export const sportSection: Section = {
           body: 'La presunta collaborazione con Nike attesta semplicemente il livello sportivo di Leerman, tanto alto da poter influenzare il pubblico.'
         },
         {
+          id: 'jutta-leerdam-pos-3',
+          sentiment: 'positive',
+          body: 'La sua popolarità, aumentata anche dalle controversie, dona più visibilità al pattinaggio di velocità, sport spesso poco seguito.'
+        },
+        {
           id: 'jutta-leerdam-neg-1',
           sentiment: 'negative',
           body: 'Ormai si premiano più le sponsorizzazioni che le medaglie…'
@@ -96,6 +121,11 @@ export const sportSection: Section = {
           id: 'jutta-leerdam-neg-2',
           sentiment: 'negative',
           body: 'Questo gesto ha spostato l’attenzione mediatica dal risultato all’immagine dell’atleta, perdendo ogni legame con lo sport.'
+        },
+        {
+          id: 'jutta-leerdam-neg-3',
+          sentiment: 'negative',
+          body: 'La celebrazione sembra troppo forzata, costruita apposta per far parlare di sé oltre lo sport, da vera egocentrica.'
         }
       ]
     }
