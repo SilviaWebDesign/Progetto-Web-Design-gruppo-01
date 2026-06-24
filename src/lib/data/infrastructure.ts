@@ -14,6 +14,7 @@ export const infrastructureSection: Section = {
     'Le Olimpiadi prendono forma attraverso cantieri, impianti e collegamenti tra territori. Queste opere possono essere lette come investimenti utili o come interventi costosi, il cui valore dipende da cosa resterà dopo l’evento.',
   object3D: '3d-crane',
   glbPath: '/models/crane.glb',
+  frostImage: '/images/frost-infrastructure.png',
   topics: [
     {
       id: 'olympic-village',
