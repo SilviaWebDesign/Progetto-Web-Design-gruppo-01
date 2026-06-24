@@ -117,7 +117,10 @@
 
 
   /* ============================================================
-     ANIMATED SWEEP GRADIENT (::before)
+     RADIAL GRADIENT (::before) — monochrome, fades in on hover
+     ============================================================
+     A soft dark-grey radial glow, offset to the left. Fades in
+     on hover. On liked it's hidden, but reappears on liked+hover.
      ============================================================ */
 
   .comment-card::before {
@@ -131,98 +134,48 @@
     transition: opacity 400ms ease;
 
     pointer-events: none;
-    filter: blur(20px);
+    filter: blur(6px);
 
-    background-size: 300% 100%;
-    background-position: 100% 50%;
-    background-repeat: no-repeat;
-  }
-
-  .comment-card[data-section='sustainability']::before {
-    background-image: linear-gradient(
-      to right,
-      var(--color-section-sustainability) 0%,
-      rgba(255, 255, 255, 0) 50%
-    );
-  }
-  .comment-card[data-section='sport']::before {
-    background-image: linear-gradient(
-      to right,
-      var(--color-section-sport) 0%,
-      rgba(255, 255, 255, 0) 50%
-    );
-  }
-  .comment-card[data-section='infrastructure']::before {
-    background-image: linear-gradient(
-      to right,
-      var(--color-section-infrastructure) 0%,
-      rgba(255, 255, 255, 0) 50%
+    background-image: radial-gradient(
+      ellipse 75% 75% at 22% 50%,
+      rgba(22, 24, 29, 0.26) 0%,
+      rgba(22, 24, 29, 0.06) 60%,
+      rgba(255, 255, 255, 0) 100%
     );
   }
 
   .comment-card:hover::before {
     opacity: 1;
-    animation: sweep 800ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
 
   .comment-card[data-liked='true']::before {
-    opacity: 0.6;
-    background-position: 50% 50%;
+    opacity: 0;
   }
 
-  @keyframes sweep {
-    from { background-position: 100% 50%; }
-    to   { background-position: 0% 50%; }
+  .comment-card[data-liked='true']:hover::before {
+    opacity: 1;
   }
-
 
   /* ============================================================
      HOVER — lift, border, outline, glow
      ============================================================ */
 
-  .comment-card:hover { transform: translateY(-1px); }
-
-  .comment-card[data-section='sustainability']:hover {
-    border-color: var(--color-section-sustainability);
-    outline-color: var(--color-section-sustainability);
+  .comment-card:hover {
+    transform: translateY(-0.5px);
+    border-color: rgba(22, 24, 29, 0.8);
+    outline-color: rgba(22, 24, 29, 0.8);
     box-shadow:
       0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 24px rgba(71, 208, 142, 0.25),
       inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
-  .comment-card[data-section='sport']:hover {
-    border-color: var(--color-section-sport);
-    outline-color: var(--color-section-sport);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 24px rgba(137, 186, 255, 0.30),
-      inset 0 1px 1px rgba(255, 255, 255, 0.5);
-  }
-  .comment-card[data-section='infrastructure']:hover {
-    border-color: var(--color-section-infrastructure);
-    outline-color: var(--color-section-infrastructure);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 24px rgba(255, 131, 76, 0.28),
-      inset 0 1px 1px rgba(255, 255, 255, 0.5);
-  }
-
 
   /* ============================================================
      LIKED — border + outline section-colored
      ============================================================ */
 
-  .comment-card[data-section='sustainability'][data-liked='true'] {
-    border-color: var(--color-section-sustainability);
-    outline-color: var(--color-section-sustainability);
-  }
-  .comment-card[data-section='sport'][data-liked='true'] {
-    border-color: var(--color-section-sport);
-    outline-color: var(--color-section-sport);
-  }
-  .comment-card[data-section='infrastructure'][data-liked='true'] {
-    border-color: var(--color-section-infrastructure);
-    outline-color: var(--color-section-infrastructure);
+  .comment-card[data-liked='true'] {
+    border-color: rgba(22, 24, 29, 0.8);
+    outline-color: rgba(22, 24, 29, 0.8);
   }
 
 
@@ -270,16 +223,8 @@
     transition: fill 200ms ease, stroke 200ms ease;
   }
 
-  .comment-card[data-section='sustainability'][data-liked='true'] .comment-card__heart-shape {
-    fill: var(--color-section-sustainability);
-    stroke: var(--color-section-sustainability);
-  }
-  .comment-card[data-section='sport'][data-liked='true'] .comment-card__heart-shape {
-    fill: var(--color-section-sport);
-    stroke: var(--color-section-sport);
-  }
-  .comment-card[data-section='infrastructure'][data-liked='true'] .comment-card__heart-shape {
-    fill: var(--color-section-infrastructure);
-    stroke: var(--color-section-infrastructure);
+  .comment-card[data-liked='true'] .comment-card__heart-shape {
+    fill: rgba(22, 24, 29, 0.8);
+    stroke: rgba(22, 24, 29, 0.8);
   }
 </style>
