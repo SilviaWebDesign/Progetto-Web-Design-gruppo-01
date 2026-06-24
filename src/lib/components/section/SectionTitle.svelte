@@ -129,8 +129,11 @@
  .section-title--spread {
     display: flex;
     justify-content: space-between;
-    margin: 0 0 -0.06em;  /* compensate the font's descender space → flush bottom */
+    margin: 0 0 -0.06em;
     font-size: min(var(--unit-300), 22vw);
+    font-weight: var(--font-weight-black);
+    font-variation-settings: 'wght' 900;
+    font-stretch: condensed;
     line-height: var(--line-height-none);
     letter-spacing: var(--letter-spacing-none);
   }
@@ -138,11 +141,14 @@
   /* ── Center mode (sustainability) ── */
  .section-title--center {
     text-align: center;
-    margin: 0 0 -0.06em;  /* compensate the font's descender space → flush bottom */
+    margin: 0 0 -0.06em;
     font-size: min(
       var(--unit-300),
       max(18vw, calc(100vw / (var(--title-chars, 12) * 0.44)))
     );
+    font-weight: var(--font-weight-black);
+    font-variation-settings: 'wght' 900;
+    font-stretch: condensed;
     line-height: var(--line-height-none);
     letter-spacing: clamp(6px, 1.2vw, 18.2px);
   }

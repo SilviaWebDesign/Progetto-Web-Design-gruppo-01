@@ -4,7 +4,7 @@
   import { getSectionById } from '$lib/data/sections';
 
   /* Change to 'sport' | 'sustainability' to test the other modes. */
-  const section = getSectionById('infrastructure')!;
+  const section = getSectionById('sustainability')!;
 </script>
 
 
