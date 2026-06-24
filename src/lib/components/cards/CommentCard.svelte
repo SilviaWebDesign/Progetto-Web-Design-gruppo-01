@@ -112,8 +112,8 @@
       box-shadow 300ms ease;
   }
 
-  .comment-card[data-size='sm'] { max-width: 356px; min-height: 82px; }
-  .comment-card[data-size='lg'] { max-width: 426px; min-height: 96px; }
+  .comment-card[data-size='sm'] { max-width: 356px; height: 96px; }
+  .comment-card[data-size='lg'] { max-width: 426px; height: 96px; }
 
 
   /* ============================================================
@@ -178,7 +178,12 @@
      BODY
      ============================================================ */
 
-  .comment-card__body { flex: 1; margin: 0; }
+  .comment-card__body { 
+    flex: 1; 
+    margin: 0; 
+    padding-left: 0.5em;
+    text-indent: -0.5em;
+  }
 
   .comment-card[data-size='sm'] .comment-card__body {
     font: var(--text-comment-body-sm-font);
@@ -210,7 +215,7 @@
     flex-shrink: 0;
 
     /* Resting size — keeps the heart's natural proportions. */
-    width: 30px;
+    width: 32px;
     height: auto;
 
     transform: scale(1);
