@@ -6,8 +6,8 @@
    Two families:
    - Section gradients: used on section cards (e.g. hover state
      of section choice cards on home). Fade to --transparent-50.
-   - Comment gradients: used on comment cards (hover/clicked
-     states). Fade to pure white (--white).
+  - Comment gradient: used on comment cards (hover state).
+     Monochrome dark-grey radial that fades to transparent.
 
    All gradients are radial, centered, with color stop at 60%.
 
@@ -36,22 +36,13 @@
     var(--transparent-50) 60%
   );
 
-  /* --- Comment gradients (fade to pure white) --- */
-  --gradient-comment-sustainability: radial-gradient(
-    circle at center,
-    var(--sustainability-500) 0%,
-    var(--white) 60%
-  );
-
-  --gradient-comment-sport: radial-gradient(
-    circle at center,
-    var(--sport-500) 0%,
-    var(--white) 60%
-  );
-
-  --gradient-comment-infrastructure: radial-gradient(
-    circle at center,
-    var(--infrastructure-500) 0%,
-    var(--white) 60%
+ /* --- Comment gradient (monochrome glow, fades to transparent) ---
+     Used on comment cards' hover state. Dark-grey radial offset to
+     the left. Comment cards are monochrome (no section color). */
+  --gradient-comment-hover: radial-gradient(
+    ellipse 75% 75% at 22% 50%,
+    color-mix(in srgb, var(--neutral-900) 26%, transparent) 0%,
+    color-mix(in srgb, var(--neutral-900) 6%, transparent) 60%,
+    transparent 100%
   );
 }

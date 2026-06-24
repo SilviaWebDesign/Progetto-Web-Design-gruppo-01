@@ -54,9 +54,9 @@
 >
   <p class="comment-card__body">{comment.body}</p>
 
-  <svg
+ <svg
     class="comment-card__heart"
-    viewBox="10 12 24 24"
+    viewBox="8 11 28 26"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
@@ -136,12 +136,7 @@
     pointer-events: none;
     filter: blur(6px);
 
-    background-image: radial-gradient(
-      ellipse 75% 75% at 22% 50%,
-      rgba(22, 24, 29, 0.26) 0%,
-      rgba(22, 24, 29, 0.06) 60%,
-      rgba(255, 255, 255, 0) 100%
-    );
+    background-image: var(--gradient-comment-hover)
   }
 
   .comment-card:hover::before {
@@ -160,10 +155,10 @@
      HOVER — lift, border, outline, glow
      ============================================================ */
 
-  .comment-card:hover {
+ .comment-card:hover {
     transform: translateY(-0.5px);
-    border-color: rgba(22, 24, 29, 0.8);
-    outline-color: rgba(22, 24, 29, 0.8);
+    border-color: var(--color-border);
+    outline-color: var(--color-border);
     box-shadow:
       0 10px 30px rgba(0, 0, 0, 0.10),
       inset 0 1px 1px rgba(255, 255, 255, 0.5);
@@ -173,9 +168,9 @@
      LIKED — border + outline section-colored
      ============================================================ */
 
-  .comment-card[data-liked='true'] {
-    border-color: rgba(22, 24, 29, 0.8);
-    outline-color: rgba(22, 24, 29, 0.8);
+ .comment-card[data-liked='true'] {
+    border-color: var(--color-border);
+    outline-color: var(--color-border);
   }
 
 
@@ -210,12 +205,25 @@
      HEART (decorative indicator)
      ============================================================ */
 
-  .comment-card__heart {
+ .comment-card__heart {
     display: block;
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    transition: color 200ms ease;
+
+    /* Resting size — keeps the heart's natural proportions. */
+    width: 30px;
+    height: auto;
+
+    transform: scale(1);
+    transform-origin: center;
+
+    transition:
+      transform 200ms cubic-bezier(0.25, 1, 0.5, 1),
+      color 200ms ease;
+  }
+
+  /* Hover (whether liked or not): grow uniformly, no distortion. */
+  .comment-card:hover .comment-card__heart {
+    transform: scale(1.1);
   }
 
   .comment-card__heart-shape {
@@ -224,7 +232,7 @@
   }
 
   .comment-card[data-liked='true'] .comment-card__heart-shape {
-    fill: rgba(22, 24, 29, 0.8);
-    stroke: rgba(22, 24, 29, 0.8);
+    fill: var(--color-border);
+    stroke: var(--color-border);
   }
 </style>
