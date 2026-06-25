@@ -21,7 +21,10 @@
   import Scene3D from '$lib/components/section/Scene3D.svelte';
   import type { Scene3DApi } from '$lib/components/section/Scene3D.svelte';
   import { headerState, resetHeaderState } from '$lib/stores/header';
+  import TextBlock from '$lib/components/section/TextBlock.svelte';
+  import CommentList from '$lib/components/section/CommentList.svelte';
   import type { PageData } from './$types';
+
 
   interface Props {
     data: PageData;
@@ -35,6 +38,22 @@
   let frostLayer = $state<HTMLDivElement | null>(null);
   let phraseEl = $state<HTMLParagraphElement | null>(null);
   let scene3d = $state<Scene3DApi | undefined>(undefined);
+  let currentTopic = $state(0);
+  let topicLikes = $state<Record<string, boolean>[]>(
+    section.topics.map(() => ({}))
+  );
+
+  /* The currently displayed topic object. */
+  let topic = $derived(section.topics[currentTopic]);
+
+  /* "1 / 3" counter string. */
+  let counter = $derived(`${currentTopic + 1} / ${section.topics.length}`);
+
+  function toggleLike(commentId: string) {
+    const current = topicLikes[currentTopic];
+    topicLikes[currentTopic] = { ...current, [commentId]: !current[commentId] };
+  }
+
 
   onMount(() => {
     if (!scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
@@ -156,6 +175,25 @@
     <div class="phrase-anchor">
       <p class="phrase" bind:this={phraseEl}>{section.description}</p>
     </div>
+
+    <!-- ── Topics stage: 3-column layout (static for now) ── -->
+    <div class="stage">
+      <div class="stage__text">
+        <TextBlock {counter} title={topic.title} body={topic.description} />
+      </div>
+
+      <div class="stage__center" aria-hidden="true"></div>
+
+      <div class="stage__right">
+        <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
+        <CommentList
+          comments={topic.comments}
+          sectionId={section.id}
+          likes={topicLikes[currentTopic]}
+          onToggleLike={toggleLike}
+        />
+      </div>
+    </div>
   </div>
 </div>
 
@@ -232,4 +270,54 @@
     opacity: 0;
     will-change: transform, opacity;
   }
+
+  /* ── Topics stage ── */
+  .stage {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    align-items: center;
+    gap: var(--page-gutter);
+
+    padding: 0 var(--page-gutter);
+    box-sizing: border-box;
+
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  .stage__text {
+    grid-column: 1;
+    justify-self: start;   /* hug the left gutter */
+  }
+
+  .stage__center {
+    grid-column: 2;
+  }
+
+  .stage__right {
+    grid-column: 3;
+    justify-self: end;     /* hug the right gutter */
+
+    width: 23.4vw; 
+
+    display: flex;
+    flex-direction: column;
+    gap: 1.26vw;           /* 19px @ 1512px */
+    max-height: 100%;
+  }
+
+  .stage__heading {
+    margin: 0;
+    text-align: center;
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-bold);
+    font-size: 0.73vw;     /* 11px @ 1512px */
+    line-height: var(--line-height-tight);
+    color: var(--color-text-primary);
+  }
+
 </style>
