@@ -17,12 +17,16 @@
   import { onMount } from 'svelte';
   import { sections } from '$lib/data/sections';
 
-  interface Props {
+ interface Props {
     /** Force the header to stay visible regardless of scroll. */
     alwaysVisible?: boolean;
+    /** Section name shown centered; appears only when `showSection` is true. */
+    sectionTitle?: string;
+    /** Whether the centered section name is visible (driven by scroll). */
+    showSection?: boolean;
   }
 
-  let { alwaysVisible = false }: Props = $props();
+  let { alwaysVisible = false, sectionTitle, showSection = false }: Props = $props();
 
   let menuOpen = $state(false);
   let scrolled = $state(false);
@@ -79,7 +83,13 @@
   class:header--always={alwaysVisible}
 >
   <div class="header__inner">
-    <a class="header__logo" href="/">Quante facce ha una medaglia?</a>
+  <a class="header__logo" href="/">Quante facce ha una medaglia?</a>
+
+  {#if sectionTitle}
+    <span class="header__section" class:is-visible={showSection}>
+      {sectionTitle}
+    </span>
+  {/if}
 
   <button
       type="button"
@@ -195,6 +205,34 @@
 
     color: var(--color-text-primary);
     text-decoration: none;
+  }
+
+  /* ============================================================
+     CENTERED SECTION NAME — appears after the title scrolls away
+     ============================================================ */
+
+  .header__section {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    font-family: var(--font-family-display);
+    font-weight: var(--font-weight-black);
+    font-variation-settings: 'wght' 900;
+    font-size: var(--font-size-lg);  /* 20px */
+    text-transform: uppercase;
+    white-space: nowrap;
+
+    color: var(--color-text-primary);
+
+    opacity: 0;
+    transition: opacity 300ms ease;
+    pointer-events: none;
+  }
+
+  .header__section.is-visible {
+    opacity: 1;
   }
 
   .header__logo:hover {

@@ -19,5 +19,5 @@
   --spacing-2xl: var(--unit-45);
   --spacing-3xl: var(--unit-90);
 
-  --page-gutter: clamp(var(--unit-24), 4vw, var(--unit-80));
+  --page-gutter: 5.29vw;  /* 80px @ 1512px */
 }

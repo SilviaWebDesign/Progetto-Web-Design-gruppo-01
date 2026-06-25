@@ -128,9 +128,9 @@
     z-index: 4;
     left: 0;
     right: 0;
-    bottom: 5.29vw;       /* 80px @ 1512px, scales like the rest */
+    bottom: var(--page-gutter);   /* 80px @ 1512px, scales like the rest */
 
-    padding: 0 5.29vw;    /* side margins 80px @ 1512px */
+    padding: 0 var(--page-gutter);
     box-sizing: border-box;
 
     pointer-events: none;
