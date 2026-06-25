@@ -5,6 +5,7 @@
   import FrostCanvas from '$lib/components/section/FrostCanvas.svelte';
   import SectionTitle from '$lib/components/section/SectionTitle.svelte';
   import { getSectionById } from '$lib/data/sections';
+  import { headerState, resetHeaderState } from '$lib/stores/header';
 
   const section = getSectionById('infrastructure')!;
 
@@ -15,6 +16,9 @@
 
   onMount(() => {
     if (!scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
+
+     /* Tell the header which section we're in. */
+    headerState.update((s) => ({ ...s, sectionTitle: section.title }));
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -33,6 +37,18 @@
         { scaleY: 2.2, yPercent: -120, opacity: 0, ease: 'power3.inOut' },
         0
       );
+
+      /* Toggle the centered section name when the title has faded.
+         Using ScrollTrigger callbacks tied to the title's fade. */
+      tl.add(() => {}, 0.25); // marker position
+
+      ScrollTrigger.create({
+        trigger: scrollArea,
+        start: () => `top+=${window.innerHeight * 0.5} top`,
+        onEnter: () => headerState.update((s) => ({ ...s, showSection: true })),
+        onLeaveBack: () => headerState.update((s) => ({ ...s, showSection: false }))
+      });
+
       tl.fromTo(
         frostLayer,
         { opacity: 1 },
@@ -56,7 +72,10 @@
       );
     }, scrollArea);
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      resetHeaderState();
+    };
   });
 </script>
 

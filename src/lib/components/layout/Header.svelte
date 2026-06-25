@@ -16,6 +16,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { sections } from '$lib/data/sections';
+  import { headerState } from '$lib/stores/header';
 
  interface Props {
     /** Force the header to stay visible regardless of scroll. */
@@ -26,7 +27,11 @@
     showSection?: boolean;
   }
 
-  let { alwaysVisible = false, sectionTitle, showSection = false }: Props = $props();
+  let { alwaysVisible = false }: Props = $props();
+
+  /* Section name + visibility come from the shared store (set by pages). */
+  let sectionTitle = $derived($headerState.sectionTitle);
+  let showSection = $derived($headerState.showSection);
 
   let menuOpen = $state(false);
   let scrolled = $state(false);

@@ -14,7 +14,7 @@
 
 <!-- alwaysVisible è temporaneo per lo sviluppo; rimuovere quando
      le pagine scrollabili gestiranno il reveal su scroll. -->
-<Header alwaysVisible />
+<Header />
 
 <svelte:head>
 	<title>Quante facce ha una medaglia?</title>
