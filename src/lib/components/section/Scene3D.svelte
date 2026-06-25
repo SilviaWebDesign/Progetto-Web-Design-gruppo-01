@@ -25,6 +25,10 @@
     setRotationY: (rad: number) => void;
     setScale: (factor: number) => void;
     setOpacity: (val: number) => void;
+    /** Start the continuous idle spin (called when the model settles). */
+    settle: () => void;
+    /** Stop the continuous idle spin (e.g. when scrubbing back to intro). */
+    unsettle: () => void;
   }
 
   interface Props {
@@ -56,9 +60,13 @@
   let materials: THREE.MeshPhysicalMaterial[] = [];
   let baseScale = 1;
 
-  let rafId: number | null = null;
+let rafId: number | null = null;
   const clock = new THREE.Clock();
   const IDLE_RAD_S = THREE.MathUtils.degToRad(7); // 7°/s idle spin
+
+  /* Whether the continuous idle spin is active. Turned on by settle()
+     (kept on through the later phases, as in the prototype). */
+  let spinning = $state(false);
 
   onMount(() => {
     if (!canvasEl || !wrapperEl) return;
@@ -76,7 +84,9 @@
           }
           m.opacity = val;
         });
-      }
+      },
+      settle: () => { spinning = true; },
+      unsettle: () => { spinning = false; }
     };
 
     initThree();
@@ -201,7 +211,7 @@
       rafId = requestAnimationFrame(render);
       const dt = clock.getDelta();
 
-      if (autoRotate && spinner) {
+      if ((autoRotate || spinning) && spinner) {
         spinner.rotation.y += IDLE_RAD_S * dt;
       }
 

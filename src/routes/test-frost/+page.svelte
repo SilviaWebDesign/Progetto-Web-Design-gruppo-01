@@ -60,7 +60,13 @@
           trigger: scrollArea,
           start: () => `top+=${window.innerHeight * 1.85} top`,
           end: 'bottom bottom',
-          scrub: 1.2
+          scrub: 1.2,
+          onUpdate: (self) => {
+            /* When the intro 3D animation completes, start the
+               continuous spin (settle). Reverse → stop it. */
+            if (self.progress >= 0.999) scene3d?.settle();
+          },
+          onReverseComplete: () => scene3d?.unsettle()
         }
       });
 
