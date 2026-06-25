@@ -1,44 +1,47 @@
 /* ============================================================
-   SMOOTH SCROLL (Lenis)
+   SMOOTH SCROLL (Lenis + GSAP ScrollTrigger)
    ============================================================
-   Sets up Lenis for inertial smooth scrolling and runs its
-   animation loop. Returns the Lenis instance so callers can
-   control it (e.g. stop/start) or hook GSAP ScrollTrigger to it
-   later, plus a destroy() to clean up.
+   Sets up Lenis for inertial smooth scrolling and wires it to
+   GSAP's ScrollTrigger so scroll-driven animations stay in sync:
+   - Lenis 'scroll' events update ScrollTrigger.
+   - GSAP's ticker drives Lenis' RAF (one loop, perfectly synced).
+   Returns the Lenis instance and a destroy() for cleanup.
    ============================================================ */
 
 import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export interface SmoothScroll {
   lenis: Lenis;
   destroy: () => void;
 }
 
-/**
- * Initialise Lenis smooth scrolling.
- * Call once (e.g. in the root layout's onMount) in the browser.
- */
 export function initSmoothScroll(): SmoothScroll {
   const lenis = new Lenis({
-    /* Duration of the inertial glide (seconds). Higher = smoother/slower. */
     duration: 1.1,
-    /* Easing curve for the glide. */
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    /* Smooth only vertical wheel scrolling. */
     smoothWheel: true
   });
 
-  let rafId: number;
+  /* 1. Keep ScrollTrigger in sync with Lenis' scroll position. */
+  lenis.on('scroll', ScrollTrigger.update);
 
-  /* Lenis must be ticked every frame to advance the scroll. */
-  function raf(time: number) {
-    lenis.raf(time);
-    rafId = requestAnimationFrame(raf);
+  /* 2. Drive Lenis from GSAP's ticker (single synced loop).
+     GSAP gives time in seconds; Lenis wants milliseconds. */
+  function tick(time: number) {
+    lenis.raf(time * 1000);
   }
-  rafId = requestAnimationFrame(raf);
+  gsap.ticker.add(tick);
+
+  /* Avoid GSAP smoothing the ticker delta (Lenis handles smoothing). */
+  gsap.ticker.lagSmoothing(0);
 
   function destroy() {
-    cancelAnimationFrame(rafId);
+    gsap.ticker.remove(tick);
+    lenis.off('scroll', ScrollTrigger.update);
     lenis.destroy();
   }
 
