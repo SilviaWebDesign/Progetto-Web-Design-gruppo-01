@@ -14,7 +14,8 @@ export const sportSection: Section = {
     'Le Olimpiadi vivono grazie a gare, atleti e discipline differenti. Questi eventi possono essere occasioni di crescita e partecipazione oppure competizioni incentrate su visibilità e risultati, in equilibrio tra sportività e spettacolo.',
   object3D: '3d-skater',
   glbPath: '/models/sport-base.glb',
-   frostImage: '/images/frost-sport.png',
+  frostImage: '/images/frost-sport.png',
+  modelFitFactor: 0.8,
   topics: [
     {
       id: 'alysa-liu',

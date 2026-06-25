@@ -140,8 +140,13 @@
       <FrostCanvas src={section.frostImage} />
     </div>
 
-    <div class="layer layer--model">
-      <Scene3D modelSrc={section.glbPath} autoRotate={false} bind:api={scene3d} />
+   <div class="layer layer--model">
+      <Scene3D
+        modelSrc={section.glbPath}
+        fitFactor={section.modelFitFactor}
+        autoRotate={false}
+        bind:api={scene3d}
+      />
     </div>
 
     <div class="hero-title" bind:this={titleWrap}>
