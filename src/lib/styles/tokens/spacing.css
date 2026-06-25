@@ -18,4 +18,6 @@
   --spacing-xl:  var(--unit-40);
   --spacing-2xl: var(--unit-45);
   --spacing-3xl: var(--unit-90);
+
+  --page-gutter: clamp(var(--unit-24), 4vw, var(--unit-80));
 }

@@ -164,7 +164,7 @@
 
     width: 100%;
     min-height: var(--control-height);
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm) var(--page-gutter);
 
     box-sizing: border-box;
     pointer-events: auto; /* re-enable clicks on the bar itself */
