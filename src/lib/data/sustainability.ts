@@ -13,7 +13,7 @@ export const sustainabilitySection: Section = {
   description:
     'Le Olimpiadi sono accompagnate da scelte che riguardano ambiente e risorse. Questi interventi possono essere letti come attenzione al territorio oppure come iniziative dal valore limitato, misurabile solo nel tempo.',
   object3D: '3d-tree',
-  glbPath: '/models/crane.glb', // TODO: replace with /models/tree.glb when available
+  glbPath: '/models/sustainability-base.glb',
   frostImage: '/images/frost-sustainability.png',
   topics: [
     {
