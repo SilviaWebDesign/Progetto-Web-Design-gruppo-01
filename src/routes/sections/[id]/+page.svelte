@@ -286,7 +286,7 @@
     box-sizing: border-box;
 
     opacity: 1;
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   .stage__text {
@@ -302,7 +302,7 @@
     grid-column: 3;
     justify-self: end;     /* hug the right gutter */
 
-    width: 23.4vw; 
+    width: 354px; 
 
     display: flex;
     flex-direction: column;

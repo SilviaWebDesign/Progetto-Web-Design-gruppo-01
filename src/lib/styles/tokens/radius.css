@@ -9,6 +9,7 @@
 :root {
   --radius-none: var(--unit-0);
   --radius-xs:   var(--unit-8);
+  --radius-s:   var(--unit-12);
   --radius-sm:   var(--unit-30);
   --radius-md:   var(--unit-32);
 }
