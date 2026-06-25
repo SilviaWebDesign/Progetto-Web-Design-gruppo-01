@@ -175,7 +175,9 @@
             roughness: 0.015,
             envMapIntensity: 5.0,
             clearcoat: 1.0,
-            clearcoatRoughness: 0.01
+            clearcoatRoughness: 0.01,
+            transparent: true,
+            opacity: 0 // start invisible; the scroll timeline fades it in
           });
           mesh.material = mat;
           materials.push(mat);

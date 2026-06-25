@@ -4,6 +4,8 @@
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import FrostCanvas from '$lib/components/section/FrostCanvas.svelte';
   import SectionTitle from '$lib/components/section/SectionTitle.svelte';
+  import Scene3D from '$lib/components/section/Scene3D.svelte';
+  import type { Scene3DApi } from '$lib/components/section/Scene3D.svelte';
   import { getSectionById } from '$lib/data/sections';
   import { headerState, resetHeaderState } from '$lib/stores/header';
 
@@ -14,62 +16,93 @@
   let frostLayer = $state<HTMLDivElement | null>(null);
   let phraseEl = $state<HTMLParagraphElement | null>(null);
 
+  /* Scene3D exposes its API here (bindable). */
+  let scene3d = $state<Scene3DApi | undefined>(undefined);
+
   onMount(() => {
     if (!scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
 
-     /* Tell the header which section we're in. */
     headerState.update((s) => ({ ...s, sectionTitle: section.title }));
 
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
+      /* ── Timeline 1: intro (title + frost + phrase) ── */
+      const heroTl = gsap.timeline({
         scrollTrigger: {
           trigger: scrollArea,
           start: 'top top',
-          end: () => `+=${window.innerHeight * 3}`,
-          scrub: true
+          end: () => `+=${window.innerHeight * 1.5}`,
+          scrub: 1.2
         }
       });
 
-      /* --- Phase 1 (0 → 0.3): title stretches & fades, frost fades out --- */
-      tl.fromTo(
+      heroTl.fromTo(
         titleWrap,
         { scaleY: 1, yPercent: 0, opacity: 1 },
         { scaleY: 2.2, yPercent: -120, opacity: 0, ease: 'power3.inOut' },
         0
       );
+      heroTl.fromTo(frostLayer, { opacity: 1 }, { opacity: 0, ease: 'power2.inOut' }, 0);
+      heroTl.fromTo(
+        phraseEl,
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, ease: 'power2.out' },
+        0.35
+      );
+      heroTl.to(phraseEl, { opacity: 0, y: -40, ease: 'power2.in' }, 0.7);
 
-      /* Toggle the centered section name when the title has faded.
-         Using ScrollTrigger callbacks tied to the title's fade. */
-      tl.add(() => {}, 0.25); // marker position
+      /* ── Timeline 2: the 3D model (appear → rotate 360° → shrink) ──
+         A proxy object is animated by GSAP; each update pushes the
+         value into the Scene3D API. Matches the prototype's threeTl. */
+      const proxy = { rot: 0, scale: 1, appear: 0 };
 
+      const threeTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: scrollArea,
+          start: () => `top+=${window.innerHeight * 1.85} top`,
+          end: 'bottom bottom',
+          scrub: 1.2
+        }
+      });
+
+      /* Appear (fade in). */
+      threeTl.fromTo(
+        proxy,
+        { appear: 0 },
+        { appear: 1, duration: 0.12, onUpdate: () => scene3d?.setOpacity(proxy.appear) },
+        0
+      );
+
+      /* Rotate a full 360°. */
+      threeTl.to(
+        proxy,
+        {
+          rot: Math.PI * 2,
+          ease: 'none',
+          duration: 0.46,
+          onUpdate: () => scene3d?.setRotationY(proxy.rot)
+        },
+        0.06
+      );
+
+      /* Shrink to 0.56. */
+      threeTl.to(
+        proxy,
+        {
+          scale: 0.56,
+          ease: 'power2.inOut',
+          duration: 0.28,
+          onUpdate: () => scene3d?.setScale(proxy.scale)
+        },
+        0.46
+      );
+
+      /* Section name in the header once the title is gone. */
       ScrollTrigger.create({
         trigger: scrollArea,
         start: () => `top+=${window.innerHeight * 0.5} top`,
         onEnter: () => headerState.update((s) => ({ ...s, showSection: true })),
         onLeaveBack: () => headerState.update((s) => ({ ...s, showSection: false }))
       });
-
-      tl.fromTo(
-        frostLayer,
-        { opacity: 1 },
-        { opacity: 0, ease: 'power2.inOut' },
-        0
-      );
-
-      /* --- Phase 2 (0.35 → 0.6): phrase fades/rises in --- */
-      tl.fromTo(
-        phraseEl,
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, ease: 'power2.out' },
-        0.35
-      );
-
-      /* --- Phase 3 (0.7 → 1): phrase fades/rises out --- */
-      tl.to(
-        phraseEl,
-        { opacity: 0, y: -40, ease: 'power2.in' },
-        0.7
-      );
     }, scrollArea);
 
     return () => {
@@ -88,12 +121,15 @@
       <FrostCanvas src={section.frostImage} />
     </div>
 
+    <!-- 3D model layer (above bg/frost, below title/phrase) -->
+    <div class="layer layer--model">
+      <Scene3D modelSrc={section.glbPath} autoRotate={false} bind:api={scene3d} />
+    </div>
+
     <div class="hero-title" bind:this={titleWrap}>
       <SectionTitle id={section.id} title={section.title} />
     </div>
 
-   <!-- Narrative phrase: outer wrapper positions/centers it,
-         inner <p> is the element GSAP animates. -->
     <div class="phrase-anchor">
       <p class="phrase" bind:this={phraseEl}>{section.description}</p>
     </div>
@@ -128,9 +164,14 @@
 
   .layer--frost { z-index: 2; overflow: hidden; }
 
+  .layer--model {
+    z-index: 3;
+    pointer-events: none;
+  }
+
   .hero-title {
     position: absolute;
-    z-index: 3;
+    z-index: 4;
     inset: 0;
     display: flex;
     flex-direction: column;
@@ -140,43 +181,31 @@
     will-change: transform, opacity;
   }
 
- /* Outer wrapper: anchored to the bottom with a scalable 80px margin
-     (5.29vw @ 1512px), respecting the side gutters too. */
   .phrase-anchor {
     position: absolute;
-    z-index: 4;
+    z-index: 5;
     left: 0;
     right: 0;
-    bottom: var(--page-gutter);   /* 80px @ 1512px, scales like the rest */
-
+    bottom: var(--page-gutter);
     padding: 0 var(--page-gutter);
     box-sizing: border-box;
-
     pointer-events: none;
   }
 
-  /* Inner phrase: GSAP animates this. Everything scales with the
-     viewport width, calibrated to the Figma values on a 1512px screen:
-     width 1349px, height 450px, font 68px → all expressed in vw so the
-     composition looks identical at any screen size. */
   .phrase {
     width: 100%;
-    max-width: 89.22vw;   /* 1349px @ 1512px */
-    height: 29.76vw;      /* 450px  @ 1512px */
+    max-width: 89.22vw;
+    height: 29.76vw;
     margin: 0;
-
     display: flex;
-    align-items: center;  /* center text block within the fixed-ratio height */
-
+    align-items: center;
     text-align: left;
-
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-bold);
-    font-size: 4.5vw;     /* 68px @ 1512px */
+    font-size: 4.5vw;
     line-height: var(--line-height-tight);
     letter-spacing: -0.01em;
     color: var(--color-text-primary);
-
     opacity: 0;
     will-change: transform, opacity;
   }
