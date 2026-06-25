@@ -55,20 +55,20 @@
          value into the Scene3D API. Matches the prototype's threeTl. */
       const proxy = { rot: 0, scale: 1, appear: 0 };
 
-      const threeTl = gsap.timeline({
-        scrollTrigger: {
+      const threeTrigger: ScrollTrigger.Vars = {
           trigger: scrollArea,
           start: () => `top+=${window.innerHeight * 1.85} top`,
           end: 'bottom bottom',
           scrub: 1.2,
           onUpdate: (self) => {
-            /* When the intro 3D animation completes, start the
-               continuous spin (settle). Reverse → stop it. */
+            /* Start the continuous spin once the intro 3D animation
+              has effectively completed. */
             if (self.progress >= 0.999) scene3d?.settle();
           },
-          onReverseComplete: () => scene3d?.unsettle()
-        }
-      });
+          onLeaveBack: () => scene3d?.unsettle()
+        };
+
+        const threeTl = gsap.timeline({ scrollTrigger: threeTrigger });
 
       /* Appear (fade in). */
       threeTl.fromTo(
