@@ -1,9 +1,15 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import { onMount } from 'svelte';
 	import '$lib/styles/app.css';
 	import Header from '$lib/components/layout/Header.svelte';
+	import { initSmoothScroll } from '$lib/utils/smoothScroll';
 
 	let { children } = $props();
+	onMount(() => {
+    const smooth = initSmoothScroll();
+    return () => smooth.destroy();
+  });
 </script>
 
 <!-- alwaysVisible è temporaneo per lo sviluppo; rimuovere quando
