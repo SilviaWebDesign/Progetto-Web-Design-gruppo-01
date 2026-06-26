@@ -172,6 +172,8 @@
   .header__inner {
     --control-height: 24px;
 
+    position: relative; 
+
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -197,10 +199,9 @@
 
     display: flex;
     align-items: center;
-    height: var(--control-height);
 
     font-family: var(--font-family-display);
-    font-size: var(--control-height);
+    font-size: var(--font-size-lg);
     font-weight: 900;
     font-variation-settings: 'wght' 900;
     font-stretch: condensed;
@@ -216,17 +217,21 @@
      CENTERED SECTION NAME — appears after the title scrolls away
      ============================================================ */
 
-  .header__section {
+.header__section {
     position: absolute;
     left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    height: var(--control-height);
+    top: var(--spacing-xl);
+    bottom: var(--spacing-sm);
+    transform: translateX(-50%);
+
+    display: flex;
+    align-items: center;
 
     font-family: var(--font-family-display);
-    font-size: var(--control-height);
+    font-size: var(--font-size-lg);   
     font-weight: 900;
     font-variation-settings: 'wght' 900;
+    font-stretch: condensed;
     text-transform: uppercase;
     white-space: nowrap;
 
@@ -300,7 +305,7 @@
   .header__burger-line {
     position: absolute;
     left: 50%;
-    width: 18px;
+    width: 24px;
     height: 2px;
     background-color: currentColor;
     border-radius: 2px;
