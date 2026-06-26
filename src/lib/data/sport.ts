@@ -22,6 +22,9 @@ export const sportSection: Section = {
       title: 'Alysa Liu',
       description:
         'Alysa Liu si presenta come una delle protagoniste più attese del pattinaggio artistico ai Giochi Olimpici Invernali di Milano-Cortina 2026. La sua partecipazione contribuisce a rafforzare l’attenzione internazionale sull’evento, in particolare tra il pubblico più giovane e gli appassionati degli sport su ghiaccio, grazie a uno stile tecnico e spettacolare che ha già segnato diverse competizioni internazionali.',
+      sources: [
+        { label: 'WIKIPEDIA', url: 'https://en.wikipedia.org/wiki/Alysa_Liu' }
+      ],
       comments: [
         {
           id: 'alysa-liu-pos-1',
@@ -60,6 +63,12 @@ export const sportSection: Section = {
       title: 'Vladyslav Heraskevych',
       description:
         "L'atleta ucraino Vladyslav Heraskevych è stato escluso dalla competizione di skeleton per essersi rifiutato di rimuovere un casco commemorativo, il quale riportava i volti di oltre venti atleti e allenatori ucraini uccisi dall'inizio dell'invasione russa. Questo gesto viola la Regola 50 della Carta Olimpica, che vieta qualsiasi forma di propaganda o messaggio politico, religioso o razziale sui campi di gara.",
+      sources: [
+        {
+          label: 'RAI NEWS',
+          url: 'https://www.rainews.it/articoli/2026/02/il-casco-con-i-volti-degli-atleti-ucraini-uccisi-squalificato-latletadello-skeleton-heraskevych-c269b776-c601-4ec0-b7f3-6271587b9f6d.html'
+        }
+      ],
       comments: [
         {
           id: 'vladyslav-heraskevych-pos-1',
@@ -98,6 +107,12 @@ export const sportSection: Section = {
       title: 'Jutta Leerdam',
       description:
         'La pattinatrice olandese Jutta Leerdam è diventata protagonista di una controversia a seguito della sua celebrazione per la vittoria nei 1000 metri. L’atleta ha aperto la zip della sua tuta mostrando l’abbigliamento sottostante, intimo sportivo firmato Nike. Si presume che Leerdam possa aver ricevuto circa 850.000 euro dal marchio statunitense, a causa di un contratto di sponsorizzazione.',
+      sources: [
+        {
+          label: 'CORRIERE DELLA SERA',
+          url: 'https://www.corriere.it/sport/olimpiadi-invernali/26_febbraio_17/jutta-leerdam-biancheria-intima-nike-soldi-19f85a90-5ac8-4c3c-bf67-c44ef8049xlk.shtml'
+        }
+      ],
       comments: [
         {
           id: 'jutta-leerdam-pos-1',

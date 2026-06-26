@@ -69,10 +69,18 @@ export interface Comment {
    Each topic carries its own set of comments.
    ------------------------------------------------------------ */
 
+/** A single external source/reference shown under a topic's text block. */
+export interface Source {
+  label: string;
+  url: string;
+}
+
 export interface Topic {
   id: string;
   title: string;
   description: string;
+  /** One or more external sources for this topic (may be empty). */
+  sources: Source[];
   comments: Comment[];
 }
 

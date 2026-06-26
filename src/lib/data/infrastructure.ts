@@ -22,6 +22,13 @@ export const infrastructureSection: Section = {
       title: 'Villaggio Olimpico',
       description:
         "Il Villaggio Olimpico di Porta Romana è stato progettato per ospitare gli atleti durante i Giochi e diventare student housing dopo l’evento. Il progetto presenta tecnologie ed impianti finalizzati al risparmio energetico. Una volta adibito a studentato, la quota mensile si aggirerà intorno ai 1.000€ per posto letto.",
+      sources: [
+        { label: 'WIKIPEDIA', url: 'https://it.wikipedia.org/wiki/Villaggio_Olimpico_di_Milano' },
+        {
+          label: 'INARCASSA',
+          url: 'https://www.inarcassa.it/articoli/studentato-villaggio-olimpico-aa-20262027-opportunita-posti-letto'
+        }
+      ],
       comments: [
         {
           id: 'olympic-village-pos-1',
@@ -60,6 +67,9 @@ export const infrastructureSection: Section = {
       title: 'Arena Santa Giulia',
       description:
         "L’Arena Santa Giulia è stata progettata per ospitare l’hockey olimpico e diventare poi un’arena polifunzionale per eventi, sport e spettacoli. La costruzione dell’arena rientra nel progetto di riqualificazione del quartiere Santa Giulia, o Montecity-Rogoredo, nella periferia sudest di Milano.",
+      sources: [
+        { label: 'WIKIPEDIA', url: 'https://it.wikipedia.org/wiki/Unipol_Dome' }
+      ],
       comments: [
         {
           id: 'santa-giulia-arena-pos-1',
@@ -98,6 +108,9 @@ export const infrastructureSection: Section = {
       title: 'Sliding Centre',
       description:
         "L’Eugenio Monti Sliding Centre è un tracciato per bob, skeleton e slittino situato a Cortina d’Ampezzo. La pista è stata ricostruita per ospitare le gare dei tre sport alle Olimpiadi Invernali di Milano-Cortina, ed è considerata una delle strutture più emblematiche dei Giochi.",
+      sources: [
+        { label: 'WIKIPEDIA', url: 'https://it.wikipedia.org/wiki/Pista_olimpica_Eugenio_Monti' }
+      ],
       comments: [
         {
           id: 'sliding-centre-pos-1',

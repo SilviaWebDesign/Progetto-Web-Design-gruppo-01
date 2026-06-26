@@ -22,7 +22,9 @@ export const sustainabilitySection: Section = {
       title: 'Riuso delle sedi',
       description:
         'Milano-Cortina 2026 è stata progettata intorno a un uso esteso di sedi già esistenti o temporanee, al fine di non lasciare “cattedrali nel deserto”, come spesso accade. Secondo la comunicazione ufficiale, circa il 90% delle sedi di gara rientra in questa logica di riuso. Alcuni degli esempi sono lo stadio di San Siro, l’Unipol Forum, e Rho Fiera.',
-        
+      sources: [
+        { label: 'SIMICO', url: 'https://www.simico.it/piano-delle-opere/' }
+      ],  
       comments: [
         {
           id: 'venue-reuse-pos-1',
@@ -62,6 +64,12 @@ export const sustainabilitySection: Section = {
       title: 'Impatto climatico',
       description:
         'Il report ufficiale di sostenibilità stima le emissioni complessive di circa 1.005.000 tonnellate di CO₂ equivalente per la realizzazione dell’evento, suddivise nel seguente modo: 30% per la pianificazione e realizzazione dei Giochi, 29% per la costruzione di infrastrutture permanenti, e 41% per le attività correlate.',
+      sources: [
+        {
+          label: 'OLYMPICS',
+          url: 'https://gstatic.olympics.com/s3/mc2026/documents/Sustainability%20-%20Now26/Sustainability%20Report/Rapporto_Sostenibilita_Impatto_Legacy_2024.pdf'
+        }
+      ],
       comments: [
         {
           id: 'climate-impact-pos-1',
@@ -100,6 +108,12 @@ export const sustainabilitySection: Section = {
       title: 'Neve artificiale',
       description:
         'Le sedi alpine hanno fatto ricorso alla neve tecnica per garantire condizioni adatte alle competizioni. A Livigno sono stati prodotti oltre 600.000 metri cubi di neve da metà dicembre per freestyle e snowboard.',
+      sources: [
+        {
+          label: 'REUTERS',
+          url: 'https://www.reuters.com/sustainability/climate-energy/snowmakers-feel-heat-climate-change-tests-milano-cortina-winter-games-2026-01-27/'
+        }
+      ],
       comments: [
         {
           id: 'artificial-snow-pos-1',
