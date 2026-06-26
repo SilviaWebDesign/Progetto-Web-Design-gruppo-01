@@ -87,9 +87,8 @@
     width: 100%;
     padding: var(--spacing-md);                  /* 20px @ 1512px */
 
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: transparent;
+   
 
     border: var(--border-thin);
     border-radius: var(--radius-s);             /* 12px @ 1512px */
