@@ -226,6 +226,7 @@
 
     display: flex;
     align-items: center;
+    height: var(--control-height);
 
     font-family: var(--font-family-display);
     font-size: var(--font-size-lg);   
@@ -305,12 +306,10 @@
   .header__burger-line {
     position: absolute;
     left: 50%;
-    width: 24px;
+    width: 20px;
     height: 2px;
     background-color: currentColor;
     border-radius: 2px;
-
-    /* Center each line horizontally; vertical position set per line below. */
     transform: translateX(-50%);
 
     transition:
@@ -321,9 +320,9 @@
 
   /* Resting positions: three evenly-spaced horizontal lines.
      control-height is 24px, lines are 2px tall. */
-  .header__burger-line:nth-child(1) { top: 7px; }
+  .header__burger-line:nth-child(1) { top: 5px; }
   .header__burger-line:nth-child(2) { top: 11px; }
-  .header__burger-line:nth-child(3) { top: 15px; }
+  .header__burger-line:nth-child(3) { top: 17px; }
 
   /* Open state → X */
   .header__burger.is-open .header__burger-line:nth-child(1) {
