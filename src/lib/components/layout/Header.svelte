@@ -179,7 +179,7 @@
 
     width: 100%;
     min-height: var(--control-height);
-    padding: var(--spacing-sm) var(--page-gutter);
+    padding: var(--spacing-xl) var(--page-gutter);
 
     box-sizing: border-box;
     pointer-events: auto; /* re-enable clicks on the bar itself */
@@ -221,11 +221,12 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    height: var(--control-height);
 
     font-family: var(--font-family-display);
-    font-weight: var(--font-weight-black);
+    font-size: var(--control-height);
+    font-weight: 900;
     font-variation-settings: 'wght' 900;
-    font-size: var(--font-size-lg);  /* 20px */
     text-transform: uppercase;
     white-space: nowrap;
 
