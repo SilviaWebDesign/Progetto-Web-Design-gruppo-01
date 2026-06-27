@@ -179,7 +179,12 @@
     <!-- ── Topics stage: 3-column layout (static for now) ── -->
     <div class="stage">
       <div class="stage__text">
-        <TextBlock {counter} title={topic.title} body={topic.description} />
+        <TextBlock
+          {counter}
+          title={topic.title}
+          body={topic.description}
+          sources={topic.sources}
+        />
       </div>
 
       <div class="stage__center" aria-hidden="true"></div>
