@@ -37,6 +37,8 @@
 
   let scrollArea = $state<HTMLDivElement | null>(null);
   let titleWrap = $state<HTMLDivElement | null>(null);
+  let stageTextEl = $state<HTMLDivElement | null>(null);
+  let stageRightEl = $state<HTMLDivElement | null>(null);
   let frostLayer = $state<HTMLDivElement | null>(null);
   let phraseEl = $state<HTMLParagraphElement | null>(null);
   let scene3d = $state<Scene3DApi | undefined>(undefined);
@@ -82,20 +84,53 @@
     scene3d?.unsettle();
   }
 
+  /* Guards against starting a new transition before the current
+     one finishes (works together with the wheel lock). */
+  let isTransitioning = false;
+
+
+  function changeTopic(applyChange: () => void) {
+    if (isTransitioning) return;
+    if (!stageTextEl || !stageRightEl) {
+      applyChange();
+      return;
+    }
+
+    isTransitioning = true;
+    const targets = [stageTextEl, stageRightEl];
+
+    gsap
+      .timeline({
+        onComplete: () => {
+          isTransitioning = false;
+        }
+      })
+      .to(targets, {
+        opacity: 0,
+        duration: 0.6,
+        ease: 'power2.in',
+        onComplete: applyChange   // swap while invisible
+      })
+      .to(targets, {
+        opacity: 1,
+        duration: 0.8,
+        ease: 'power2.out'
+      });
+  }
+
   function goNext() {
-    if (!anyLiked) return;                       // need a like first
+    if (!anyLiked) return;
     if (currentTopic < section.topics.length - 1) {
-      currentTopic += 1;
+      changeTopic(() => { currentTopic += 1; });
     } else {
       // last topic → feedback phase (placeholder for now)
       // enterFeedbackPhase();
     }
   }
 
-  /* Move to the previous topic; from the first one, exit topics mode. */
   function goPrev() {
     if (currentTopic > 0) {
-      currentTopic -= 1;
+      changeTopic(() => { currentTopic -= 1; });
     } else {
       exitTopicsMode();
     }
@@ -245,7 +280,7 @@
 
   <!-- ── Topics stage: 3-column layout, shown in topics mode ── -->
     <div class="stage" class:is-visible={inTopicsMode}>
-      <div class="stage__text">
+      <div class="stage__text" bind:this={stageTextEl}>
         <TextBlock
           {counter}
           title={topic.title}
@@ -256,7 +291,7 @@
 
       <div class="stage__center" aria-hidden="true"></div>
 
-      <div class="stage__right">
+      <div class="stage__right" bind:this={stageRightEl}>
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
         <CommentList
           comments={topic.comments}
