@@ -234,7 +234,7 @@
       else goPrev();
 
       // release the lock after the transition settles
-      setTimeout(() => { wheelLock = false; }, 800);
+      setTimeout(() => { wheelLock = false; }, 1000);
     }
 
     window.addEventListener('wheel', onWheel, { passive: false });
