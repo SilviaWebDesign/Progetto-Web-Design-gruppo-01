@@ -301,6 +301,25 @@
         />
       </div>
     </div>
+    <!-- ── "Continua" CTA: advances to the next topic (needs a like) ── -->
+    <button
+      class="continue"
+      class:is-visible={inTopicsMode}
+      disabled={!anyLiked}
+      onclick={goNext}
+      aria-label="Continua al prossimo argomento"
+    >
+      <span class="continue__label">Continua</span>
+      <svg class="continue__arrow" viewBox="0 0 24 12" fill="none" aria-hidden="true">
+        <path
+          d="M2 2l10 8 10-8"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
   </div>
 </div>
 
@@ -431,5 +450,72 @@
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
   }
+
+  /* ── "Continua" CTA ── */
+  .continue {
+    position: absolute;
+    z-index: 7;
+    left: 50%;
+    bottom: var(--page-gutter);
+    transform: translateX(-50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2xs);
+
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text-primary);
+
+    /* Hidden outside topics mode. */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 400ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  /* Shown in topics mode; dimmed until a like enables advancing. */
+  .continue.is-visible {
+    opacity: 0.35;
+    pointer-events: auto;
+  }
+
+  .continue.is-visible:not(:disabled) {
+    opacity: 1;
+  }
+
+  .continue:disabled {
+    cursor: default;
+  }
+
+  .continue__label {
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+    color: inherit;
+  }
+
+  .continue__arrow {
+    width: 25px;
+    height: 24px;
+  }
+
+  /* Gentle bounce, only when the CTA is active (can advance). */
+  .continue.is-visible:not(:disabled) .continue__arrow {
+    animation: continue-bounce 1.6s ease-in-out infinite;
+  }
+
+  @keyframes continue-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .continue__arrow { animation: none; }
+  }
+
 
 </style>
