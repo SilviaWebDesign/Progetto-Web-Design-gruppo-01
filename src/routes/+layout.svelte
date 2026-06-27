@@ -17,8 +17,6 @@
 });
 </script>
 
-<!-- alwaysVisible è temporaneo per lo sviluppo; rimuovere quando
-     le pagine scrollabili gestiranno il reveal su scroll. -->
 <Header />
 
 <svelte:head>

@@ -24,6 +24,8 @@
   import TextBlock from '$lib/components/section/TextBlock.svelte';
   import CommentList from '$lib/components/section/CommentList.svelte';
   import type { PageData } from './$types';
+  import { lenisStore } from '$lib/stores/scroll';
+  import { get } from 'svelte/store';
 
 
   interface Props {
@@ -46,7 +48,7 @@
   type Phase = 'intro' | 'topics' | 'feedback';
   let phase = $state<Phase>('intro');
 
-  /* Convenience flag used by the markup/styles. */
+
   let inTopicsMode = $derived(phase === 'topics');
 
   /* The currently displayed topic object. */
@@ -55,11 +57,49 @@
   /* "1 / 3" counter string. */
   let counter = $derived(`${currentTopic + 1} / ${section.topics.length}`);
 
+/* True if at least one comment of the current topic is liked.
+     Required to advance to the next topic. */
+  let anyLiked = $derived(
+    Object.values(topicLikes[currentTopic]).some(Boolean)
+  );
+
   function toggleLike(commentId: string) {
     const current = topicLikes[currentTopic];
     topicLikes[currentTopic] = { ...current, [commentId]: !current[commentId] };
   }
 
+  function enterTopicsMode() {
+    if (phase === 'topics') return;     
+    phase = 'topics';
+    get(lenisStore)?.stop();            // freeze native/smooth scroll
+    scene3d?.settle();                  // 3D keeps spinning on its own
+  }
+
+  function exitTopicsMode() {
+    if (phase !== 'topics') return;
+    phase = 'intro';
+    get(lenisStore)?.start();           // resume scrolling
+    scene3d?.unsettle();
+  }
+
+  function goNext() {
+    if (!anyLiked) return;                       // need a like first
+    if (currentTopic < section.topics.length - 1) {
+      currentTopic += 1;
+    } else {
+      // last topic → feedback phase (placeholder for now)
+      // enterFeedbackPhase();
+    }
+  }
+
+  /* Move to the previous topic; from the first one, exit topics mode. */
+  function goPrev() {
+    if (currentTopic > 0) {
+      currentTopic -= 1;
+    } else {
+      exitTopicsMode();
+    }
+  }
 
   onMount(() => {
     if (!scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
@@ -101,9 +141,9 @@
         end: 'bottom bottom',
         scrub: 1.2,
         onUpdate: (self) => {
-          if (self.progress >= 0.999) scene3d?.settle();
+          if (self.progress >= 0.999) enterTopicsMode();
         },
-        onLeaveBack: () => scene3d?.unsettle()
+        onLeaveBack: () => exitTopicsMode()
       };
 
       const threeTl = gsap.timeline({ scrollTrigger: threeTrigger });
@@ -143,8 +183,29 @@
         onLeaveBack: () => headerState.update((s) => ({ ...s, showSection: false }))
       });
     }, scrollArea);
+   
+/* ── Wheel navigation while in topics mode ── */
+    let wheelLock = false;
+
+    function onWheel(e: WheelEvent) {
+      if (phase !== 'topics') return;     // only intercept in topics mode
+
+      e.preventDefault();                  // block native scroll
+      if (wheelLock) return;               // ignore the burst of events
+      if (Math.abs(e.deltaY) < 10) return; // ignore tiny trackpad noise
+
+      wheelLock = true;
+      if (e.deltaY > 0) goNext();
+      else goPrev();
+
+      // release the lock after the transition settles
+      setTimeout(() => { wheelLock = false; }, 800);
+    }
+
+    window.addEventListener('wheel', onWheel, { passive: false });
 
     return () => {
+      window.removeEventListener('wheel', onWheel);
       ctx.revert();
       resetHeaderState();
     };
