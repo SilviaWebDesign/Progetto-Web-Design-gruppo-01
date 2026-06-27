@@ -37,6 +37,7 @@
 
 {#if sources.length > 0}
     <p class="text-block__sources">
+    -
       {#each sources as source, i (source.url)}
         {#if i > 0}, {/if}
         <a class="text-block__source" href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a>
