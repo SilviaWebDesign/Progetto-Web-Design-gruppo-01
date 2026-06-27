@@ -4,12 +4,17 @@
 	import '$lib/styles/app.css';
 	import Header from '$lib/components/layout/Header.svelte';
 	import { initSmoothScroll } from '$lib/utils/smoothScroll';
-
-	let { children } = $props();
+	import { lenisStore } from '$lib/stores/scroll';
+	let { children } = $props(); 
 	onMount(() => {
-    const smooth = initSmoothScroll();
-    return () => smooth.destroy();
-  });
+		const { lenis, destroy } = initSmoothScroll();
+		lenisStore.set(lenis);
+
+		return () => {
+			destroy();
+			lenisStore.set(null);
+  };
+});
 </script>
 
 <!-- alwaysVisible è temporaneo per lo sviluppo; rimuovere quando

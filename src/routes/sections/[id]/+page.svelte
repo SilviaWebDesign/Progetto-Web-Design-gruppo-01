@@ -43,6 +43,12 @@
     section.topics.map(() => ({}))
   );
 
+  type Phase = 'intro' | 'topics' | 'feedback';
+  let phase = $state<Phase>('intro');
+
+  /* Convenience flag used by the markup/styles. */
+  let inTopicsMode = $derived(phase === 'topics');
+
   /* The currently displayed topic object. */
   let topic = $derived(section.topics[currentTopic]);
 
@@ -176,8 +182,8 @@
       <p class="phrase" bind:this={phraseEl}>{section.description}</p>
     </div>
 
-    <!-- ── Topics stage: 3-column layout (static for now) ── -->
-    <div class="stage">
+  <!-- ── Topics stage: 3-column layout, shown in topics mode ── -->
+    <div class="stage" class:is-visible={inTopicsMode}>
       <div class="stage__text">
         <TextBlock
           {counter}
@@ -290,10 +296,15 @@
     padding: 0 var(--page-gutter);
     box-sizing: border-box;
 
+    opacity: 0;
+    pointer-events: none;
+     transition: opacity 600ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .stage.is-visible {
     opacity: 1;
     pointer-events: auto;
   }
-
   .stage__text {
     grid-column: 1;
     justify-self: start;   /* hug the left gutter */
