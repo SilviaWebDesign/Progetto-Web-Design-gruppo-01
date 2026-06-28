@@ -1,0 +1,136 @@
+<!--
+  ============================================================
+  CARD STACK
+  ============================================================
+  Vertical stack of CommentCards with imperative entrance/exit
+  animations, exposed via a bindable api:
+    - animateIn():  cards slide in from the right, staggered
+    - animateOut(): cards slide out to the right, staggered
+    - resetHidden(): snap all cards hidden (opacity 0)
+
+  Used for the "special" moments (entering topics on the first
+  topic, leaving towards feedback on the last). Intermediate
+  topic changes are handled by the page with a coordinated
+  crossfade instead, so the stagger doesn't fire every time.
+
+  Presentational: receives comments + liked map, forwards like
+  toggles by comment id (string, matching our data model).
+  ============================================================
+-->
+
+<script lang="ts">
+  import gsap from 'gsap';
+  import CommentCard from '$lib/components/cards/CommentCard.svelte';
+  import type { Comment, SectionId } from '$lib/types';
+
+  export interface CardStackApi {
+    animateOut: () => Promise<void>;
+    animateIn: () => Promise<void>;
+    resetHidden: () => void;
+  }
+
+  interface Props {
+    comments: Comment[];
+    sectionId: SectionId;
+    /** Map of comment id → liked boolean. */
+    likes: Record<string, boolean>;
+    onToggleLike: (id: string) => void;
+    /** Identifies the current topic so each stack keys uniquely. */
+    topicId: string;
+    api?: CardStackApi;
+  }
+
+  let { comments, sectionId, likes, onToggleLike, topicId, api = $bindable() }: Props =
+    $props();
+
+  let stackEl = $state<HTMLDivElement | null>(null);
+
+  const STAGGER = 0.075;
+  const DURATION = 0.42;
+  const OFFSCREEN_PAD = 32;
+
+  function getItems(): HTMLElement[] {
+    if (!stackEl) return [];
+    return Array.from(stackEl.querySelectorAll<HTMLElement>('.card-stack__item'));
+  }
+
+  /** Distance needed to push a card fully past the right viewport edge. */
+  function exitDistanceFor(item: HTMLElement): number {
+    const rect = item.getBoundingClientRect();
+    return window.innerWidth - rect.left + OFFSCREEN_PAD;
+  }
+
+  /** Cards exit fully to the right, one after another. */
+  function animateOut(): Promise<void> {
+    const items = getItems();
+    if (!items.length) return Promise.resolve();
+    return new Promise((resolve) => {
+      gsap.to(items, {
+        x: (_i, el) => exitDistanceFor(el as HTMLElement),
+        duration: DURATION,
+        stagger: STAGGER,
+        ease: 'power3.in',
+        onComplete: resolve
+      });
+    });
+  }
+
+  /** Cards re-enter from the right edge, one after another. */
+  function animateIn(): Promise<void> {
+    const items = getItems();
+    if (!items.length) return Promise.resolve();
+
+    gsap.set(items, { x: 0, opacity: 1 });
+    const distances = items.map((item) => exitDistanceFor(item));
+    items.forEach((item, i) => gsap.set(item, { x: distances[i] }));
+
+    return new Promise((resolve) => {
+      gsap.to(items, {
+        x: 0,
+        duration: DURATION,
+        stagger: STAGGER,
+        ease: 'power3.out',
+        onComplete: resolve
+      });
+    });
+  }
+
+  function resetHidden() {
+    const items = getItems();
+    gsap.killTweensOf(items);
+    gsap.set(items, { opacity: 0, x: 0 });
+  }
+
+  api = { animateOut, animateIn, resetHidden };
+</script>
+
+
+<div class="card-stack" bind:this={stackEl}>
+  {#each comments as comment (`${topicId}-${comment.id}`)}
+    <div class="card-stack__item">
+      <CommentCard
+        {comment}
+        {sectionId}
+        liked={likes[comment.id] ?? false}
+        onToggleLike={() => onToggleLike(comment.id)}
+        size="sm"
+      />
+    </div>
+  {/each}
+</div>
+
+
+<style>
+  .card-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 19px; /* 19px @ 1512px — matches our comment list spacing */
+    width: 100%;
+    overflow: visible;
+  }
+
+  .card-stack__item {
+    opacity: 0;
+    will-change: transform;
+  }
+</style>

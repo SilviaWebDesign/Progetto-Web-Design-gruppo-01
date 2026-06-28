@@ -2,165 +2,224 @@
   ============================================================
   SECTION PAGE — [id] dynamic route
   ============================================================
-  Serves all three sections from one template. Section data comes
-  from +page.ts (validated against the URL [id]).
+  intro   — scroll-driven: frost + title + phrase + 3D
+  topics  — model settled into particles; wheel navigates topics
+  feedback— particles morph into the result model; overlay + blur
 
-  This step builds the INTRO scene (scroll-driven):
-  frost + chapter title (stretch/fade) + narrative phrase (in/out)
-  + 3D model (appear / rotate 360° / shrink, then continuous spin).
-  The topics stage and feedback come in later steps.
+  Card stagger fires only on entering topics (first topic) and
+  leaving towards feedback (last topic). Intermediate changes use
+  a coordinated directional crossfade.
   ============================================================
 -->
 
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
+  import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
   import gsap from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
   import FrostCanvas from '$lib/components/section/FrostCanvas.svelte';
   import SectionTitle from '$lib/components/section/SectionTitle.svelte';
   import Scene3D from '$lib/components/section/Scene3D.svelte';
   import type { Scene3DApi } from '$lib/components/section/Scene3D.svelte';
-  import { headerState, resetHeaderState } from '$lib/stores/header';
   import TextBlock from '$lib/components/section/TextBlock.svelte';
-  import CommentList from '$lib/components/section/CommentList.svelte';
-  import type { PageData } from './$types';
+  import CardStack from '$lib/components/section/CardStack.svelte';
+  import type { CardStackApi } from '$lib/components/section/CardStack.svelte';
+
+  import { headerState, resetHeaderState } from '$lib/stores/header';
   import { lenisStore } from '$lib/stores/scroll';
-  import { get } from 'svelte/store';
-  import { computeOpinionState } from '$lib/utils/result';
-  import type { OpinionState } from '$lib/types';
-  import { FEEDBACK_HEADING } from '$lib/data/feedback';
-  import { goto } from '$app/navigation';
   import { progress, allSectionsCompleted, SECTION_ORDER } from '$lib/stores/progress';
+  import { computeOpinionState } from '$lib/utils/result';
+  import { FEEDBACK_HEADING } from '$lib/data/feedback';
+  import { get } from 'svelte/store';
+  import type { OpinionState } from '$lib/types';
+  import type { PageData } from './$types';
+  import { overlayVisible } from '$lib/stores/pageTransition';
 
   interface Props {
     data: PageData;
   }
-
   let { data }: Props = $props();
   let section = $derived(data.section);
 
   let scrollArea = $state<HTMLDivElement | null>(null);
+  let sceneEl = $state<HTMLDivElement | null>(null);
   let titleWrap = $state<HTMLDivElement | null>(null);
-  let stageTextEl = $state<HTMLDivElement | null>(null);
-  let stageRightEl = $state<HTMLDivElement | null>(null);
   let frostLayer = $state<HTMLDivElement | null>(null);
   let phraseEl = $state<HTMLParagraphElement | null>(null);
   let scene3d = $state<Scene3DApi | undefined>(undefined);
+  let cardStack = $state<CardStackApi | undefined>(undefined);
+
   let currentTopic = $state(0);
-  let topicLikes = $state<Record<string, boolean>[]>(
-    section.topics.map(() => ({}))
-  );
+  let topicLikes = $state<Record<string, boolean>[]>(section.topics.map(() => ({})));
   let currentResult = $state<OpinionState | null>(null);
+  let isTransitioning = $state(false);
 
   type Phase = 'intro' | 'topics' | 'feedback';
   let phase = $state<Phase>('intro');
 
-
-  let inTopicsMode = $derived(phase === 'topics');
-
   let inIntro = $derived(phase === 'intro');
-
-  /* The currently displayed topic object. */
+  let lastTopic = $derived(section.topics.length - 1);
   let topic = $derived(section.topics[currentTopic]);
-
-  /* "1 / 3" counter string. */
   let counter = $derived(`${currentTopic + 1} / ${section.topics.length}`);
+  let anyLiked = $derived(Object.values(topicLikes[currentTopic]).some(Boolean));
+  let feedbackBody = $derived(currentResult ? section.feedback[currentResult] : '');
 
-/* True if at least one comment of the current topic is liked.
-     Required to advance to the next topic. */
-  let anyLiked = $derived(
-    Object.values(topicLikes[currentTopic]).some(Boolean)
-  );
+  let resultPaths = $derived([
+    `/models/${section.id}-positive.glb`,
+    `/models/${section.id}-negative.glb`,
+    `/models/${section.id}-more-positive.glb`,
+    `/models/${section.id}-more-negative.glb`,
+    `/models/${section.id}-neutral.glb`
+  ]);
 
-  let feedbackBody = $derived(
-    currentResult ? section.feedback[currentResult] : ''
-  );
+  function resultPathFor(state: OpinionState): string {
+    const map: Record<OpinionState, string> = {
+      ALL_POSITIVE: `/models/${section.id}-positive.glb`,
+      ALL_NEGATIVE: `/models/${section.id}-negative.glb`,
+      MOSTLY_POSITIVE: `/models/${section.id}-more-positive.glb`,
+      MOSTLY_NEGATIVE: `/models/${section.id}-more-negative.glb`,
+      NEUTRAL: `/models/${section.id}-neutral.glb`
+    };
+    return map[state];
+  }
 
   function toggleLike(commentId: string) {
     const current = topicLikes[currentTopic];
     topicLikes[currentTopic] = { ...current, [commentId]: !current[commentId] };
+    scene3d?.pulse();
+  }
+
+  function crossfadeTopic(direction: 1 | -1, applyChange: () => void): Promise<void> {
+    return new Promise((resolve) => {
+      const textTargets = '.stage__text, .stage__heading';
+      const outY = direction === 1 ? -40 : 40;
+      const inY = direction === 1 ? 40 : -40;
+
+      const tl = gsap.timeline({ onComplete: resolve });
+
+      // 1) fade the current content out
+      tl.to([textTargets, '.card-stack__item'], {
+        opacity: 0,
+        y: outY,
+        duration: 0.4,
+        ease: 'power2.in'
+      });
+
+      // 2) swap the topic (new cards mount at opacity 0)
+      tl.add(() => {
+        applyChange();
+      });
+
+      // 3) after the DOM updates, place the new content and fade it in
+      tl.add(async () => {
+        await tick();
+        gsap.set([textTargets, '.card-stack__item'], { opacity: 0, y: inY });
+        gsap.to([textTargets, '.card-stack__item'], {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          ease: 'power2.out'
+        });
+      });
+    });
+  }
+
+  async function goNext() {
+    if (!anyLiked || isTransitioning) return;
+    if (currentTopic === lastTopic) {
+      enterFeedbackPhase();
+      return;
+    }
+    scene3d?.resetPulse();
+    isTransitioning = true;
+    await crossfadeTopic(1, () => {
+      currentTopic += 1;
+    });
+    isTransitioning = false;
+  }
+
+  async function goPrev() {
+    if (isTransitioning || currentTopic === 0) return;
+    scene3d?.resetPulse();
+    isTransitioning = true;
+    await crossfadeTopic(-1, () => {
+      currentTopic -= 1;
+    });
+    isTransitioning = false;
   }
 
   function enterTopicsMode() {
-    if (phase === 'topics') return;     
+    if (phase !== 'intro') return;
     phase = 'topics';
-    get(lenisStore)?.stop();            // freeze native/smooth scroll
-    scene3d?.settle();                  // 3D keeps spinning on its own
+    get(lenisStore)?.stop();
+    scene3d?.settle();
+    void tick().then(() => cardStack?.animateIn());
   }
 
   function exitTopicsMode() {
     if (phase !== 'topics') return;
     phase = 'intro';
-    get(lenisStore)?.start();           // resume scrolling
+    get(lenisStore)?.start();
     scene3d?.unsettle();
   }
 
-  /* Guards against starting a new transition before the current
-     one finishes (works together with the wheel lock). */
-  let isTransitioning = false;
-
-
-  function changeTopic(applyChange: () => void) {
-    if (isTransitioning) return;
-    if (!stageTextEl || !stageRightEl) {
-      applyChange();
-      return;
-    }
-
+  async function enterFeedbackPhase() {
+    if (phase !== 'topics' || isTransitioning || !anyLiked) return;
     isTransitioning = true;
-    const targets = [stageTextEl, stageRightEl];
 
-    gsap
-      .timeline({
-        onComplete: () => {
-          isTransitioning = false;
-        }
-      })
-      .to(targets, {
-        opacity: 0,
-        duration: 0.6,
-        ease: 'power2.in',
-        onComplete: applyChange   // swap while invisible
-      })
-      .to(targets, {
-        opacity: 1,
-        duration: 0.8,
-        ease: 'power2.out'
+    const OUT = 0.5;
+    gsap.to('.stage__text', { opacity: 0, y: -8, duration: OUT, ease: 'power3.inOut' });
+    gsap.to('.stage__heading', { opacity: 0, duration: OUT * 0.6, ease: 'power3.inOut' });
+    gsap.to('.continue', { opacity: 0, duration: OUT * 0.6, ease: 'power2.inOut' });
+    await cardStack?.animateOut();
+
+    const result = computeOpinionState(section, topicLikes);
+    currentResult = result;
+    progress.markCompleted(section.id, result);
+
+    gsap.to('.layer--bg', { filter: 'blur(12px)', duration: 0.8, ease: 'power2.inOut' });
+
+    scene3d?.morphToResult(resultPathFor(result), () => {
+      phase = 'feedback';
+      isTransitioning = false;
+      void tick().then(() => {
+        gsap.fromTo('.feedback__heading', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' });
+        gsap.fromTo('.feedback__body', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.15 });
+        gsap.fromTo('.feedback__cta', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.25 });
       });
+    });
   }
 
-  function goNext() {
-    if (!anyLiked) return;
-    if (currentTopic < section.topics.length - 1) {
-      changeTopic(() => { currentTopic += 1; });
-    } else {
-      enterFeedbackPhase();
-    }
-  }
+  async function exitFeedbackPhase() {
+    if (phase !== 'feedback' || isTransitioning) return;
+    isTransitioning = true;
 
-  function goPrev() {
-    if (currentTopic > 0) {
-      changeTopic(() => { currentTopic -= 1; });
-    } else {
-      exitTopicsMode();
-    }
-  }
+    const OUT = 0.35;
+    gsap.to('.feedback__heading', { opacity: 0, duration: OUT });
+    gsap.to('.feedback__body', { opacity: 0, duration: OUT });
+    gsap.to('.feedback__cta', { opacity: 0, duration: OUT });
+    await new Promise<void>((r) => setTimeout(r, OUT * 1000));
 
-function enterFeedbackPhase() {
-    if (phase !== 'topics' || !anyLiked) return;
-    currentResult = computeOpinionState(section, topicLikes);
-    progress.markCompleted(section.id, currentResult);   // record result
-    phase = 'feedback';
-    // (3D morph to the result model comes later, with particles)
-  }
-
-  function exitFeedbackPhase() {
-    if (phase !== 'feedback') return;
-    phase = 'topics';
+    gsap.to('.layer--bg', { filter: 'none', duration: 0.6, ease: 'power2.inOut' });
+    scene3d?.returnToParticles();
     currentResult = null;
+    phase = 'topics';
+    await tick();
+
+    gsap.fromTo('.stage__text', { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.inOut' });
+    gsap.fromTo('.stage__heading', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power3.inOut', delay: 0.04 });
+    await tick();
+    await cardStack?.animateIn();
+    gsap.to('.continue', { opacity: 1, duration: 0.3, delay: 0.1 });
+    isTransitioning = false;
   }
 
-  function goToNextSection() {
+async function goToNextSection() {
+    get(lenisStore)?.start();
+    overlayVisible.set(true);
+    await new Promise<void>((r) => setTimeout(r, 400));
     const i = SECTION_ORDER.indexOf(section.id);
     const next = SECTION_ORDER[(i + 1) % SECTION_ORDER.length];
     goto(`/sections/${next}`);
@@ -168,20 +227,27 @@ function enterFeedbackPhase() {
 
   function finishFeedback() {
     if (get(allSectionsCompleted)) {
-      // goto('/results');   // results page — created in a later step
       console.log('All sections completed → results page (coming soon)');
     } else {
       goToNextSection();
     }
   }
 
+  let modelLoaded = false;
+
   onMount(() => {
-    if (!scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
+    if (!browser || !scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
+    
+    // Reveal this section by fading out the navigation veil.
+    if (get(overlayVisible)) {
+      setTimeout(() => overlayVisible.set(false), 60);
+    }
+
+    history.scrollRestoration = 'manual';
 
     headerState.update((s) => ({ ...s, sectionTitle: section.title }));
 
     const ctx = gsap.context(() => {
-      /* ── Intro timeline: title + frost + phrase ── */
       const heroTl = gsap.timeline({
         scrollTrigger: {
           trigger: scrollArea,
@@ -198,29 +264,23 @@ function enterFeedbackPhase() {
         0
       );
       heroTl.fromTo(frostLayer, { opacity: 1 }, { opacity: 0, ease: 'power2.inOut' }, 0);
-      heroTl.fromTo(
-        phraseEl,
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, ease: 'power2.out' },
-        0.35
-      );
+      heroTl.fromTo(phraseEl, { opacity: 0, y: 40 }, { opacity: 1, y: 0, ease: 'power2.out' }, 0.35);
       heroTl.to(phraseEl, { opacity: 0, y: -40, ease: 'power2.in' }, 0.7);
 
-      /* ── 3D timeline: appear → rotate 360° → shrink, then settle ── */
       const proxy = { rot: 0, scale: 1, appear: 0 };
 
-      const threeTrigger: ScrollTrigger.Vars = {
-        trigger: scrollArea,
-        start: () => `top+=${window.innerHeight * 1.85} top`,
-        end: 'bottom bottom',
-        scrub: 1.2,
-        onUpdate: (self) => {
-          if (self.progress >= 0.999) enterTopicsMode();
-        },
-        onLeaveBack: () => exitTopicsMode()
-      };
-
-      const threeTl = gsap.timeline({ scrollTrigger: threeTrigger });
+      const threeTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: scrollArea,
+          start: () => `top+=${window.innerHeight * 1.85} top`,
+          end: 'bottom bottom',
+          scrub: 1.2,
+          onUpdate: (self) => {
+            if (self.progress >= 0.999) enterTopicsMode();
+          },
+          onLeaveBack: () => exitTopicsMode()
+        }
+      });
 
       threeTl.fromTo(
         proxy,
@@ -230,26 +290,15 @@ function enterFeedbackPhase() {
       );
       threeTl.to(
         proxy,
-        {
-          rot: Math.PI * 2,
-          ease: 'none',
-          duration: 0.46,
-          onUpdate: () => scene3d?.setRotationY(proxy.rot)
-        },
+        { rot: Math.PI * 2, ease: 'none', duration: 0.46, onUpdate: () => scene3d?.setRotationY(proxy.rot) },
         0.06
       );
       threeTl.to(
         proxy,
-        {
-          scale: 0.56,
-          ease: 'power2.inOut',
-          duration: 0.28,
-          onUpdate: () => scene3d?.setScale(proxy.scale)
-        },
+        { scale: 0.56, ease: 'power2.inOut', duration: 0.28, onUpdate: () => scene3d?.setScale(proxy.scale) },
         0.46
       );
 
-      /* Header section name once the title has scrolled away. */
       ScrollTrigger.create({
         trigger: scrollArea,
         start: () => `top+=${window.innerHeight * 0.5} top`,
@@ -257,15 +306,30 @@ function enterFeedbackPhase() {
         onLeaveBack: () => headerState.update((s) => ({ ...s, showSection: false }))
       });
     }, scrollArea);
-   
-/* ── Wheel navigation while in topics mode ── */
-    let wheelLock = false;
 
-    /* Scroll accumulation for leaving the feedback by scrolling down. */
+    const windowLoaded = new Promise<void>((resolve) => {
+      if (document.readyState === 'complete') resolve();
+      else window.addEventListener('load', () => resolve(), { once: true });
+    });
+    windowLoaded.then(() => {
+      ScrollTrigger.refresh();
+      requestAnimationFrame(() => requestAnimationFrame(() => ScrollTrigger.refresh()));
+      if ('requestIdleCallback' in window) {
+        (
+          window as Window & {
+            requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void;
+          }
+        ).requestIdleCallback(() => scene3d?.preloadResultModels(), { timeout: 1000 });
+      } else {
+        setTimeout(() => scene3d?.preloadResultModels(), 2000);
+      }
+    });
+
+    let wheelLock = false;
     let feedbackAccum = 0;
     let feedbackResetTimer: ReturnType<typeof setTimeout> | null = null;
-    const FEEDBACK_THRESHOLD = 450;       // px to scroll before advancing
-    const FEEDBACK_RESET_MS = 220;        // idle gap that resets the accumulation
+    const FEEDBACK_THRESHOLD = 450;
+    const FEEDBACK_RESET_MS = 700;
 
     function clearFeedbackAccum() {
       feedbackAccum = 0;
@@ -277,28 +341,34 @@ function enterFeedbackPhase() {
 
     function onWheel(e: WheelEvent) {
       if (phase === 'topics') {
+        const goingDown = e.deltaY > 0;
+        if (!goingDown && currentTopic === 0) {
+          exitTopicsMode();
+          return;
+        }
         e.preventDefault();
-        if (wheelLock) return;
+        if (wheelLock || isTransitioning) return;
         if (Math.abs(e.deltaY) < 10) return;
 
         wheelLock = true;
-        if (e.deltaY > 0) goNext();
+        if (goingDown) goNext();
         else goPrev();
-        setTimeout(() => { wheelLock = false; }, 1000);
+        setTimeout(() => {
+          wheelLock = false;
+        }, 1000);
         return;
       }
 
       if (phase === 'feedback') {
         e.preventDefault();
+        if (isTransitioning) return;
 
-        // scroll up → back to topics
         if (e.deltaY < 0) {
           clearFeedbackAccum();
           exitFeedbackPhase();
           return;
         }
 
-        // scroll down → accumulate until the threshold, then advance
         feedbackAccum += e.deltaY;
         if (feedbackResetTimer) clearTimeout(feedbackResetTimer);
         feedbackResetTimer = setTimeout(() => {
@@ -323,14 +393,13 @@ function enterFeedbackPhase() {
   });
 </script>
 
-
 <svelte:head>
   <title>{section.title} — Quante facce ha una medaglia?</title>
 </svelte:head>
 
 
 <div class="scroll-area" bind:this={scrollArea}>
-  <div class="scene">
+  <div class="scene" bind:this={sceneEl}>
     <div class="layer layer--bg" style="background-image: url({section.frostImage})"></div>
 
     <div class="layer layer--frost" class:is-hidden={!inIntro} bind:this={frostLayer}>
@@ -341,7 +410,9 @@ function enterFeedbackPhase() {
       <Scene3D
         modelSrc={section.glbPath}
         fitFactor={section.modelFitFactor}
-        autoRotate={false}
+        resultPaths={resultPaths}
+        orbitEnabled={phase === 'feedback'}
+        onModelLoaded={() => (modelLoaded = true)}
         bind:api={scene3d}
       />
     </div>
@@ -354,56 +425,47 @@ function enterFeedbackPhase() {
       <p class="phrase" bind:this={phraseEl}>{section.description}</p>
     </div>
 
-  <!-- ── Topics stage: 3-column layout, shown in topics mode ── -->
-    <div class="stage" class:is-visible={inTopicsMode}>
-      <div class="stage__text" bind:this={stageTextEl}>
-        <TextBlock
-          {counter}
-          title={topic.title}
-          body={topic.description}
-          sources={topic.sources}
-        />
+    <!-- ── Topics stage ── -->
+    <div class="stage" class:is-visible={phase === 'topics'}>
+      <div class="stage__text">
+        <TextBlock {counter} title={topic.title} body={topic.description} sources={topic.sources} />
       </div>
 
       <div class="stage__center" aria-hidden="true"></div>
 
-      <div class="stage__right" bind:this={stageRightEl}>
+      <div class="stage__right" class:no-pointer={phase !== 'topics'}>
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
-        <CommentList
+        <CardStack
+          bind:api={cardStack}
           comments={topic.comments}
           sectionId={section.id}
           likes={topicLikes[currentTopic]}
           onToggleLike={toggleLike}
+          topicId={topic.id}
         />
       </div>
     </div>
-    <!-- ── "Continua" CTA: advances to the next topic (needs a like) ── -->
+
+    <!-- ── "Continua" CTA ── -->
     <button
       class="continue"
-      class:is-visible={inTopicsMode}
+      class:is-visible={phase === 'topics'}
       disabled={!anyLiked}
       onclick={goNext}
       aria-label="Continua al prossimo argomento"
     >
       <span class="continue__label">Continua</span>
-      <svg class="continue__arrow" viewBox="0 0 24 12" fill="none" aria-hidden="true">
-        <path
-          d="M2 2l10 8 10-8"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
+      <svg class="continue__arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
+        <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
     </button>
-    
+
+    <!-- ── Feedback overlay ── -->
     {#if phase === 'feedback'}
       <div class="feedback">
         <p class="feedback__heading">{FEEDBACK_HEADING}</p>
-
         <p class="feedback__body">{feedbackBody}</p>
-
-       <button
+        <button
           class="feedback__cta"
           onclick={finishFeedback}
           aria-label={$allSectionsCompleted ? 'Scopri i tuoi risultati' : 'Passa al prossimo argomento'}
@@ -412,13 +474,7 @@ function enterFeedbackPhase() {
             {$allSectionsCompleted ? 'Scopri i tuoi risultati' : 'Passa al prossimo argomento'}
           </span>
           <svg class="feedback__cta-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
-            <path
-              d="M2 2l10.5 6 10.5-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
       </div>
@@ -442,7 +498,10 @@ function enterFeedbackPhase() {
     background: var(--color-background-page);
   }
 
-  .layer { position: absolute; inset: 0; }
+  .layer {
+    position: absolute;
+    inset: 0;
+  }
 
   .layer--bg {
     z-index: 1;
@@ -452,7 +511,10 @@ function enterFeedbackPhase() {
     pointer-events: none;
   }
 
-  .layer--frost { z-index: 2; overflow: hidden; }
+  .layer--frost {
+    z-index: 2;
+    overflow: hidden;
+  }
 
   .layer--model {
     z-index: 3;
@@ -500,7 +562,6 @@ function enterFeedbackPhase() {
     will-change: transform, opacity;
   }
 
-
   .layer--frost.is-hidden,
   .hero-title.is-hidden,
   .phrase-anchor.is-hidden {
@@ -508,32 +569,29 @@ function enterFeedbackPhase() {
     pointer-events: none;
   }
 
-  /* ── Topics stage ── */
   .stage {
     position: absolute;
     inset: 0;
     z-index: 6;
-
     display: grid;
     grid-template-columns: 1fr 1.2fr 1fr;
     align-items: center;
     gap: var(--page-gutter);
-
     padding: 0 var(--page-gutter);
     box-sizing: border-box;
-
     opacity: 0;
     pointer-events: none;
-     transition: opacity 600ms cubic-bezier(0.25, 1, 0.5, 1);
+    transition: opacity 600ms cubic-bezier(0.25, 1, 0.5, 1);
   }
 
   .stage.is-visible {
     opacity: 1;
     pointer-events: auto;
   }
+
   .stage__text {
     grid-column: 1;
-    justify-self: start;   /* hug the left gutter */
+    justify-self: start;
   }
 
   .stage__center {
@@ -542,14 +600,16 @@ function enterFeedbackPhase() {
 
   .stage__right {
     grid-column: 3;
-    justify-self: end;     /* hug the right gutter */
-
-    width: 354px; 
-
+    justify-self: end;
+    width: 354px;
     display: flex;
     flex-direction: column;
-    gap: 1.26vw;           /* 19px @ 1512px */
+    gap: 19px;
     max-height: 100%;
+  }
+
+  .stage__right.no-pointer {
+    pointer-events: none;
   }
 
   .stage__heading {
@@ -557,38 +617,32 @@ function enterFeedbackPhase() {
     text-align: center;
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-bold);
-    font-size: 0.73vw;     /* 11px @ 1512px */
+    font-size: 0.73vw;
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
   }
 
-  /* ── "Continua" CTA ── */
   .continue {
     position: absolute;
     z-index: 7;
     left: 50%;
     bottom: var(--page-gutter);
     transform: translateX(-50%);
-
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-2xs);
-
     margin: 0;
     padding: 0;
     border: none;
     background: none;
     cursor: pointer;
     color: var(--color-text-primary);
-
-    /* Hidden outside topics mode. */
     opacity: 0;
     pointer-events: none;
     transition: opacity 400ms cubic-bezier(0.25, 1, 0.5, 1);
   }
 
-  /* Shown in topics mode; dimmed until a like enables advancing. */
   .continue.is-visible {
     opacity: 0.35;
     pointer-events: auto;
@@ -611,20 +665,18 @@ function enterFeedbackPhase() {
 
   .continue__arrow {
     width: 25px;
-    height: 24px;
+    height: 10px;
   }
 
-  /* Gentle bounce, only when the CTA is active (can advance). */
   .continue.is-visible:not(:disabled) .continue__arrow {
     animation: continue-bounce 1.6s ease-in-out infinite;
   }
 
-  /* ── Feedback overlay ── */
   .feedback {
     position: absolute;
     inset: 0;
     z-index: 7;
-    pointer-events: none;   /* let the 3D be orbited; children re-enable */
+    pointer-events: none;
   }
 
   .feedback__heading {
@@ -632,11 +684,9 @@ function enterFeedbackPhase() {
     top: 8vh;
     left: 50%;
     transform: translateX(-50%);
-
     margin: 0;
     text-align: center;
-    white-space: pre-line;   /* renders the \n as a line break */
-
+    white-space: pre-line;
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-bold);
     font-size: 36px;
@@ -649,16 +699,14 @@ function enterFeedbackPhase() {
     bottom: 110px;
     left: 50%;
     transform: translateX(-50%);
-
     margin: 0;
     max-width: 840px;
     padding: 0 clamp(16px, 4vw, 48px);
     box-sizing: border-box;
     text-align: center;
-    text-wrap: balance; 
-
+    text-wrap: balance;
     font-family: var(--font-family-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-regular);
     font-size: 24px;
     line-height: 1.5;
     color: var(--color-text-primary);
@@ -669,20 +717,17 @@ function enterFeedbackPhase() {
     bottom: 28px;
     left: 50%;
     transform: translateX(-50%);
-
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-2xs);
-
     margin: 0;
     padding: 0;
     border: none;
     background: none;
     cursor: pointer;
     color: var(--color-text-primary);
-
-    pointer-events: auto;   /* CTA is clickable */
+    pointer-events: auto;
   }
 
   .feedback__cta-label {
@@ -699,18 +744,15 @@ function enterFeedbackPhase() {
     animation: continue-bounce 1.6s ease-in-out infinite;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .feedback__cta-arrow { animation: none; }
-  }
-
   @keyframes continue-bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(4px); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .continue__arrow { animation: none; }
+    .continue__arrow,
+    .feedback__cta-arrow {
+      animation: none;
+    }
   }
-
-
 </style>

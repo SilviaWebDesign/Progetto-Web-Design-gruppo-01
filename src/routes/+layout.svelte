@@ -5,6 +5,7 @@
 	import Header from '$lib/components/layout/Header.svelte';
 	import { initSmoothScroll } from '$lib/utils/smoothScroll';
 	import { lenisStore } from '$lib/stores/scroll';
+	import PageTransition from '$lib/components/layout/PageTransition.svelte';
 	let { children } = $props(); 
 	onMount(() => {
 		const { lenis, destroy } = initSmoothScroll();
@@ -18,6 +19,7 @@
 </script>
 
 <Header />
+<PageTransition />
 
 <svelte:head>
 	<title>Quante facce ha una medaglia?</title>
