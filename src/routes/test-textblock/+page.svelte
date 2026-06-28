@@ -23,6 +23,7 @@
       counter="1/3"
       title={topic.title}
       body={topic.description}
+      sources={topic.sources}
     />
   </div>
 

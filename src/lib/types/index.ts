@@ -102,6 +102,7 @@ export interface Section {
   frostImage: string;
   modelFitFactor: number;
   topics: Topic[];
+  feedback: Record<OpinionState, string>;
 }
 
 
