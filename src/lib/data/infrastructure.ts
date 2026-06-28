@@ -144,5 +144,12 @@ export const infrastructureSection: Section = {
         }
       ]
     }
-  ]
+  ],
+  feedback: {
+    ALL_NEGATIVE: `Le infrastrutture dei Giochi rappresentano solo una cementificazione immoderata, frutto di una sconsiderata gestione dei fondi pubblici, e un danno permanente che supera i benefici temporanei dell'evento.`,
+    MOSTLY_NEGATIVE: `I ritardi, i costi crescenti e l'incognita sull'effettivo utilizzo e mantenimento delle infrastrutture nel post-olimpiade generano innumerevoli dubbi sui rischi legati ai cantieri.`,
+    NEUTRAL: `Un evento globale di questa portata richiede aggiornamenti e rivoluzioni del territorio, ma questo comporta necessariamente pesanti compromessi economici e logistici.`,
+    MOSTLY_POSITIVE: `Lo sviluppo e il miglioramento delle infrastrutture e dei servizi in occasione delle Olimpiadi Invernali hanno un valore notevole, essendo questi elementi significativi per il territorio.`,
+    ALL_POSITIVE: `Le infrastrutture olimpiche sono motore e simbolo di crescita e innovazione, un'eredità inestimabile che proietterà il territorio nel futuro, azzerando qualsiasi dubbio logistico o polemica sui costi.`
+  },
 };

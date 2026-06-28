@@ -147,5 +147,12 @@ export const sustainabilitySection: Section = {
         }
       ]
     }
-  ]
+  ],
+  feedback: {
+    ALL_NEGATIVE: `L'impatto dei Giochi sull'ecosistema territoriale è stato distruttivo, irreversibile e ingiustificabile. Le Olimpiadi di Milano-Cortina 2026 non possono in alcun modo essere considerate sostenibili.`,
+    MOSTLY_NEGATIVE: `Le misure di compensazione ambientale dichiarate dai canali ufficiali sono insufficienti rispetto all'impatto che i Giochi hanno avuto sul territorio locale.`,
+    NEUTRAL: `Va riconosciuto un impegno reale verso un'edizione dei Giochi più sostenibile, ma un evento di questa portata genera inevitabilmente un'impronta ecologica pesante, su cui si può ancora migliorare.`,
+    MOSTLY_POSITIVE: `Queste Olimpiadi si possono considerare una vittoria per la sostenibilità dei grandi eventi, le emissioni sono compromessi inevitabili nell'epoca del cambiamento climatico.`,
+    ALL_POSITIVE: `Milano-Cortina 2026 stabilirà un nuovo standard mondiale per i grandi eventi, dimostrando che è possibile coniugare l'efficienza infrastrutturale con il rispetto assoluto dell'ambiente.`
+  },
 };

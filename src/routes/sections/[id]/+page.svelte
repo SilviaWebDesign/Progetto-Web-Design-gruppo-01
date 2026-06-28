@@ -26,6 +26,9 @@
   import type { PageData } from './$types';
   import { lenisStore } from '$lib/stores/scroll';
   import { get } from 'svelte/store';
+  import { computeOpinionState } from '$lib/utils/result';
+  import type { OpinionState } from '$lib/types';
+  import { FEEDBACK_HEADING } from '$lib/data/feedback';
 
 
   interface Props {
@@ -46,6 +49,7 @@
   let topicLikes = $state<Record<string, boolean>[]>(
     section.topics.map(() => ({}))
   );
+  let currentResult = $state<OpinionState | null>(null);
 
   type Phase = 'intro' | 'topics' | 'feedback';
   let phase = $state<Phase>('intro');
@@ -63,6 +67,10 @@
      Required to advance to the next topic. */
   let anyLiked = $derived(
     Object.values(topicLikes[currentTopic]).some(Boolean)
+  );
+
+  let feedbackBody = $derived(
+    currentResult ? section.feedback[currentResult] : ''
   );
 
   function toggleLike(commentId: string) {
@@ -123,8 +131,7 @@
     if (currentTopic < section.topics.length - 1) {
       changeTopic(() => { currentTopic += 1; });
     } else {
-      // last topic → feedback phase (placeholder for now)
-      // enterFeedbackPhase();
+      enterFeedbackPhase();
     }
   }
 
@@ -134,6 +141,19 @@
     } else {
       exitTopicsMode();
     }
+  }
+
+  function enterFeedbackPhase() {
+    if (phase !== 'topics' || !anyLiked) return;
+    currentResult = computeOpinionState(section, topicLikes);
+    phase = 'feedback';
+    // (3D morph to the result model comes later, with particles)
+  }
+
+  function exitFeedbackPhase() {
+    if (phase !== 'feedback') return;
+    phase = 'topics';
+    currentResult = null;
   }
 
   onMount(() => {
@@ -320,6 +340,31 @@
         />
       </svg>
     </button>
+    
+    {#if phase === 'feedback'}
+      <div class="feedback">
+        <p class="feedback__heading">{FEEDBACK_HEADING}</p>
+
+        <p class="feedback__body">{feedbackBody}</p>
+
+        <button
+          class="feedback__cta"
+          onclick={exitFeedbackPhase}
+          aria-label="Passa al prossimo argomento"
+        >
+          <span class="feedback__cta-label">Passa al prossimo argomento</span>
+          <svg class="feedback__cta-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
+            <path
+              d="M2 2l10.5 6 10.5-6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -506,6 +551,90 @@
   /* Gentle bounce, only when the CTA is active (can advance). */
   .continue.is-visible:not(:disabled) .continue__arrow {
     animation: continue-bounce 1.6s ease-in-out infinite;
+  }
+
+  /* ── Feedback overlay ── */
+  .feedback {
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    pointer-events: none;   /* let the 3D be orbited; children re-enable */
+  }
+
+  .feedback__heading {
+    position: absolute;
+    top: 8vh;
+    left: 50%;
+    transform: translateX(-50%);
+
+    margin: 0;
+    text-align: center;
+    white-space: pre-line;   /* renders the \n as a line break */
+
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-bold);
+    font-size: 36px;
+    line-height: 1.25;
+    color: var(--color-text-primary);
+  }
+
+  .feedback__body {
+    position: absolute;
+    bottom: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    margin: 0;
+    max-width: 840px;
+    padding: 0 clamp(16px, 4vw, 48px);
+    box-sizing: border-box;
+    text-align: center;
+    text-wrap: balance; 
+
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-medium);
+    font-size: 24px;
+    line-height: 1.5;
+    color: var(--color-text-primary);
+  }
+
+  .feedback__cta {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2xs);
+
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text-primary);
+
+    pointer-events: auto;   /* CTA is clickable */
+  }
+
+  .feedback__cta-label {
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-medium);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+  }
+
+  .feedback__cta-arrow {
+    width: 25px;
+    height: 10px;
+    animation: continue-bounce 1.6s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feedback__cta-arrow { animation: none; }
   }
 
   @keyframes continue-bounce {

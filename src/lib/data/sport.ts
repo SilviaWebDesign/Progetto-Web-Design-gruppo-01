@@ -146,5 +146,12 @@ export const sportSection: Section = {
         }
       ]
     }
-  ]
+  ],
+  feedback: {
+    ALL_NEGATIVE: `Le Olimpiadi non sono altro che un palcoscenico iper-commercializzato, gli interessi finanziari hanno completamente eclissato i valori etici degli atleti e l'autenticità della competizione.`,
+    MOSTLY_NEGATIVE: `L'organizzazione ha lasciato che le polemiche extra-sportive e le logiche di marketing superassero talvolta il valore puramente agonistico e il fascino delle performance.`,
+    NEUTRAL: `Non si possono ignorare le contraddizioni di un sistema che deve scendere a pesanti compromessi tra etica, regolamenti rigidi e contratti milionari.`,
+    MOSTLY_POSITIVE: `I regolamenti sono necessari per garantire la neutralità sul campo di gara, mentre i media e le sponsorizzazioni aumentano la visibilità internazionale e il coinvolgimento della comunità.`,
+    ALL_POSITIVE: `Questi Giochi hanno ispirato e unito persone e territori, grazie anche agli sponsor che hanno contribuito all'attrattività dell'evento, e ai regolamenti ufficiali che hanno tutelato l'armonia della competizione.`
+  },
 };
