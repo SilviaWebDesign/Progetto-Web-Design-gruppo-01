@@ -29,7 +29,8 @@
   import { computeOpinionState } from '$lib/utils/result';
   import type { OpinionState } from '$lib/types';
   import { FEEDBACK_HEADING } from '$lib/data/feedback';
-
+  import { goto } from '$app/navigation';
+  import { progress, allSectionsCompleted, SECTION_ORDER } from '$lib/stores/progress';
 
   interface Props {
     data: PageData;
@@ -56,6 +57,8 @@
 
 
   let inTopicsMode = $derived(phase === 'topics');
+
+  let inIntro = $derived(phase === 'intro');
 
   /* The currently displayed topic object. */
   let topic = $derived(section.topics[currentTopic]);
@@ -143,9 +146,10 @@
     }
   }
 
-  function enterFeedbackPhase() {
+function enterFeedbackPhase() {
     if (phase !== 'topics' || !anyLiked) return;
     currentResult = computeOpinionState(section, topicLikes);
+    progress.markCompleted(section.id, currentResult);   // record result
     phase = 'feedback';
     // (3D morph to the result model comes later, with particles)
   }
@@ -154,6 +158,21 @@
     if (phase !== 'feedback') return;
     phase = 'topics';
     currentResult = null;
+  }
+
+  function goToNextSection() {
+    const i = SECTION_ORDER.indexOf(section.id);
+    const next = SECTION_ORDER[(i + 1) % SECTION_ORDER.length];
+    goto(`/sections/${next}`);
+  }
+
+  function finishFeedback() {
+    if (get(allSectionsCompleted)) {
+      // goto('/results');   // results page — created in a later step
+      console.log('All sections completed → results page (coming soon)');
+    } else {
+      goToNextSection();
+    }
   }
 
   onMount(() => {
@@ -242,19 +261,56 @@
 /* ── Wheel navigation while in topics mode ── */
     let wheelLock = false;
 
+    /* Scroll accumulation for leaving the feedback by scrolling down. */
+    let feedbackAccum = 0;
+    let feedbackResetTimer: ReturnType<typeof setTimeout> | null = null;
+    const FEEDBACK_THRESHOLD = 450;       // px to scroll before advancing
+    const FEEDBACK_RESET_MS = 220;        // idle gap that resets the accumulation
+
+    function clearFeedbackAccum() {
+      feedbackAccum = 0;
+      if (feedbackResetTimer) {
+        clearTimeout(feedbackResetTimer);
+        feedbackResetTimer = null;
+      }
+    }
+
     function onWheel(e: WheelEvent) {
-      if (phase !== 'topics') return;     // only intercept in topics mode
+      if (phase === 'topics') {
+        e.preventDefault();
+        if (wheelLock) return;
+        if (Math.abs(e.deltaY) < 10) return;
 
-      e.preventDefault();                  // block native scroll
-      if (wheelLock) return;               // ignore the burst of events
-      if (Math.abs(e.deltaY) < 10) return; // ignore tiny trackpad noise
+        wheelLock = true;
+        if (e.deltaY > 0) goNext();
+        else goPrev();
+        setTimeout(() => { wheelLock = false; }, 1000);
+        return;
+      }
 
-      wheelLock = true;
-      if (e.deltaY > 0) goNext();
-      else goPrev();
+      if (phase === 'feedback') {
+        e.preventDefault();
 
-      // release the lock after the transition settles
-      setTimeout(() => { wheelLock = false; }, 1000);
+        // scroll up → back to topics
+        if (e.deltaY < 0) {
+          clearFeedbackAccum();
+          exitFeedbackPhase();
+          return;
+        }
+
+        // scroll down → accumulate until the threshold, then advance
+        feedbackAccum += e.deltaY;
+        if (feedbackResetTimer) clearTimeout(feedbackResetTimer);
+        feedbackResetTimer = setTimeout(() => {
+          feedbackAccum = 0;
+          feedbackResetTimer = null;
+        }, FEEDBACK_RESET_MS);
+
+        if (feedbackAccum >= FEEDBACK_THRESHOLD) {
+          clearFeedbackAccum();
+          finishFeedback();
+        }
+      }
     }
 
     window.addEventListener('wheel', onWheel, { passive: false });
@@ -277,11 +333,11 @@
   <div class="scene">
     <div class="layer layer--bg" style="background-image: url({section.frostImage})"></div>
 
-    <div class="layer layer--frost" bind:this={frostLayer}>
+    <div class="layer layer--frost" class:is-hidden={!inIntro} bind:this={frostLayer}>
       <FrostCanvas src={section.frostImage} />
     </div>
 
-   <div class="layer layer--model">
+    <div class="layer layer--model">
       <Scene3D
         modelSrc={section.glbPath}
         fitFactor={section.modelFitFactor}
@@ -290,11 +346,11 @@
       />
     </div>
 
-    <div class="hero-title" bind:this={titleWrap}>
+    <div class="hero-title" class:is-hidden={!inIntro} bind:this={titleWrap}>
       <SectionTitle id={section.id} title={section.title} />
     </div>
 
-    <div class="phrase-anchor">
+    <div class="phrase-anchor" class:is-hidden={!inIntro}>
       <p class="phrase" bind:this={phraseEl}>{section.description}</p>
     </div>
 
@@ -347,12 +403,14 @@
 
         <p class="feedback__body">{feedbackBody}</p>
 
-        <button
+       <button
           class="feedback__cta"
-          onclick={exitFeedbackPhase}
-          aria-label="Passa al prossimo argomento"
+          onclick={finishFeedback}
+          aria-label={$allSectionsCompleted ? 'Scopri i tuoi risultati' : 'Passa al prossimo argomento'}
         >
-          <span class="feedback__cta-label">Passa al prossimo argomento</span>
+          <span class="feedback__cta-label">
+            {$allSectionsCompleted ? 'Scopri i tuoi risultati' : 'Passa al prossimo argomento'}
+          </span>
           <svg class="feedback__cta-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
             <path
               d="M2 2l10.5 6 10.5-6"
@@ -440,6 +498,14 @@
     color: var(--color-text-primary);
     opacity: 0;
     will-change: transform, opacity;
+  }
+
+
+  .layer--frost.is-hidden,
+  .hero-title.is-hidden,
+  .phrase-anchor.is-hidden {
+    opacity: 0 !important;
+    pointer-events: none;
   }
 
   /* ── Topics stage ── */
