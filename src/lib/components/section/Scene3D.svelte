@@ -33,6 +33,7 @@
     pulse: () => void;
     resetPulse: () => void;
     snapToParticles: () => void;
+    snapToResult: (path: string) => void;
     preloadResultModels: () => void;
     morphToResult: (path: string, onDone: () => void) => void;
     returnToParticles: () => void;
@@ -452,12 +453,15 @@
     });
   }
 
-  function doMorph(source: THREE.Group, onDone: () => void) {
-    if (!scene || !camera || !spinner || !modelGroup || !particleMesh || !iMatBuf) return;
+  // Clone, center, scale and chrome-material a result model so it sits
+  // exactly where doMorph and snapToResult both need it. Returns null if
+  // prerequisites aren't ready.
+  function buildResultGroup(source: THREE.Group): THREE.Group | null {
+    if (!camera || !modelGroup) return null;
 
     const resultGroup = source.clone();
-
     resultGroup.updateMatrixWorld(true);
+
     const box = new THREE.Box3().setFromObject(resultGroup);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -488,6 +492,16 @@
       mesh.material = chrome;
       resultModelMaterials.push(chrome);
     });
+
+    return resultGroup;
+  }
+
+  function doMorph(source: THREE.Group, onDone: () => void) {
+    if (!scene || !camera || !spinner || !modelGroup || !particleMesh || !iMatBuf) return;
+
+    const resultGroup = buildResultGroup(source);
+    if (!resultGroup) return;
+
 
     spinner.add(resultGroup);
     scene.updateMatrixWorld();
