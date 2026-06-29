@@ -334,9 +334,29 @@ async function goToNextSection() {
       if (document.readyState === 'complete') resolve();
       else window.addEventListener('load', () => resolve(), { once: true });
     });
-    windowLoaded.then(() => {
+
+     function restoreScrollForPhase() {
+      if (!saved) return;
+      if (saved.phase !== 'topics' && saved.phase !== 'feedback') return;
+
+      phase = saved.phase; // guards in enter/exitTopicsMode now bail out
+      const lenis = get(lenisStore);
+      lenis?.scrollTo(document.documentElement.scrollHeight, {
+        immediate: true,
+        force: true
+      });
+      ScrollTrigger.update();
+      lenis?.stop();
+    }
+
+      windowLoaded.then(() => {
       ScrollTrigger.refresh();
-      requestAnimationFrame(() => requestAnimationFrame(() => ScrollTrigger.refresh()));
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          ScrollTrigger.refresh();
+          restoreScrollForPhase();
+        })
+      );
       if ('requestIdleCallback' in window) {
         (
           window as Window & {
