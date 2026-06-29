@@ -61,6 +61,8 @@
   let phase = $state<Phase>('intro');
   let restored = $state(false);
 
+  const TOPICS_SCALE = 0.56; 
+
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
   let topic = $derived(section.topics[currentTopic]);
@@ -235,7 +237,7 @@ async function goToNextSection() {
     }
   }
 
-  let modelLoaded = false;
+  let modelLoaded = $state(false);
 
  
   $effect(() => {
@@ -246,6 +248,18 @@ async function goToNextSection() {
       phase,
       currentResult
     });
+  });
+
+  let sceneRestored = $state(false);
+  $effect(() => {
+    if (sceneRestored || !restored || !modelLoaded) return;
+    const saved = sectionState.read(section.id);
+    if (saved?.phase !== 'topics') return;
+
+    sceneRestored = true;
+    scene3d?.setScale(TOPICS_SCALE); // re-apply the settled scale the timeline couldn't set pre-load
+    scene3d?.snapToParticles();
+    void tick().then(() => cardStack?.animateIn());
   });
 
   onMount(() => {
@@ -318,7 +332,7 @@ async function goToNextSection() {
       );
       threeTl.to(
         proxy,
-        { scale: 0.56, ease: 'power2.inOut', duration: 0.28, onUpdate: () => scene3d?.setScale(proxy.scale) },
+        { scale: TOPICS_SCALE, ease: 'power2.inOut', duration: 0.28, onUpdate: () => scene3d?.setScale(proxy.scale) },
         0.46
       );
 
