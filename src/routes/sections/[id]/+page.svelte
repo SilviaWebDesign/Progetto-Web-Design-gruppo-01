@@ -36,6 +36,7 @@
   import type { OpinionState } from '$lib/types';
   import type { PageData } from './$types';
   import { overlayVisible } from '$lib/stores/pageTransition';
+  import { sectionState } from '$lib/stores/sectionState';
 
   interface Props {
     data: PageData;
@@ -58,6 +59,7 @@
 
   type Phase = 'intro' | 'topics' | 'feedback';
   let phase = $state<Phase>('intro');
+  let restored = $state(false);
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
@@ -235,8 +237,21 @@ async function goToNextSection() {
 
   let modelLoaded = false;
 
+ 
+  $effect(() => {
+    if (!restored) return;
+    sectionState.save(section.id, {
+      currentTopic,
+      topicLikes: $state.snapshot(topicLikes),
+      phase,
+      currentResult
+    });
+  });
+
   onMount(() => {
     if (!browser || !scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
+
+    restored = true; // B.1b will replace this with: read snapshot → apply → restored = true
     
     // Reveal this section by fading out the navigation veil.
     if (get(overlayVisible)) {
