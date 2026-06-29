@@ -251,7 +251,15 @@ async function goToNextSection() {
   onMount(() => {
     if (!browser || !scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
 
-    restored = true; // B.1b will replace this with: read snapshot → apply → restored = true
+    const saved = sectionState.read(section.id);
+    if (saved) {
+      currentTopic = saved.currentTopic;
+      if (saved.topicLikes.length === section.topics.length) {
+        topicLikes = saved.topicLikes;
+      }
+      currentResult = saved.currentResult;
+    }
+    restored = true;
     
     // Reveal this section by fading out the navigation veil.
     if (get(overlayVisible)) {
