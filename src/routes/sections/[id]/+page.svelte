@@ -254,12 +254,19 @@ async function goToNextSection() {
   $effect(() => {
     if (sceneRestored || !restored || !modelLoaded) return;
     const saved = sectionState.read(section.id);
-    if (saved?.phase !== 'topics') return;
+    if (saved?.phase !== 'topics' && saved?.phase !== 'feedback') return;
 
     sceneRestored = true;
-    scene3d?.setScale(TOPICS_SCALE); // re-apply the settled scale the timeline couldn't set pre-load
-    scene3d?.snapToParticles();
-    void tick().then(() => cardStack?.animateIn());
+    scene3d?.setScale(TOPICS_SCALE);
+
+    if (saved.phase === 'topics') {
+      scene3d?.snapToParticles();
+      void tick().then(() => cardStack?.animateIn());
+    } else {
+      // feedback: show the result model formed, blur the backdrop.
+      if (currentResult) scene3d?.snapToResult(resultPathFor(currentResult));
+      gsap.set('.layer--bg', { filter: 'blur(12px)' });
+    }
   });
 
   onMount(() => {

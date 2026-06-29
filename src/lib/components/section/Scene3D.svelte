@@ -33,6 +33,45 @@
     pulse: () => void;
     resetPulse: () => void;
     snapToParticles: () => void;
+    // Show the result model already fully formed, particles off — the
+      // end-state of a morph, with no animation. Used to restore feedback
+      // phase after a reload. Loads (or reuses cached) glb, then snaps.
+      snapToResult: (path: string) => {
+        const finish = (source: THREE.Group) => {
+          if (!scene || !spinner || !particleMesh) return;
+          const resultGroup = buildResultGroup(source);
+          if (!resultGroup) return;
+
+          spinner.add(resultGroup);
+          resultModelMaterials.forEach((m) => {
+            m.opacity = 1;
+            m.transparent = false;
+            m.needsUpdate = true;
+          });
+
+          particleMesh.visible = false;
+          if (particleMat) particleMat.uniforms.uPulse.value = 0;
+
+          transitionState = 'done';
+          morphState = 'none';
+        };
+
+        const cached = resultModels.get(path);
+        if (cached) {
+          finish(cached);
+          return;
+        }
+        const loader = new GLTFLoader();
+        loader.load(
+          path,
+          (gltf) => {
+            resultModels.set(path, gltf.scene);
+            finish(gltf.scene);
+          },
+          undefined,
+          (err) => console.error('[Scene3D] snapToResult load error:', path, err)
+        );
+      },
     snapToResult: (path: string) => void;
     preloadResultModels: () => void;
     morphToResult: (path: string, onDone: () => void) => void;
