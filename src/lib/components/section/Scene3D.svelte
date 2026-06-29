@@ -2,7 +2,7 @@
   ============================================================
   SCENE 3D (particle system)
   ============================================================
-  Vanilla Three.js scene that renders the chrome model and can:
+  Three.js scene that renders the chrome model and can:
     - appear / rotate / shrink during the intro
     - settle() → dissolve the solid model into ~20k particles
     - pulse() → a one-off ripple through the particles (on like)
@@ -29,7 +29,7 @@
     setScale: (factor: number) => void;
     setOpacity: (val: number) => void;
     settle: () => void;
-    unsettle: () => void;
+    unsettle: (onDone?: () => void) => void;
     pulse: () => void;
     resetPulse: () => void;
     snapToParticles: () => void;
@@ -82,10 +82,15 @@
   const particleTargets = new Float32Array(COUNT * 3);
   const particleCurrent = new Float32Array(COUNT * 3);
 
-  type TState = 'none' | 'in' | 'done';
+  type TState = 'none' | 'in' | 'out' | 'done';
   let transitionState: TState = 'none';
   let transitionProgress = 0;
   const TRANSITION_DURATION = 2.0;
+
+  const SETTLE_PULSE_AMPLITUDE = 0.6;
+  let unsettleElapsed = 0;
+  const UNSETTLE_DURATION = 0.6;
+  let unsettleDoneCallback: (() => void) | null = null;
 
   let manualPulseActive = false;
   let manualPulseElapsed = 0;
@@ -122,13 +127,23 @@
         });
       },
       settle: startTransition,
-      unsettle: () => {
-        if (transitionState !== 'none') return;
+      unsettle: (onDone) => {
+        if (transitionState === 'none' && !particleMesh?.visible) {
+          onDone?.();
+          return;
+        }
         materials.forEach((m) => {
-          m.opacity = 1;
-          m.transparent = false;
+          m.visible = true;
+          m.transparent = true;
+          m.opacity = 0;
           m.needsUpdate = true;
         });
+        morphState = 'none';
+        manualPulseActive = false;
+        manualPulseElapsed = 0;
+        unsettleDoneCallback = onDone ?? null;
+        transitionState = 'out';
+        unsettleElapsed = 0;
       },
       pulse: triggerManualPulse,
       resetPulse: () => {
@@ -676,7 +691,7 @@
       }
       particleMesh.instanceMatrix.needsUpdate = true;
 
-      particleMat.uniforms.uPulse.value = Math.sin(transitionProgress * Math.PI) * 3.0;
+      particleMat.uniforms.uPulse.value = Math.sin(transitionProgress * Math.PI) * SETTLE_PULSE_AMPLITUDE;
       particleMat.uniforms.uBaseOpacity.value = Math.min(0.85, transitionProgress * 1.7 * 0.85);
       materials.forEach((m) => {
         m.opacity = Math.max(0, 1 - transitionProgress);
@@ -696,6 +711,31 @@
           m.opacity = 0;
           m.visible = false;
         });
+      }
+    }
+
+    if (transitionState === 'out' && particleMesh && particleMat) {
+      unsettleElapsed += dt;
+      const t = Math.min(1, unsettleElapsed / UNSETTLE_DURATION);
+      const e = t * t * (3 - 2 * t); 
+      particleMat.uniforms.uBaseOpacity.value = 0.85 * (1 - e); 
+      materials.forEach((m) => {
+        m.opacity = e; 
+      });
+      if (t >= 1) {
+        transitionState = 'none';
+        transitionProgress = 0;
+        particleMesh.visible = false;
+        particleMat.uniforms.uPulse.value = 0;
+        particleMat.uniforms.uBaseOpacity.value = 0;
+        materials.forEach((m) => {
+          m.opacity = 1;
+          m.transparent = false;
+          m.needsUpdate = true;
+        });
+        const cb = unsettleDoneCallback;
+        unsettleDoneCallback = null;
+        cb?.(); 
       }
     }
 

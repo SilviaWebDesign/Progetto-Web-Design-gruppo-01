@@ -162,11 +162,10 @@
     void tick().then(() => cardStack?.animateIn());
   }
 
-  function exitTopicsMode() {
+function exitTopicsMode() {
     if (phase !== 'topics') return;
     phase = 'intro';
-    get(lenisStore)?.start();
-    scene3d?.unsettle();
+    scene3d?.unsettle(() => get(lenisStore)?.start());
   }
 
   async function enterFeedbackPhase() {
