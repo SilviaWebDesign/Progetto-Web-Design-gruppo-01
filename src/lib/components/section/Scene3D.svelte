@@ -32,6 +32,7 @@
     unsettle: () => void;
     pulse: () => void;
     resetPulse: () => void;
+    snapToParticles: () => void;
     preloadResultModels: () => void;
     morphToResult: (path: string, onDone: () => void) => void;
     returnToParticles: () => void;
@@ -133,6 +134,34 @@
         manualPulseActive = false;
         manualPulseElapsed = 0;
         if (particleMat) particleMat.uniforms.uPulse.value = 0;
+      },
+      // Jump straight to the settled "particles" state, no animation.
+      // Mirror of the transitionProgress>=1 branch in tick(). Used to
+      // restore the scene after a reload into topics phase.
+      snapToParticles: () => {
+        if (!particleMesh || !particleMat || !iMatBuf) return;
+
+        transitionState = 'done';
+        transitionProgress = 1;
+        morphState = 'none';
+
+        for (let i = 0; i < COUNT; i++) {
+          const b = i * 16 + 12;
+          iMatBuf[b] = particleTargets[i * 3];
+          iMatBuf[b + 1] = particleTargets[i * 3 + 1];
+          iMatBuf[b + 2] = particleTargets[i * 3 + 2];
+        }
+        particleCurrent.set(particleTargets);
+        particleMesh.instanceMatrix.needsUpdate = true;
+        particleMesh.visible = true;
+
+        particleMat.uniforms.uBaseOpacity.value = 0.85;
+        particleMat.uniforms.uPulse.value = 0;
+
+        materials.forEach((m) => {
+          m.opacity = 0;
+          m.visible = false;
+        });
       },
       preloadResultModels,
       morphToResult,
