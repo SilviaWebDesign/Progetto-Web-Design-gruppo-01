@@ -98,15 +98,10 @@
   const MANUAL_PULSE_AMPLITUDE = 0.4; 
   const IDLE_PULSE_AMPLITUDE = 0.08; 
 
-  // ── Hover particelle (repulsione attorno al cursore) ──
-  const _hoverMouse = new THREE.Vector2();
-  const _hoverRay = new THREE.Raycaster();
-  const _hoverPlane = new THREE.Plane();
-  const _hoverNormal = new THREE.Vector3();
-  const _hoverHit = new THREE.Vector3();
-  const _hoverCenter = new THREE.Vector3();
+
+  const _hoverNDC = new THREE.Vector2();
   let pointerInside = false;
-  const HOVER_STRENGTH_RATE = 10; // velocità salita/discesa della forza hover
+  const HOVER_STRENGTH_RATE = 10; 
 
   const resultModels = new Map<string, THREE.Group>();
 
@@ -486,27 +481,57 @@
       uniforms: {
         uPulse: { value: 0.0 },
         uBaseOpacity: { value: 0.0 },
-        uPointer: { value: new THREE.Vector3() },
-        uHoverRadius: { value: (0.9 * REF_BS) / baseScale },
-        uHoverPush: { value: (0.75 * REF_BS) / baseScale },
-        uHoverStrength: { value: 0.0 }
+        uPointerNDC: { value: new THREE.Vector2() },
+        uHoverRadiusNDC: { value: 0.18 },
+        uHoverPush: { value: 0.2 },
+        uHoverStrength: { value: 0.0 },
+        uHoverJitter: { value: 1.0 },
+        uAspect: { value: camera ? camera.aspect : 1 }
       },
       vertexShader: `
         attribute vec3 aDirection;
         uniform float uPulse;
-        uniform vec3 uPointer;
-        uniform float uHoverRadius;
+        uniform vec2 uPointerNDC;
+        uniform float uHoverRadiusNDC;
         uniform float uHoverPush;
         uniform float uHoverStrength;
+        uniform float uHoverJitter;
+        uniform float uAspect;
+
+        float hash(vec3 p) {
+          return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+        }
+
         void main() {
           vec3 local = position + aDirection * uPulse;
           vec3 instPos = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-          vec3 toPart = instPos - uPointer;
-          float dist = length(toPart);
-          float infl = smoothstep(uHoverRadius, uHoverRadius * 0.28, dist) * uHoverStrength;
-          vec3 repel = dist > 0.0001 ? normalize(toPart) * infl * uHoverPush : vec3(0.0);
-          vec3 p = local + repel;
-          gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(p, 1.0);
+
+          
+          vec4 vertView = modelViewMatrix * instanceMatrix * vec4(local, 1.0);
+          vec4 centerView = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+
+          
+          vec4 centerClip = projectionMatrix * centerView;
+          vec2 ndc = centerClip.xy / max(centerClip.w, 0.0001);
+          vec2 d = ndc - uPointerNDC;
+          d.x *= uAspect;
+          float dist = length(d);
+
+          
+          float r  = hash(instPos);
+          float r2 = hash(instPos + 19.19);
+          float radius = uHoverRadiusNDC * (1.0 + uHoverJitter * (r - 0.5) * 0.8);
+          float infl = smoothstep(radius, radius * 0.25, dist) * uHoverStrength;
+
+          vec2 dir = dist > 0.0001 ? normalize(d) : vec2(0.0);
+          float ang = uHoverJitter * (r2 - 0.5) * 1.2;
+          float ca = cos(ang), sa = sin(ang);
+          dir = vec2(dir.x * ca - dir.y * sa, dir.x * sa + dir.y * ca);
+
+          float pushAmt = uHoverPush * (1.0 + uHoverJitter * (r - 0.5) * 0.9);
+          vertView.xy += dir * infl * pushAmt;
+
+          gl_Position = projectionMatrix * vertView;
         }
       `,
       fragmentShader: `
@@ -724,22 +749,15 @@
   }
 
   function updateHoverPointer(clientX: number, clientY: number) {
-    if (!renderer || !camera || !particleMat || !modelGroup) return;
+    if (!renderer || !particleMat) return;
     const rect = renderer.domElement.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
 
-    _hoverMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    _hoverMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-
-    _hoverRay.setFromCamera(_hoverMouse, camera);
-    camera.getWorldDirection(_hoverNormal);
-    modelGroup.getWorldPosition(_hoverCenter);
-    _hoverPlane.setFromNormalAndCoplanarPoint(_hoverNormal, _hoverCenter);
-
-    if (!_hoverRay.ray.intersectPlane(_hoverPlane, _hoverHit)) return;
-
-    modelGroup.worldToLocal(_hoverHit);
-    particleMat.uniforms.uPointer.value.lerp(_hoverHit, 0.5);
+    _hoverNDC.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1
+    );
+    particleMat.uniforms.uPointerNDC.value.lerp(_hoverNDC, 0.5);
   }
 
   function onPointerMove(event: PointerEvent) {
@@ -891,6 +909,7 @@
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    if (particleMat) particleMat.uniforms.uAspect.value = camera.aspect;
   }
 </script>
 
