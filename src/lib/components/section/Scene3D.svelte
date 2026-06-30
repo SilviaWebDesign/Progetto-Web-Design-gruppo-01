@@ -392,20 +392,40 @@
   function buildParticles(root: THREE.Group) {
     if (!scene || !spinner) return;
 
-    scene.updateMatrixWorld();
+    // FORCE l'update delle matrici world PRIMA di leggerle: senza (true) i
+    // nodi interni del GLB possono restare con matrici stantie (bug #9).
+    scene.updateMatrixWorld(true);
+    root.updateMatrixWorld(true);
     const rootWorldInv = new THREE.Matrix4().copy(root.matrixWorld).invert();
 
     const geos: THREE.BufferGeometry[] = [];
     root.traverse((node) => {
       const mesh = node as THREE.Mesh;
-      if (!mesh.isMesh || !mesh.geometry) return;
+      if (!mesh.isMesh || !mesh.geometry || mesh === particleMesh) return;
       const posAttr = mesh.geometry.getAttribute('position') as
         | THREE.BufferAttribute
         | undefined;
       if (!posAttr) return;
 
       const g = new THREE.BufferGeometry();
-      g.setAttribute('position', posAttr.clone());
+      const skinned = mesh as THREE.SkinnedMesh;
+
+      if (skinned.isSkinnedMesh && skinned.skeleton) {
+        mesh.updateWorldMatrix(true, false);
+        skinned.skeleton.update();
+        const baked = new Float32Array(posAttr.count * 3);
+        const vp = new THREE.Vector3();
+        for (let i = 0; i < posAttr.count; i++) {
+          skinned.getVertexPosition(i, vp);
+          baked[i * 3] = vp.x;
+          baked[i * 3 + 1] = vp.y;
+          baked[i * 3 + 2] = vp.z;
+        }
+        g.setAttribute('position', new THREE.BufferAttribute(baked, 3));
+      } else {
+        g.setAttribute('position', posAttr.clone());
+      }
+
       if (mesh.geometry.index) g.setIndex(mesh.geometry.index.clone());
 
       const deindexed = g.toNonIndexed();
@@ -415,7 +435,6 @@
       deindexed.applyMatrix4(relMatrix);
       geos.push(deindexed);
     });
-
     if (geos.length === 0) return;
 
     const merged = geos.length === 1 ? geos[0] : mergeGeometries(geos, false);
