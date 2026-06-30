@@ -87,7 +87,7 @@
   let transitionProgress = 0;
   const TRANSITION_DURATION = 2.0;
 
-  const SETTLE_PULSE_AMPLITUDE = 0.6;
+  const SETTLE_PULSE_AMPLITUDE = 0.4;
   let unsettleElapsed = 0;
   const UNSETTLE_DURATION = 0.6;
   let unsettleDoneCallback: (() => void) | null = null;
@@ -95,6 +95,18 @@
   let manualPulseActive = false;
   let manualPulseElapsed = 0;
   const MANUAL_PULSE_DURATION = 1.5;
+  const MANUAL_PULSE_AMPLITUDE = 0.4; 
+  const IDLE_PULSE_AMPLITUDE = 0.08; 
+
+  // ── Hover particelle (repulsione attorno al cursore) ──
+  const _hoverMouse = new THREE.Vector2();
+  const _hoverRay = new THREE.Raycaster();
+  const _hoverPlane = new THREE.Plane();
+  const _hoverNormal = new THREE.Vector3();
+  const _hoverHit = new THREE.Vector3();
+  const _hoverCenter = new THREE.Vector3();
+  let pointerInside = false;
+  const HOVER_STRENGTH_RATE = 10; // velocità salita/discesa della forza hover
 
   const resultModels = new Map<string, THREE.Group>();
 
@@ -265,8 +277,12 @@
     }
 
     window.addEventListener('resize', onResize);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerleave', onPointerLeave);
     return () => {
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerleave', onPointerLeave);
     };
   });
 
@@ -454,7 +470,7 @@
     merged.dispose();
 
     const REF_BS = 0.6405;
-    const particleRadius = (0.008 * REF_BS) / baseScale;
+    const particleRadius = (0.012 * REF_BS) / baseScale;
     const dirScale = (8 * REF_BS) / baseScale;
     const directions = new Float32Array(COUNT * 3);
     for (let i = 0; i < COUNT; i++) {
@@ -469,13 +485,27 @@
     particleMat = new THREE.ShaderMaterial({
       uniforms: {
         uPulse: { value: 0.0 },
-        uBaseOpacity: { value: 0.0 }
+        uBaseOpacity: { value: 0.0 },
+        uPointer: { value: new THREE.Vector3() },
+        uHoverRadius: { value: (0.9 * REF_BS) / baseScale },
+        uHoverPush: { value: (0.75 * REF_BS) / baseScale },
+        uHoverStrength: { value: 0.0 }
       },
       vertexShader: `
         attribute vec3 aDirection;
         uniform float uPulse;
+        uniform vec3 uPointer;
+        uniform float uHoverRadius;
+        uniform float uHoverPush;
+        uniform float uHoverStrength;
         void main() {
-          vec3 p = position + aDirection * uPulse;
+          vec3 local = position + aDirection * uPulse;
+          vec3 instPos = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+          vec3 toPart = instPos - uPointer;
+          float dist = length(toPart);
+          float infl = smoothstep(uHoverRadius, uHoverRadius * 0.28, dist) * uHoverStrength;
+          vec3 repel = dist > 0.0001 ? normalize(toPart) * infl * uHoverPush : vec3(0.0);
+          vec3 p = local + repel;
           gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(p, 1.0);
         }
       `,
@@ -684,6 +714,43 @@
     }
   }
 
+  function particlesHoverActive() {
+    return (
+      !!particleMesh?.visible &&
+      morphState === 'none' &&
+      !orbitEnabled &&
+      transitionState === 'done'
+    );
+  }
+
+  function updateHoverPointer(clientX: number, clientY: number) {
+    if (!renderer || !camera || !particleMat || !modelGroup) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    _hoverMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    _hoverMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+    _hoverRay.setFromCamera(_hoverMouse, camera);
+    camera.getWorldDirection(_hoverNormal);
+    modelGroup.getWorldPosition(_hoverCenter);
+    _hoverPlane.setFromNormalAndCoplanarPoint(_hoverNormal, _hoverCenter);
+
+    if (!_hoverRay.ray.intersectPlane(_hoverPlane, _hoverHit)) return;
+
+    modelGroup.worldToLocal(_hoverHit);
+    particleMat.uniforms.uPointer.value.lerp(_hoverHit, 0.5);
+  }
+
+  function onPointerMove(event: PointerEvent) {
+    pointerInside = true;
+    if (particlesHoverActive()) updateHoverPointer(event.clientX, event.clientY);
+  }
+
+  function onPointerLeave() {
+    pointerInside = false;
+  }
+
   function tick() {
     rafId = requestAnimationFrame(tick);
     if (!renderer || !scene || !camera) return;
@@ -693,6 +760,12 @@
 
     if (spinner && !orbitEnabled) spinner.rotation.y += IDLE_RAD_S * dt;
     if (controls?.enabled) controls.update();
+
+    if (particleMat) {
+      const hoverTarget = pointerInside && particlesHoverActive() ? 1 : 0;
+      const u = particleMat.uniforms.uHoverStrength;
+      u.value += (hoverTarget - u.value) * Math.min(1, dt * HOVER_STRENGTH_RATE);
+    }
 
     if (transitionState === 'in' && particleMesh && particleMat && iMatBuf) {
       transitionProgress = Math.min(1, transitionProgress + dt / TRANSITION_DURATION);
@@ -762,10 +835,11 @@
       if (manualPulseActive) {
         manualPulseElapsed += dt;
         const t = Math.min(1, manualPulseElapsed / MANUAL_PULSE_DURATION);
-        particleMat.uniforms.uPulse.value = Math.sin(t * Math.PI) * 1.2;
+        particleMat.uniforms.uPulse.value = Math.sin(t * Math.PI) * MANUAL_PULSE_AMPLITUDE;
         if (t >= 1) manualPulseActive = false;
       } else {
-        particleMat.uniforms.uPulse.value = Math.abs(Math.sin(elapsed * Math.PI)) * 0.08;
+        particleMat.uniforms.uPulse.value =
+          Math.abs(Math.sin(elapsed * Math.PI)) * IDLE_PULSE_AMPLITUDE;
       }
     }
 
