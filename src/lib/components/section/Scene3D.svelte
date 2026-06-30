@@ -65,6 +65,9 @@
   let modelGroup: THREE.Group | null = null;
   let materials: THREE.MeshPhysicalMaterial[] = [];
   let baseScale = 1;
+  let fitVisibleH = 0;
+  let fitModelW = 0;
+  const VIEWPORT_FIT_MARGIN = 0.9;
 
   let rafId: number | null = null;
   let spinner: THREE.Group | null = null;
@@ -361,9 +364,12 @@
         const maxDim = Math.max(size.x, size.y, size.z);
         baseScale = (visibleH * 0.9 * fitFactor) / maxDim;
 
-        const group = new THREE.Group();
+       const group = new THREE.Group();
         group.add(gltf.scene);
         group.scale.setScalar(baseScale);
+
+        fitVisibleH = visibleH;
+        fitModelW = baseScale * Math.max(size.x, size.z);
 
         materials = [];
         group.traverse((node) => {
@@ -390,6 +396,7 @@
         scene.add(spinner);
 
         buildParticles(group);
+        applyViewportFit();
         onModelLoaded?.();
       },
       undefined,
@@ -908,6 +915,14 @@
     renderer.render(scene, camera);
   }
 
+  function applyViewportFit() {
+    if (!spinner || !camera || fitModelW <= 0) return;
+    // visibleW shrinks with aspect on narrow windows; scale the rig down to fit.
+    const visibleW = fitVisibleH * camera.aspect;
+    const fit = Math.min(1, (visibleW * VIEWPORT_FIT_MARGIN) / fitModelW);
+    spinner.scale.setScalar(fit);
+  }
+
   function onResize() {
     if (!renderer || !camera) return;
     const w = window.innerWidth;
@@ -916,6 +931,7 @@
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     if (particleMat) particleMat.uniforms.uAspect.value = camera.aspect;
+    applyViewportFit();
   }
 </script>
 
