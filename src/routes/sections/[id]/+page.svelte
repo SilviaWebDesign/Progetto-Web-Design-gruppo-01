@@ -248,9 +248,17 @@ async function goToNextSection() {
     goto(`/sections/${next}`);
   }
 
+  
+  async function goToResults() {
+    get(lenisStore)?.start();
+    overlayVisible.set(true);
+    await new Promise<void>((r) => setTimeout(r, 400));
+    goto('/results');
+  }
+
   function finishFeedback() {
     if (get(allSectionsCompleted)) {
-      console.log('All sections completed → results page (coming soon)');
+      goToResults();
     } else {
       goToNextSection();
     }

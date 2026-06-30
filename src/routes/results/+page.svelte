@@ -1,0 +1,187 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { progress, SECTION_ORDER } from '$lib/stores/progress';
+  import { overlayVisible } from '$lib/stores/pageTransition';
+  import ModelViewer from '$lib/components/3d/ModelViewer.svelte';
+  import type { OpinionState, SectionId } from '$lib/types';
+
+  // Static blurred background — swap for any of our frost images
+  const RESULTS_BG = '/images/frost-infrastructure.png';
+
+  // Per-model fit factor, tuned by eye so the three read balanced
+ const FIT_FACTOR: Record<SectionId, number> = {
+    sustainability: 0.98,
+    sport: 1.12,
+    infrastructure: 0.95
+  };
+
+  // OpinionState -> model file variant (same scheme as the section page)
+  const VARIANT: Record<OpinionState, string> = {
+    ALL_POSITIVE: 'positive',
+    ALL_NEGATIVE: 'negative',
+    MOSTLY_POSITIVE: 'more-positive',
+    MOSTLY_NEGATIVE: 'more-negative',
+    NEUTRAL: 'neutral'
+  };
+
+  function resultModelPath(id: SectionId, state: OpinionState | undefined): string | null {
+    return state ? `/models/${id}-${VARIANT[state]}.glb` : null;
+  }
+
+  // One entry per section, in canonical order, with its result model
+  let models = $derived(
+    SECTION_ORDER.map((id) => ({
+      id,
+      src: resultModelPath(id, $progress[id]),
+      fitFactor: FIT_FACTOR[id]
+    }))
+  );
+
+  onMount(() => {
+    // Reveal the page by fading the navigation veil out
+    const t = setTimeout(() => overlayVisible.set(false), 60);
+    return () => clearTimeout(t);
+  });
+
+  async function goHome() {
+    overlayVisible.set(true);
+    await new Promise<void>((r) => setTimeout(r, 400));
+    progress.reset(); // fresh start next time
+    goto('/');
+  }
+
+  // About page is not built yet — placeholder route for now
+  async function goAbout() {
+    overlayVisible.set(true);
+    await new Promise<void>((r) => setTimeout(r, 400));
+    goto('/about');
+  }
+</script>
+
+<svelte:head>
+  <title>I tuoi risultati — Quante facce ha una medaglia?</title>
+</svelte:head>
+
+<div class="results">
+  <div class="results__bg" style="background-image: url({RESULTS_BG})" aria-hidden="true"></div>
+
+  <div class="results__models">
+    {#each models as model (model.id)}
+      <div class="results__model">
+        <ModelViewer src={model.src} fitFactor={model.fitFactor} />
+      </div>
+    {/each}
+  </div>
+
+  <p class="results__quote">
+    La realtà non è mai unica e uguale per tutti.<br />
+    Lo stesso evento può generare visioni differenti e soggettive, in base alle opinioni di ognuno
+  </p>
+
+ <div class="results__ctas">
+    <button class="results__cta results__cta--primary" type="button" onclick={goHome}>
+      Torna alla home
+    </button>
+    <button class="results__cta" type="button" onclick={goAbout}>
+      Scopri di più sul progetto
+    </button>
+  </div>
+</div>
+
+<style>
+  .results {
+    position: relative;
+    min-height: 100vh;
+    background: var(--color-background-page);
+    overflow: hidden;
+  }
+
+  .results__bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.28;
+    filter: blur(12px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .results__models {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    width: min(1200px, 92vw);
+    height: min(58vh, 640px);
+    pointer-events: none;
+  }
+
+  .results__model {
+    flex: 1;
+    height: 100%;
+    min-width: 0;
+    pointer-events: auto;
+  }
+
+  .results__quote {
+    position: fixed;
+    left: 50%;
+    bottom: 108px;
+    transform: translateX(-50%);
+    z-index: 1;
+    margin: 0;
+    max-width: min(860px, 92vw);
+    padding: 0 16px;
+    text-align: center;
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-medium);
+    /* calibrated to 1512px (30/1512*100 = 1.98vw); shrinks on small windows */
+    font-size: clamp(18px, 1.98vw, 30px);
+    line-height: 1.35;
+    color: var(--color-text-primary);
+  }
+
+  .results__ctas {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+  }
+
+  .results__cta {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    white-space: nowrap;
+    color: var(--color-text-primary);
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-medium);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    transition: opacity 0.25s ease;
+  }
+
+  .results__cta:hover {
+    opacity: 1;
+  }
+
+  .results__cta--primary {
+    font-weight: var(--font-weight-bold);
+    opacity: 1;
+  }
+</style>
