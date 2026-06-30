@@ -506,29 +506,35 @@
           vec3 local = position + aDirection * uPulse;
           vec3 instPos = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 
-          
+          // particle vertex and center in VIEW space (camera-aligned)
           vec4 vertView = modelViewMatrix * instanceMatrix * vec4(local, 1.0);
           vec4 centerView = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
 
-          
+          // project center to screen (NDC) -> distance to cursor ignores depth
           vec4 centerClip = projectionMatrix * centerView;
           vec2 ndc = centerClip.xy / max(centerClip.w, 0.0001);
-          vec2 d = ndc - uPointerNDC;
+
+          // stable per-particle randoms
+          float r1 = hash(instPos + 1.3);
+          float r2 = hash(instPos + 5.7);
+          float r3 = hash(instPos + 9.1);
+
+          // domain-warp the sample point: affected zone is blobby, not a circle
+          vec2 warp = (vec2(r1, r2) - 0.5) * uHoverJitter * 0.14;
+          vec2 d = (ndc + warp) - uPointerNDC;
           d.x *= uAspect;
           float dist = length(d);
 
-          
-          float r  = hash(instPos);
-          float r2 = hash(instPos + 19.19);
-          float radius = uHoverRadiusNDC * (1.0 + uHoverJitter * (r - 0.5) * 0.8);
-          float infl = smoothstep(radius, radius * 0.25, dist) * uHoverStrength;
+          float infl = smoothstep(uHoverRadiusNDC, uHoverRadiusNDC * 0.2, dist) * uHoverStrength;
 
-          vec2 dir = dist > 0.0001 ? normalize(d) : vec2(0.0);
-          float ang = uHoverJitter * (r2 - 0.5) * 1.2;
-          float ca = cos(ang), sa = sin(ang);
-          dir = vec2(dir.x * ca - dir.y * sa, dir.x * sa + dir.y * ca);
+          // direction: per-particle turbulent angle blended with radial.
+          // mostly turbulent -> particles scatter instead of clearing a clean sphere
+          float a = r3 * 6.2831853;
+          vec2 turb = vec2(cos(a), sin(a));
+          vec2 radial = dist > 0.0001 ? normalize(d) : turb;
+          vec2 dir = normalize(mix(radial, turb, uHoverJitter * 0.8) + 1e-4);
 
-          float pushAmt = uHoverPush * (1.0 + uHoverJitter * (r - 0.5) * 0.9);
+          float pushAmt = uHoverPush * (0.5 + r1);
           vertView.xy += dir * infl * pushAmt;
 
           gl_Position = projectionMatrix * vertView;
