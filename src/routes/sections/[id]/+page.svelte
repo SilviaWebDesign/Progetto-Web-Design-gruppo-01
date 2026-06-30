@@ -168,6 +168,26 @@ function exitTopicsMode() {
     scene3d?.unsettle(() => get(lenisStore)?.start());
   }
 
+ 
+  const FEEDBACK_BODY_MAX_LINES = 3;
+  const FEEDBACK_BODY_MAX_FONT = 24; 
+  const FEEDBACK_BODY_MIN_FONT = 14; 
+  const FEEDBACK_BODY_LINE_HEIGHT = 1.5;
+
+  function fitFeedbackBody() {
+    const el = document.querySelector<HTMLElement>('.feedback__body');
+    if (!el) return;
+    let fs = FEEDBACK_BODY_MAX_FONT;
+    el.style.fontSize = `${fs}px`;
+    // step down 1px at a time until it fits in <= max lines or hits the floor
+    while (fs > FEEDBACK_BODY_MIN_FONT) {
+      const lines = Math.round(el.scrollHeight / (fs * FEEDBACK_BODY_LINE_HEIGHT));
+      if (lines <= FEEDBACK_BODY_MAX_LINES) break;
+      fs -= 1;
+      el.style.fontSize = `${fs}px`;
+    }
+  }
+
   async function enterFeedbackPhase() {
     if (phase !== 'topics' || isTransitioning || !anyLiked) return;
     isTransitioning = true;
@@ -265,6 +285,13 @@ async function goToNextSection() {
       // feedback: show the result model formed, blur the backdrop.
       if (currentResult) scene3d?.snapToResult(resultPathFor(currentResult));
       gsap.set('.layer--bg', { filter: 'blur(12px)' });
+    }
+  });
+
+  // Re-fit the feedback body whenever it appears or its text changes.
+  $effect(() => {
+    if (phase === 'feedback' && feedbackBody) {
+      void tick().then(fitFeedbackBody);
     }
   });
 
@@ -446,10 +473,15 @@ async function goToNextSection() {
       }
     }
 
+    const onFeedbackResize = () => {
+      if (phase === 'feedback') fitFeedbackBody();
+    };
     window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('resize', onFeedbackResize);
 
     return () => {
       window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('resize', onFeedbackResize);
       ctx.revert();
       resetHeaderState();
     };
@@ -749,10 +781,10 @@ async function goToNextSection() {
     transform: translateX(-50%);
     margin: 0;
     text-align: center;
-    white-space: pre-line;
+    white-space: pre;
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-bold);
-    font-size: 36px;
+    font-size: clamp(16px, 2.38vw, 36px);
     line-height: 1.25;
     color: var(--color-text-primary);
   }
