@@ -186,8 +186,16 @@
         <span>una medaglia?</span>
       </h1>
       <div class="home__hint">
-        <span class="home__hint-arrow" aria-hidden="true">↓</span>
         <span class="home__hint-text">Scorri per continuare</span>
+        <svg class="home__hint-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
+          <path
+            d="M2 2l10.5 6 10.5-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
       </div>
     </div>
   </section>
@@ -285,8 +293,9 @@
     color: var(--color-text-primary);
   }
 
-  .home__hint-arrow {
-    font-size: 1rem;
+ .home__hint-arrow {
+    width: 25px;
+    height: 10px;
     animation: home-bounce 2s infinite;
   }
 
