@@ -266,10 +266,13 @@
   </section>
 
   <section class="home__stage home__cards" style="opacity: {cardsOpacity}" aria-hidden={cardsOpacity < 0.05}>
-    <div class="home__cards-grid">
-      {#each sections as section (section.id)}
-        <SectionChoiceCard {section} href={`/sections/${section.id}`} />
-      {/each}
+    <div class="home__cards-block">
+      <div class="home__cards-grid">
+        {#each sections as section (section.id)}
+          <SectionChoiceCard {section} href={`/sections/${section.id}`} />
+        {/each}
+      </div>
+      <p class="home__cards-hint">Scegli una sezione per iniziare ad esplorare</p>
     </div>
   </section>
 </div>
@@ -386,6 +389,22 @@
 
   .home__cards {
     justify-content: center;
+  }
+
+  .home__cards-block {
+    position: relative;
+    width: 100%;
+  }
+
+  .home__cards-hint {
+    position: absolute;
+    top: calc(100% - 580px); /* ~100px below the cards, out of flow */
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    font: var(--text-home-subtitle-font); /* bold 16px (body) */
+    color: var(--color-text-primary);
   }
 
   .home__cards-grid {
