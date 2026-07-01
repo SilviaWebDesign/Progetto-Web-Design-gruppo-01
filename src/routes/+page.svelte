@@ -25,10 +25,11 @@
     'dipende dai fatti che osservi',
     'e dal punto di vista che scegli.'
   ];
-  const TEXT2_LINES = [
-    'Attraversa il percorso, tra sostenibilità,',
-    'sport e infrastrutture, e prendi posizione',
-    'davanti alle informazioni.'
+ const TEXT2_LINES = [
+    'Attraversa il percorso, tra',
+    'sostenibilità, sport e infrastrutture,',
+    'e prendi posizione davanti alle',
+    'informazioni.'
   ];
   const TEXT3_LINES = [
     'Le tue scelte plasmeranno gli eroi',
@@ -296,7 +297,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 1200px;
   }
 
   .home__line {
