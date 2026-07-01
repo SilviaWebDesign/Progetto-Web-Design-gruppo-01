@@ -23,6 +23,20 @@ body {
   background-color: var(--color-background-page);
 }
 
+/* ------------------------------------------------------------
+   Line-wrapping quality (progressive enhancement)
+   - headings: balance line lengths (great for short display text)
+   - paragraphs: avoid widows/orphans in running text
+   Browsers without support fall back to normal wrapping.
+   ------------------------------------------------------------ */
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
 /* Links inherit color and weight; underline only on hover.
    Style refined later when we build the Link primitive. */
 a {
