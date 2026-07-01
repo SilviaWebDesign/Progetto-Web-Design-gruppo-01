@@ -45,17 +45,20 @@
   const SMOOTH_HERO = 0.05; // glide for the title <-> first text transition
   const SMOOTH_TEXT = 0.01; // glide for the text-to-text snaps (slower)
   const SNAP_COOLDOWN = 1100; // ms lock between text snaps
+  const SNAP_THRESHOLD = 60; // wheel delta needed to trigger a snap (higher = less sensitive)
+  const ACCUM_RESET_MS = 180; // reset the wheel accumulator after a scroll pause
 
   let scrollProgress = $state(0);
   let targetProgress = 0;
   let snapIndex = -1; // -1 = free hero zone; 0..3 = locked on a text anchor
   let snapLockUntil = 0;
   let glideSmooth = SMOOTH_HERO; // smoothing used by the current transition
+  let wheelAccum = 0; // accumulated wheel delta toward the next snap
+  let lastWheelTime = 0;
   let rafId = 0;
 
   // hero fully fades across its own free zone (0 -> 0 opacity at the first text)
   let heroOpacity = $derived(1 - easeOutCubic(clamp(scrollProgress / FREE_END, 0, 1)));
-  // ...and rises while fading, so it clears out before the first text (no overlap)
   let heroLift = $derived(easeOutCubic(clamp(scrollProgress / FREE_END, 0, 1)) * -8); // vh
   let text1Opacity = $derived(stageOpacity(scrollProgress, 0.06, 0.11, 0.13, 0.18));
   let text2Opacity = $derived(stageOpacity(scrollProgress, 0.28, 0.33, 0.35, 0.4));
@@ -114,8 +117,23 @@
       const d = clamp(e.deltaY, -80, 80);
       targetProgress = clamp(targetProgress + d * FREE_SENS, 0, FREE_END);
       if (targetProgress >= FREE_END) enterTextZone();
-    } else {
-      advance(dir);
+      return;
+    }
+    // text zone: require a deliberate scroll (threshold) before snapping,
+    // so an accidental little scroll doesn't jump and you can recover.
+    const now = performance.now();
+    if (now - lastWheelTime > ACCUM_RESET_MS) wheelAccum = 0; // decay stale input
+    lastWheelTime = now;
+    if (now < snapLockUntil) {
+      wheelAccum = 0; // ignore input during the cooldown
+      return;
+    }
+    if (wheelAccum !== 0 && Math.sign(e.deltaY) !== Math.sign(wheelAccum)) wheelAccum = 0;
+    wheelAccum += e.deltaY;
+    if (Math.abs(wheelAccum) >= SNAP_THRESHOLD) {
+      const d = Math.sign(wheelAccum);
+      wheelAccum = 0;
+      advance(d);
     }
   }
 
