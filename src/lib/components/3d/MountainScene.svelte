@@ -2,7 +2,7 @@
   import { onMount, tick } from 'svelte';
   import { browser } from '$app/environment';
   import * as THREE from 'three';
-  import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+  import { createGltfLoader } from '$lib/utils/gltf';
   import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
   /**
@@ -86,7 +86,7 @@
     THREE.Cache.enabled = true;
     if (!loadPromise) {
       loadPromise = new Promise<GLTF>((resolve, reject) => {
-        const loader = new GLTFLoader();
+        const loader = createGltfLoader();
         loader.load(MOUNTAIN_GLB_URL, resolve, undefined, (err) => {
           loadPromise = null;
           reject(err);

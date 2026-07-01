@@ -2,7 +2,7 @@
   import { onMount, tick } from 'svelte';
   import { browser } from '$app/environment';
   import * as THREE from 'three';
-  import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+ import { createGltfLoader } from '$lib/utils/gltf';
 
   interface Props {
     src: string;
@@ -120,7 +120,7 @@
       animate();
       window.addEventListener('resize', resize);
 
-      const loader = new GLTFLoader();
+      const loader = createGltfLoader();
       loader.load(
         src,
         (gltf) => {

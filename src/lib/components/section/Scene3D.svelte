@@ -18,7 +18,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import * as THREE from 'three';
-  import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+  import { createGltfLoader } from '$lib/utils/gltf';
   import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
   import { MeshSurfaceSampler } from 'three/examples/jsm/math/MeshSurfaceSampler.js';
   import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -217,7 +217,7 @@
           finish(cached);
           return;
         }
-        const loader = new GLTFLoader();
+        const loader = createGltfLoader();
         loader.load(
           path,
           (gltf) => {
@@ -346,7 +346,7 @@
   }
 
   function loadModel() {
-    const loader = new GLTFLoader();
+    const loader = createGltfLoader();
 
     loader.load(
       modelSrc,
@@ -579,7 +579,7 @@
   function preloadResultModels() {
     const uniquePaths = [...new Set(resultPaths)];
     if (uniquePaths.length === 0) return;
-    const loader = new GLTFLoader();
+    const loader = createGltfLoader();
     uniquePaths.forEach((path) => {
       loader.load(
         path,
@@ -706,7 +706,7 @@
       return;
     }
 
-    const loader = new GLTFLoader();
+    const loader = createGltfLoader();
     loader.load(
       path,
       (gltf) => {

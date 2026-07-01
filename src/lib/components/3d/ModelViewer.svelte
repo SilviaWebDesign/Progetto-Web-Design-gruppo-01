@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import * as THREE from 'three';
-  import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+  import { createGltfLoader } from '$lib/utils/gltf';
   import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -63,7 +63,7 @@
     controls.target.set(0, 0, 0);
 
     // No DRACO: our GLBs are not Draco-compressed (same setup as Scene3D)
-    const loader = new GLTFLoader();
+    const loader = createGltfLoader();
 
     loader.load(src, (gltf) => {
       if (!scene || !camera) return;
