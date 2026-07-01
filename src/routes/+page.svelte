@@ -397,6 +397,14 @@
     gap: var(--spacing-lg);
   }
 
+  /* above 1375px: fixed 100px gap, cards grouped and centered */
+  @media (min-width: 1375px) {
+    .home__cards-grid {
+      justify-content: center;
+      gap: 100px;
+    }
+  }
+
   @keyframes home-bounce {
     0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
     40% { transform: translateY(-6px); }
