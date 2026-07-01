@@ -314,6 +314,7 @@
 
   .home__brand {
     margin: 0;
+    transform: translateY(-25px); /* nudge the brand up, above the title */
     font: var(--text-home-subtitle-font);
     color: var(--color-text-primary);
   }
