@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { overlayVisible } from '$lib/stores/pageTransition';
+  import { headerState } from '$lib/stores/header';
   import MountainScene from '$lib/components/3d/MountainScene.svelte';
+  import SectionChoiceCard from '$lib/components/cards/SectionChoiceCard.svelte';
+  import { sections } from '$lib/data/sections';
 
   // --- scroll math ---
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -38,8 +41,8 @@
   const FREE_END = TEXT_ANCHORS[0];
   const FREE_SENS = 0.0006; // hero free-scroll sensitivity (per wheel unit)
   const FREE_STEP = 0.03; // hero free-scroll step for arrow keys
-  const SMOOTH_HERO = 0.06; // glide for the title <-> first text transition
-  const SMOOTH_TEXT = 0.02; // glide for the text-to-text snaps (slower)
+  const SMOOTH_HERO = 0.05; // glide for the title <-> first text transition
+  const SMOOTH_TEXT = 0.01; // glide for the text-to-text snaps (slower)
   const SNAP_COOLDOWN = 1100; // ms lock between text snaps
 
   let scrollProgress = $state(0);
@@ -57,6 +60,12 @@
   let text2Opacity = $derived(stageOpacity(scrollProgress, 0.28, 0.33, 0.35, 0.4));
   let text3Opacity = $derived(stageOpacity(scrollProgress, 0.58, 0.68, 0.7, 0.8));
   let cardsOpacity = $derived(easeOutCubic(rangeProgress(scrollProgress, 0.9, 0.95)));
+
+  // reveal the global header once we reach the cards phase
+  $effect(() => {
+    const inCards = scrollProgress > 0.85;
+    headerState.update((s) => ({ ...s, forceVisible: inCards }));
+  });
 
   function enterTextZone() {
     snapIndex = 0;
@@ -135,6 +144,7 @@
       cancelAnimationFrame(rafId);
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKey);
+      headerState.update((s) => ({ ...s, forceVisible: false }));
     };
   });
 </script>
@@ -182,7 +192,11 @@
   </section>
 
   <section class="home__stage home__cards" style="opacity: {cardsOpacity}" aria-hidden={cardsOpacity < 0.05}>
-    <p class="home__cards-placeholder">[ Card sezioni — Fase 2 ]</p>
+    <div class="home__cards-grid">
+      {#each sections as section (section.id)}
+        <SectionChoiceCard {section} href={`/sections/${section.id}`} />
+      {/each}
+    </div>
   </section>
 </div>
 
@@ -211,7 +225,8 @@
     align-items: center;
     text-align: center;
     box-sizing: border-box;
-    padding: 110px 40px 52px; /* prototype hero padding (top/x/bottom) */
+    /* side padding = page gutter, so cards align with the header */
+    padding: 110px var(--page-gutter) 52px;
   }
 
   /* Hero: brand + title + hint anchored toward the bottom */
@@ -298,10 +313,13 @@
     justify-content: center;
   }
 
-  .home__cards-placeholder {
-    margin: 0;
-    font: var(--text-home-subtitle-font);
-    color: var(--color-text-secondary);
+  .home__cards-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 354px));
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-lg);
   }
 
   @keyframes home-bounce {

@@ -11,16 +11,19 @@ import { writable } from 'svelte/store';
 interface HeaderState {
   /** Section name to show centered in the header (empty = none). */
   sectionTitle: string;
-  /** Whether the centered section name is visible. */
+ /** Whether the centered section name is visible. */
   showSection: boolean;
+  /** Force the header visible without real scroll (e.g. home cards phase). */
+  forceVisible?: boolean;
 }
 
 export const headerState = writable<HeaderState>({
   sectionTitle: '',
-  showSection: false
+  showSection: false,
+  forceVisible: false
 });
 
 /** Reset to defaults (e.g. when leaving a section page). */
 export function resetHeaderState() {
-  headerState.set({ sectionTitle: '', showSection: false });
+  headerState.set({ sectionTitle: '', showSection: false, forceVisible: false });
 }

@@ -32,6 +32,7 @@
   /* Section name + visibility come from the shared store (set by pages). */
   let sectionTitle = $derived($headerState.sectionTitle);
   let showSection = $derived($headerState.showSection);
+  let forceVisible = $derived($headerState.forceVisible ?? false);
 
   let menuOpen = $state(false);
   let scrolled = $state(false);
@@ -84,7 +85,7 @@
 
 <header
   class="header"
-  class:header--visible={alwaysVisible || scrolled || menuOpen}
+  class:header--visible={alwaysVisible || scrolled || menuOpen || forceVisible}
   class:header--always={alwaysVisible}
 >
   <div class="header__inner">

@@ -2,13 +2,12 @@
   ============================================================
   SECTION CHOICE CARD
   ============================================================
-  A large card representing one of the three main sections.
-
-  Hover behaviour:
-  - Border takes the section color
-  - A diffuse radial gradient of the section color fades in
-    inside the card (clipped to the card's rounded corners)
-  - The 3D model stops rotating, so the user can take in the shape
+  One of the three home menu cards. Form/position mirror the
+  prototype, restyled with our design tokens:
+  - glass surface, dark 2px border (--border-thick), soft radius
+  - 3D object sits in the upper area; title below
+  - hover: card lifts (scale), dark halo + object glow fade in,
+    and the 3D model stops rotating so the shape can be read
   ============================================================
 -->
 
@@ -24,12 +23,9 @@
 
   let { section, href }: Props = $props();
 
-  let computedHref = $derived(href ?? `/sezioni/${section.id}`);
-
-  /* Hover state — drives the gradient appearance and pauses the 3D rotation. */
+  let computedHref = $derived(href ?? `/sections/${section.id}`);
   let isHovered = $state(false);
 </script>
-
 
 <article
   class="section-choice-card"
@@ -37,200 +33,154 @@
   onmouseenter={() => (isHovered = true)}
   onmouseleave={() => (isHovered = false)}
 >
-  <!-- 3D scene fills the entire card. -->
-  <div class="section-choice-card__scene" aria-hidden="true">
-    <Canvas>
-      <T.PerspectiveCamera
-        makeDefault
-        position={[0, 0, 3.5]}
-        fov={35}
-        oncreate={(ref) => {
-          ref.lookAt(0, 0, 0);
-        }}
-      />
+  <div class="section-choice-card__halo" aria-hidden="true"></div>
 
-      <T.AmbientLight intensity={1.5} />
-      <T.DirectionalLight position={[5, 5, 5]} intensity={1.5} />
+  <div class="section-choice-card__surface">
+    <div class="section-choice-card__object" aria-hidden="true">
+      <div class="section-choice-card__glow" aria-hidden="true"></div>
+      <div class="section-choice-card__scene">
+        <Canvas>
+          <T.PerspectiveCamera
+            makeDefault
+            position={[0, 0, 3.5]}
+            fov={35}
+            oncreate={(ref) => ref.lookAt(0, 0, 0)}
+          />
+          <T.AmbientLight intensity={1.5} />
+          <T.DirectionalLight position={[5, 5, 5]} intensity={1.5} />
+          <SectionModel url={section.glbPath} paused={isHovered} />
+        </Canvas>
+      </div>
+    </div>
 
-      <SectionModel url={section.glbPath} paused={isHovered} />
-    </Canvas>
+    <h2 class="section-choice-card__title">{section.title}</h2>
   </div>
 
-  <!-- Title overlaid centered on top of the 3D scene. -->
-  <h2 class="section-choice-card__title">{section.title}</h2>
-
-  <!-- Invisible stretched link covering the entire card. -->
   <a class="section-choice-card__link" href={computedHref}>
     <span class="visually-hidden">Vai alla sezione {section.title}</span>
   </a>
 </article>
 
-
 <style>
-  /* ============================================================
-     CARD STRUCTURE
-     ============================================================ */
-
   .section-choice-card {
     position: relative;
     isolation: isolate;
-
-    width: 100%;
-    max-width: 354px;
-    aspect-ratio: 354 / 572;
-
-    /* True glassmorphism. */
-    background-color: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-
-    border: var(--border-thin);
-    border-radius: var(--radius-md);
-
-    color: var(--color-text-primary);
-
-    /* Inner highlight + subtle outer shadow (default state). */
-    box-shadow:
-      0 6px 20px rgba(0, 0, 0, 0.08),
-      inset 0 1px 1px rgba(255, 255, 255, 0.4);
-
-    overflow: hidden;
-
-    /* Reserved 1px outline for hover (no layout shift). */
-    outline: var(--border-width-thin) solid transparent;
-    outline-offset: 0;
-
-    transition:
-      transform 300ms cubic-bezier(0.25, 1, 0.5, 1),
-      border-color 200ms ease,
-      outline-color 200ms ease,
-      box-shadow 300ms ease;
+    width: 354px;
+    height: 380px;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
+  @media (hover: hover) {
+    .section-choice-card:hover {
+      transform: scale(1.03);
+      z-index: 2;
+    }
+  }
 
-  /* ============================================================
-     DIFFUSE GRADIENT INSIDE (::before, behind everything)
-     ============================================================ */
-
-  .section-choice-card::before {
-    content: '';
+  /* Dark diffuse halo behind the card (hover) */
+  .section-choice-card__halo {
     position: absolute;
-    inset: 0;
-    z-index: -1;
-
-    border-radius: inherit;
+    inset: -48px;
+    z-index: 0;
+    border-radius: var(--radius-md);
     opacity: 0;
-    transition: opacity 400ms ease;
-
     pointer-events: none;
-    filter: blur(20px);
+    filter: blur(26px);
+    background: radial-gradient(
+      ellipse 72% 68% at 50% 44%,
+      color-mix(in srgb, var(--color-border) 18%, transparent) 0%,
+      color-mix(in srgb, var(--color-border) 9%, transparent) 38%,
+      color-mix(in srgb, var(--color-border) 4%, transparent) 58%,
+      transparent 78%
+    );
+    transition: opacity 0.35s ease;
   }
 
-  .section-choice-card[data-section='sustainability']::before {
-    background: radial-gradient(
-      circle at center,
-      var(--color-section-sustainability) 0%,
-      rgba(255, 255, 255, 0) 80%
-    );
-  }
-  .section-choice-card[data-section='sport']::before {
-    background: radial-gradient(
-      circle at center,
-      var(--color-section-sport) 0%,
-      rgba(255, 255, 255, 0) 80%
-    );
-  }
-  .section-choice-card[data-section='infrastructure']::before {
-    background: radial-gradient(
-      circle at center,
-      var(--color-section-infrastructure) 0%,
-      rgba(255, 255, 255, 0) 80%
-    );
-  }
-
-  .section-choice-card:hover::before {
+  .section-choice-card:hover .section-choice-card__halo {
     opacity: 1;
   }
 
-
-  /* ============================================================
-     HOVER — lift, border, outline, layered glow
-     ============================================================ */
-
-  .section-choice-card:hover {
-    transform: translateY(-1px);
+  /* Glass surface (the visible card) */
+  .section-choice-card__surface {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.5); /* glass surface (tokenize later) */
+    border: var(--border-thick);
+    border-radius: var(--radius-s);
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: box-shadow 0.35s ease;
   }
 
-  .section-choice-card[data-section='sustainability']:hover {
-    border-color: var(--color-section-sustainability);
-    outline-color: var(--color-section-sustainability);
+  .section-choice-card:hover .section-choice-card__surface {
     box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 24px rgba(71, 208, 142, 0.25),
-      inset 0 1px 1px rgba(255, 255, 255, 0.5);
-  }
-  .section-choice-card[data-section='sport']:hover {
-    border-color: var(--color-section-sport);
-    outline-color: var(--color-section-sport);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 24px rgba(137, 186, 255, 0.30),
-      inset 0 1px 1px rgba(255, 255, 255, 0.5);
-  }
-  .section-choice-card[data-section='infrastructure']:hover {
-    border-color: var(--color-section-infrastructure);
-    outline-color: var(--color-section-infrastructure);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.10),
-      0 0 24px rgba(255, 131, 76, 0.28),
-      inset 0 1px 1px rgba(255, 255, 255, 0.5);
+      0 0 24px color-mix(in srgb, var(--color-border) 12%, transparent),
+      0 0 48px color-mix(in srgb, var(--color-border) 7%, transparent),
+      0 0 80px color-mix(in srgb, var(--color-border) 4%, transparent);
   }
 
+  /* 3D object box, centered in the upper area */
+  .section-choice-card__object {
+    position: absolute;
+    top: var(--spacing-lg);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    height: 220px;
+    z-index: 1;
+  }
 
-  /* ============================================================
-     3D SCENE — fills the card behind the title
-     ============================================================ */
+  .section-choice-card__glow {
+    position: absolute;
+    left: 50%;
+    top: 54%;
+    transform: translate(-50%, -50%);
+    width: 78%;
+    height: 72%;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(16px);
+    background: radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--color-border) 32%, transparent) 0%,
+      color-mix(in srgb, var(--color-border) 14%, transparent) 42%,
+      transparent 72%
+    );
+    transition: opacity 0.35s ease;
+  }
+
+  .section-choice-card:hover .section-choice-card__glow {
+    opacity: 1;
+  }
 
   .section-choice-card__scene {
     position: absolute;
     inset: 0;
-    z-index: 0;
+    z-index: 1;
   }
 
-
-  /* ============================================================
-     TITLE — centered absolutely above the 3D scene
-     ============================================================ */
-
-.section-choice-card__title {
+  /* Title below the object */
+  .section-choice-card__title {
     position: absolute;
-    inset: auto 0 0 0; /* anchored to bottom, full width */
-    z-index: 1;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-
+    left: 0;
+    right: 0;
+    bottom: var(--spacing-xl);
     margin: 0;
-    padding: var(--spacing-xl) var(--spacing-md);
-
+    padding: 0 var(--spacing-md);
+    text-align: center;
     font: var(--text-section-menu-font);
     text-transform: uppercase;
-
+    color: var(--color-text-primary);
     pointer-events: none;
   }
-
-
-  /* ============================================================
-     STRETCHED LINK
-     ============================================================ */
 
   .section-choice-card__link {
     position: absolute;
     inset: 0;
     z-index: 2;
-
     display: block;
     color: transparent;
     text-decoration: none;
@@ -240,11 +190,6 @@
     outline: 2px solid var(--color-border);
     outline-offset: -2px;
   }
-
-
-  /* ============================================================
-     UTILS
-     ============================================================ */
 
   .visually-hidden {
     position: absolute;
