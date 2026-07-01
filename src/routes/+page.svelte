@@ -32,8 +32,8 @@
     'informazioni.'
   ];
   const TEXT3_LINES = [
-    'Le tue scelte plasmeranno gli eroi',
-    'e i cattivi di Milano-Cortina 2026.'
+    'Le tue scelte plasmeranno la realtà',
+    'di Milano-Cortina 2026.'
   ];
 
   // Text snap anchors = prototype scroll positions (so the mountain lands right).
