@@ -20,7 +20,7 @@
   }
 
   // --- narrative content ---
-  const TEXT1_LINES = [
+ const TEXT1_LINES = [
     'La realtà non è unica e oggettiva,',
     'dipende dai fatti che osservi',
     'e dal punto di vista che scegli.'
@@ -42,7 +42,9 @@
   const FREE_END = TEXT_ANCHORS[0];
   const FREE_SENS = 0.0006; // hero free-scroll sensitivity (per wheel unit)
   const FREE_STEP = 0.03; // hero free-scroll step for arrow keys
-  const SMOOTH_HERO = 0.05; // glide for the title <-> first text transition
+  const FREE_SMOOTH = 0.06; // chase smoothing for the free hero scroll
+  const DURATION_HERO = 800; // ms, title <-> first text (bounded, clean stop)
+  const DURATION_TEXT = 1300; // ms, text-to-text (softer, bounded, clean stop)
   const SMOOTH_TEXT = 0.01; // glide for the text-to-text snaps (slower)
   const SNAP_COOLDOWN = 1100; // ms lock between text snaps
   const SNAP_THRESHOLD = 60; // wheel delta needed to trigger a snap (higher = less sensitive)
@@ -52,7 +54,12 @@
   let targetProgress = 0;
   let snapIndex = -1; // -1 = free hero zone; 0..3 = locked on a text anchor
   let snapLockUntil = 0;
-  let glideSmooth = SMOOTH_HERO; // smoothing used by the current transition
+  // bounded tween state for snaps (so the mountain stops exactly when a text lands)
+  let tweening = false;
+  let tweenFrom = 0;
+  let tweenTo = 0;
+  let tweenStart = 0;
+  let tweenDuration = DURATION_TEXT;
   let wheelAccum = 0; // accumulated wheel delta toward the next snap
   let lastWheelTime = 0;
   let rafId = 0;
@@ -71,17 +78,24 @@
     headerState.update((s) => ({ ...s, forceVisible: inCards }));
   });
 
+  function startTween(to: number, duration: number) {
+    tweenFrom = scrollProgress;
+    tweenTo = to;
+    tweenStart = performance.now();
+    tweenDuration = duration;
+    tweening = true;
+  }
+
   function enterTextZone() {
     snapIndex = 0;
-    targetProgress = TEXT_ANCHORS[0];
-    glideSmooth = SMOOTH_HERO; // title -> first text
+    startTween(TEXT_ANCHORS[0], DURATION_HERO); // title -> first text
     snapLockUntil = performance.now() + SNAP_COOLDOWN;
   }
 
   function advance(dir: number) {
     // free hero zone (arrow keys use a fixed step)
     if (snapIndex < 0) {
-      glideSmooth = SMOOTH_HERO;
+      tweening = false; // free chase mode
       targetProgress = clamp(targetProgress + dir * FREE_STEP, 0, FREE_END);
       if (targetProgress >= FREE_END) enterTextZone();
       return;
@@ -90,18 +104,16 @@
     if (performance.now() < snapLockUntil) return;
     if (dir > 0 && snapIndex < TEXT_ANCHORS.length - 1) {
       snapIndex += 1;
-      targetProgress = TEXT_ANCHORS[snapIndex];
-      glideSmooth = SMOOTH_TEXT; // text-to-text
+      startTween(TEXT_ANCHORS[snapIndex], DURATION_TEXT); // text-to-text
       snapLockUntil = performance.now() + SNAP_COOLDOWN;
     } else if (dir < 0) {
       if (snapIndex > 0) {
         snapIndex -= 1;
-        targetProgress = TEXT_ANCHORS[snapIndex];
-        glideSmooth = SMOOTH_TEXT; // text-to-text
+        startTween(TEXT_ANCHORS[snapIndex], DURATION_TEXT); // text-to-text
       } else {
         snapIndex = -1; // back into the free hero zone
         targetProgress = FREE_END - FREE_STEP;
-        glideSmooth = SMOOTH_HERO; // first text -> title
+        startTween(targetProgress, DURATION_HERO); // first text -> title
       }
       snapLockUntil = performance.now() + SNAP_COOLDOWN;
     }
@@ -113,7 +125,7 @@
     if (dir === 0) return;
     if (snapIndex < 0) {
       // free scroll: move the target by the wheel delta (clamped for mouse wheels)
-      glideSmooth = SMOOTH_HERO;
+      tweening = false; // free chase mode
       const d = clamp(e.deltaY, -80, 80);
       targetProgress = clamp(targetProgress + d * FREE_SENS, 0, FREE_END);
       if (targetProgress >= FREE_END) enterTextZone();
@@ -148,9 +160,20 @@
   }
 
   function frame() {
-    // smooth glide of scrollProgress toward the target (free scroll + snaps)
-    scrollProgress += (targetProgress - scrollProgress) * glideSmooth;
-    if (Math.abs(targetProgress - scrollProgress) < 0.0003) scrollProgress = targetProgress;
+    if (tweening) {
+      // bounded eased snap: reaches the anchor and STOPS (mountain settles with it)
+      const t = clamp((performance.now() - tweenStart) / tweenDuration, 0, 1);
+      scrollProgress = tweenFrom + (tweenTo - tweenFrom) * easeOutCubic(t);
+      if (t >= 1) {
+        scrollProgress = tweenTo;
+        tweening = false;
+      }
+    } else if (snapIndex < 0) {
+      // free hero zone: smoothly chase the wheel-driven target
+      scrollProgress += (targetProgress - scrollProgress) * FREE_SMOOTH;
+      if (Math.abs(targetProgress - scrollProgress) < 0.0003) scrollProgress = targetProgress;
+    }
+    // else: locked on a text anchor -> nothing moves (mountain at rest)
     rafId = requestAnimationFrame(frame);
   }
 

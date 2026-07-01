@@ -26,6 +26,7 @@
   const MOUNTAIN_ROTATION_Y = Math.PI / 2 + 0.12; // slight offset from 90°
   const CAM_Y_LOW = -2.9; // hero camera height
   const TOP_DOWN_YAW = Math.PI / 2; // top-down view yaw (cards phase)
+  const CARDS_TILT = 0.8; // cards-phase tilt: 0 = straight down, higher = more angled
   const ORBIT_EASE_POWER = 1.45; // higher = slower rotation mid-scroll
   const ORBIT_ARC = Math.PI * 2; // full turn
   const FOG_COLOR = '#ffffff';
@@ -226,12 +227,15 @@
     }
   }
 
-  function sampleTopDownCamera(cardsT: number): boolean {
+  function sampleTopDownCamera(cardsT: number) {
     const cfg = orbitConfig;
     if (!cfg) return false;
     const eased = easeInOutCubic(clamp(cardsT, 0, 1));
     const height = cfg.topDownHeight * lerp(1.12, 1, eased);
-    _camPos.set(cfg.center.x, cfg.center.y + height, cfg.center.z);
+    // pull the camera back along -Z as we tilt, so the view is angled (not straight down)
+    const back = Math.sin(CARDS_TILT) * height;
+    const up = Math.cos(CARDS_TILT) * height;
+    _camPos.set(cfg.center.x, cfg.center.y + up, cfg.center.z - back);
     _lookAt.copy(cfg.center);
     return true;
   }
@@ -325,7 +329,7 @@
       setMountainVisible(true);
       if (sampleTopDownCamera(cardsT)) {
         camera.position.copy(_camPos);
-        camera.up.set(Math.cos(TOP_DOWN_YAW), 0, Math.sin(TOP_DOWN_YAW));
+        camera.up.set(0, 1, 0);
         camera.lookAt(_lookAt);
       }
       camera.zoom = lerp(1.05, 1.28, easeInOutCubic(cardsT));
