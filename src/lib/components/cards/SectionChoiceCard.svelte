@@ -12,8 +12,7 @@
 -->
 
 <script lang="ts">
-  import { Canvas, T } from '@threlte/core';
-  import SectionModel from '$lib/_archive/SectionModel.svelte';
+  import CardModel from '$lib/components/cards/CardModel.svelte';
   import type { Section } from '$lib/types';
 
   interface Props {
@@ -39,17 +38,7 @@
     <div class="section-choice-card__object" aria-hidden="true">
       <div class="section-choice-card__glow" aria-hidden="true"></div>
       <div class="section-choice-card__scene">
-        <Canvas>
-          <T.PerspectiveCamera
-            makeDefault
-            position={[0, 0, 3.5]}
-            fov={35}
-            oncreate={(ref) => ref.lookAt(0, 0, 0)}
-          />
-          <T.AmbientLight intensity={1.5} />
-          <T.DirectionalLight position={[5, 5, 5]} intensity={1.5} />
-          <SectionModel url={section.glbPath} paused={isHovered} />
-        </Canvas>
+        <CardModel src={section.glbPath} paused={isHovered} />
       </div>
     </div>
 
