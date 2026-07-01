@@ -3,7 +3,7 @@
   import { overlayVisible } from '$lib/stores/pageTransition';
   import MountainScene from '$lib/components/3d/MountainScene.svelte';
 
-  // --- scroll math (ported from the prototype's scrollStages) ---
+  // --- scroll math ---
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
   const rangeProgress = (p: number, s: number, e: number) =>
     p <= s ? 0 : p >= e ? 1 : (p - s) / (e - s);
@@ -32,61 +32,107 @@
     'e i cattivi di Milano-Cortina 2026.'
   ];
 
-  // Snap anchors = the prototype's exact scroll positions, so the mountain
-  // rotation (added in a later phase) lands correctly at each text.
-  const ANCHORS = [0, 0.12, 0.34, 0.69, 0.95]; // hero, text1, text2, text3, cards
-  const SNAP_DURATION = 900; // ms
+  // Text snap anchors = prototype scroll positions (so the mountain lands right).
+  // The hero zone (0 .. FREE_END) is FREE scroll; snapping starts at the texts.
+  const TEXT_ANCHORS = [0.12, 0.34, 0.69, 0.95]; // text1, text2, text3, cards
+  const FREE_END = TEXT_ANCHORS[0];
+  const FREE_SENS = 0.0006; // hero free-scroll sensitivity (per wheel unit)
+  const FREE_STEP = 0.03; // hero free-scroll step for arrow keys
+  const SMOOTH_HERO = 0.06; // glide for the title <-> first text transition
+  const SMOOTH_TEXT = 0.02; // glide for the text-to-text snaps (slower)
+  const SNAP_COOLDOWN = 1100; // ms lock between text snaps
 
   let scrollProgress = $state(0);
-  let stageIndex = $state(0);
-  let animating = false;
+  let targetProgress = 0;
+  let snapIndex = -1; // -1 = free hero zone; 0..3 = locked on a text anchor
+  let snapLockUntil = 0;
+  let glideSmooth = SMOOTH_HERO; // smoothing used by the current transition
+  let rafId = 0;
 
-  // Opacities driven by scrollProgress (same curves/ranges as the prototype)
-  let heroOpacity = $derived(Math.max(0, 1 - easeOutCubic(clamp(scrollProgress * 3.8, 0, 1))));
+  // hero fully fades across its own free zone (0 -> 0 opacity at the first text)
+  let heroOpacity = $derived(1 - easeOutCubic(clamp(scrollProgress / FREE_END, 0, 1)));
+  // ...and rises while fading, so it clears out before the first text (no overlap)
+  let heroLift = $derived(easeOutCubic(clamp(scrollProgress / FREE_END, 0, 1)) * -8); // vh
   let text1Opacity = $derived(stageOpacity(scrollProgress, 0.06, 0.11, 0.13, 0.18));
   let text2Opacity = $derived(stageOpacity(scrollProgress, 0.28, 0.33, 0.35, 0.4));
   let text3Opacity = $derived(stageOpacity(scrollProgress, 0.58, 0.68, 0.7, 0.8));
   let cardsOpacity = $derived(easeOutCubic(rangeProgress(scrollProgress, 0.9, 0.95)));
 
-  function snapTo(index: number) {
-    const target = clamp(index, 0, ANCHORS.length - 1);
-    if (target === stageIndex || animating) return;
-    stageIndex = target;
-    const from = scrollProgress;
-    const to = ANCHORS[target];
-    const start = performance.now();
-    animating = true;
-    function step(now: number) {
-      const t = clamp((now - start) / SNAP_DURATION, 0, 1);
-      scrollProgress = from + (to - from) * easeOutCubic(t);
-      if (t < 1) requestAnimationFrame(step);
-      else animating = false;
+  function enterTextZone() {
+    snapIndex = 0;
+    targetProgress = TEXT_ANCHORS[0];
+    glideSmooth = SMOOTH_HERO; // title -> first text
+    snapLockUntil = performance.now() + SNAP_COOLDOWN;
+  }
+
+  function advance(dir: number) {
+    // free hero zone (arrow keys use a fixed step)
+    if (snapIndex < 0) {
+      glideSmooth = SMOOTH_HERO;
+      targetProgress = clamp(targetProgress + dir * FREE_STEP, 0, FREE_END);
+      if (targetProgress >= FREE_END) enterTextZone();
+      return;
     }
-    requestAnimationFrame(step);
+    // text zone: one snap per gesture, cooldown-guarded
+    if (performance.now() < snapLockUntil) return;
+    if (dir > 0 && snapIndex < TEXT_ANCHORS.length - 1) {
+      snapIndex += 1;
+      targetProgress = TEXT_ANCHORS[snapIndex];
+      glideSmooth = SMOOTH_TEXT; // text-to-text
+      snapLockUntil = performance.now() + SNAP_COOLDOWN;
+    } else if (dir < 0) {
+      if (snapIndex > 0) {
+        snapIndex -= 1;
+        targetProgress = TEXT_ANCHORS[snapIndex];
+        glideSmooth = SMOOTH_TEXT; // text-to-text
+      } else {
+        snapIndex = -1; // back into the free hero zone
+        targetProgress = FREE_END - FREE_STEP;
+        glideSmooth = SMOOTH_HERO; // first text -> title
+      }
+      snapLockUntil = performance.now() + SNAP_COOLDOWN;
+    }
   }
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    if (animating) return;
-    if (e.deltaY > 0) snapTo(stageIndex + 1);
-    else if (e.deltaY < 0) snapTo(stageIndex - 1);
+    const dir = Math.sign(e.deltaY);
+    if (dir === 0) return;
+    if (snapIndex < 0) {
+      // free scroll: move the target by the wheel delta (clamped for mouse wheels)
+      glideSmooth = SMOOTH_HERO;
+      const d = clamp(e.deltaY, -80, 80);
+      targetProgress = clamp(targetProgress + d * FREE_SENS, 0, FREE_END);
+      if (targetProgress >= FREE_END) enterTextZone();
+    } else {
+      advance(dir);
+    }
   }
 
   function onKey(e: KeyboardEvent) {
     if (e.key === 'ArrowDown' || e.key === 'PageDown') {
       e.preventDefault();
-      snapTo(stageIndex + 1);
+      advance(1);
     } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
       e.preventDefault();
-      snapTo(stageIndex - 1);
+      advance(-1);
     }
   }
 
+  function frame() {
+    // smooth glide of scrollProgress toward the target (free scroll + snaps)
+    scrollProgress += (targetProgress - scrollProgress) * glideSmooth;
+    if (Math.abs(targetProgress - scrollProgress) < 0.0003) scrollProgress = targetProgress;
+    rafId = requestAnimationFrame(frame);
+  }
+
   onMount(() => {
-    overlayVisible.set(false); // dissolve the navigation veil on arrival
+    overlayVisible.set(false);
+    frame();
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKey);
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKey);
     };
@@ -103,7 +149,7 @@
     <MountainScene {scrollProgress} />
   </div>
 
-  <section class="home__stage home__hero" style="opacity: {heroOpacity}" aria-hidden={heroOpacity < 0.05}>
+  <section class="home__stage home__hero" style="opacity: {heroOpacity}; transform: translateY({heroLift}vh);" aria-hidden={heroOpacity < 0.05}>
     <div class="home__hero-inner">
       <p class="home__brand">Milano-Cortina 2026</p>
       <h1 class="home__title">
