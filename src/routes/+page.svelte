@@ -159,6 +159,28 @@
     }
   }
 
+  function onClick(e: MouseEvent) {
+    // let links/buttons (section cards, header) behave normally
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest('a, button')) return;
+    // lower half = forward, upper half = back (experimental)
+    const dir = e.clientY > window.innerHeight / 2 ? 1 : -1;
+    if (snapIndex < 0) {
+      if (dir > 0) enterTextZone(); // hero -> first text
+      return;
+    }
+    if (dir < 0 && snapIndex === 0) {
+      // clicking back from the first text returns fully to the hero
+      if (performance.now() < snapLockUntil) return;
+      snapIndex = -1;
+      targetProgress = 0;
+      startTween(0, DURATION_HERO);
+      snapLockUntil = performance.now() + SNAP_COOLDOWN;
+      return;
+    }
+    advance(dir);
+  }
+
   function frame() {
     if (tweening) {
       // bounded eased snap: reaches the anchor and STOPS (mountain settles with it)
@@ -182,10 +204,12 @@
     frame();
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKey);
+    window.addEventListener('click', onClick);
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('click', onClick);
       headerState.update((s) => ({ ...s, forceVisible: false }));
     };
   });
