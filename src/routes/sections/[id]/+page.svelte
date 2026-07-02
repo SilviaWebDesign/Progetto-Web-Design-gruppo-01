@@ -610,7 +610,7 @@ async function goToNextSection() {
     z-index: 1;
     background-size: cover;
     background-position: center;
-    opacity: 0.28;
+    opacity: 0.10;
     pointer-events: none;
   }
 
@@ -803,13 +803,14 @@ async function goToNextSection() {
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
-    max-width: 840px;
+    width: 1000px;
+    max-width: 1100px;
     padding: 0 clamp(16px, 4vw, 48px);
     box-sizing: border-box;
     text-align: center;
     text-wrap: balance;
     font-family: var(--font-family-body);
-    font-weight: var(--font-weight-regular);
+    font-weight: var(--font-weight-medium);
     font-size: 24px;
     line-height: 1.5;
     color: var(--color-text-primary);
