@@ -6,26 +6,16 @@
   import SectionChoiceCard from '$lib/components/cards/SectionChoiceCard.svelte';
   import { sections } from '$lib/data/sections';
 
-  // --- scroll math ---
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
-  const rangeProgress = (p: number, s: number, e: number) =>
-    p <= s ? 0 : p >= e ? 1 : (p - s) / (e - s);
-  const easeOutCubic = (t: number) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
-  function stageOpacity(p: number, inS: number, inE: number, outS: number, outE: number) {
-    if (p < inS) return 0;
-    if (p < inE) return easeOutCubic(rangeProgress(p, inS, inE));
-    if (p < outS) return 1;
-    if (p < outE) return 1 - easeOutCubic(rangeProgress(p, outS, outE));
-    return 0;
-  }
+  const easeInOutSine = (t: number) => -(Math.cos(Math.PI * clamp(t, 0, 1)) - 1) / 2;
 
   // --- narrative content ---
- const TEXT1_LINES = [
+  const TEXT1_LINES = [
     'La realtà non è unica e oggettiva,',
     'dipende dai fatti che osservi',
     'e dal punto di vista che scegli.'
   ];
- const TEXT2_LINES = [
+  const TEXT2_LINES = [
     'Attraversa il percorso, tra',
     'sostenibilità, sport e infrastrutture,',
     'e prendi posizione davanti alle',
@@ -36,108 +26,70 @@
     'di Milano-Cortina 2026.'
   ];
 
-  // Text snap anchors = prototype scroll positions (so the mountain lands right).
-  // The hero zone (0 .. FREE_END) is FREE scroll; snapping starts at the texts.
-  const TEXT_ANCHORS = [0.12, 0.34, 0.69, 0.95]; // text1, text2, text3, cards
-  const FREE_END = TEXT_ANCHORS[0];
-  const FREE_SENS = 0.0006; // hero free-scroll sensitivity (per wheel unit)
-  const FREE_STEP = 0.03; // hero free-scroll step for arrow keys
-  const FREE_SMOOTH = 0.06; // chase smoothing for the free hero scroll
-  const DURATION_HERO = 800; // ms, title <-> first text (bounded, clean stop)
-  const DURATION_TEXT = 1300; // ms, text-to-text (softer, bounded, clean stop)
-  const SMOOTH_TEXT = 0.01; // glide for the text-to-text snaps (slower)
-  const SNAP_COOLDOWN = 1100; // ms lock between text snaps
-  const SNAP_THRESHOLD = 60; // wheel delta needed to trigger a snap (higher = less sensitive)
-  const ACCUM_RESET_MS = 180; // reset the wheel accumulator after a scroll pause
+  // mountain scrollProgress at each stage (hero, text1, text2, text3, cards)
+  const STAGE_ANCHORS = [0, 0.12, 0.34, 0.69, 0.95];
+  const LAST_STAGE = STAGE_ANCHORS.length - 1;
 
-  let scrollProgress = $state(0);
-  let targetProgress = 0;
-  let snapIndex = -1; // -1 = free hero zone; 0..3 = locked on a text anchor
-  let snapLockUntil = 0;
-  // bounded tween state for snaps (so the mountain stops exactly when a text lands)
-  let tweening = false;
-  let tweenFrom = 0;
-  let tweenTo = 0;
-  let tweenStart = 0;
-  let tweenDuration = DURATION_TEXT;
-  let wheelAccum = 0; // accumulated wheel delta toward the next snap
+  // --- feel controls (tune these) ---
+  const MOUNTAIN_SPEED = 0.00001; // mountain move speed (progress/ms) — LOWER = slower rotation
+  const MOVE_MIN_MS = 1100; // shortest mountain move
+  const MOVE_MAX_MS = 4500; // longest mountain move (the dive)
+  const FADE_OUT_MS = 300; // text fade-out before the mountain moves
+  const FADE_IN_MS = 550; // text fade-in after the mountain settles
+  const SNAP_THRESHOLD = 60; // wheel delta to trigger a move (higher = less sensitive)
+  const ACCUM_RESET_MS = 180; // reset wheel accumulator after a pause
+
+  let scrollProgress = $state(STAGE_ANCHORS[0]); // -> MountainScene
+  let stage = $state(0); // committed stage
+  let visibleStage = $state(0); // which text is on screen
+  let textOpacity = $state(1); // 0..1 for the visible text
+
+  // transition state machine: idle -> out -> move -> in -> idle
+  let phase: 'idle' | 'out' | 'move' | 'in' = 'idle';
+  let phaseStart = 0;
+  let fromStage = 0;
+  let toStage = 0;
+  let moveFrom = 0;
+  let moveTo = 0;
+  let moveDur = 0;
+
+  let wheelAccum = 0;
   let lastWheelTime = 0;
   let rafId = 0;
 
-  // hero fully fades across its own free zone (0 -> 0 opacity at the first text)
-  let heroOpacity = $derived(1 - easeOutCubic(clamp(scrollProgress / FREE_END, 0, 1)));
-  let heroLift = $derived(easeOutCubic(clamp(scrollProgress / FREE_END, 0, 1)) * -8); // vh
-  let text1Opacity = $derived(stageOpacity(scrollProgress, 0.06, 0.11, 0.13, 0.18));
-  let text2Opacity = $derived(stageOpacity(scrollProgress, 0.28, 0.33, 0.35, 0.4));
-  let text3Opacity = $derived(stageOpacity(scrollProgress, 0.58, 0.68, 0.7, 0.8));
-  let cardsOpacity = $derived(easeOutCubic(rangeProgress(scrollProgress, 0.9, 0.95)));
+  // per-stage opacities derived from the single visible text (no overlap)
+  let heroOpacity = $derived(visibleStage === 0 ? textOpacity : 0);
+  let heroLift = $derived(visibleStage === 0 ? (1 - textOpacity) * -8 : 0); // vh
+  let text1Opacity = $derived(visibleStage === 1 ? textOpacity : 0);
+  let text2Opacity = $derived(visibleStage === 2 ? textOpacity : 0);
+  let text3Opacity = $derived(visibleStage === 3 ? textOpacity : 0);
+  let cardsOpacity = $derived(visibleStage === 4 ? textOpacity : 0);
 
-  // reveal the global header once we reach the cards phase
+  // reveal the global header at the cards stage
   $effect(() => {
-    const inCards = scrollProgress > 0.85;
-    headerState.update((s) => ({ ...s, forceVisible: inCards }));
+    headerState.update((s) => ({ ...s, forceVisible: stage === LAST_STAGE }));
   });
 
-  function startTween(to: number, duration: number) {
-    tweenFrom = scrollProgress;
-    tweenTo = to;
-    tweenStart = performance.now();
-    tweenDuration = duration;
-    tweening = true;
-  }
-
-  function enterTextZone() {
-    snapIndex = 0;
-    startTween(TEXT_ANCHORS[0], DURATION_HERO); // title -> first text
-    snapLockUntil = performance.now() + SNAP_COOLDOWN;
-  }
-
   function advance(dir: number) {
-    // free hero zone (arrow keys use a fixed step)
-    if (snapIndex < 0) {
-      tweening = false; // free chase mode
-      targetProgress = clamp(targetProgress + dir * FREE_STEP, 0, FREE_END);
-      if (targetProgress >= FREE_END) enterTextZone();
-      return;
-    }
-    // text zone: one snap per gesture, cooldown-guarded
-    if (performance.now() < snapLockUntil) return;
-    if (dir > 0 && snapIndex < TEXT_ANCHORS.length - 1) {
-      snapIndex += 1;
-      startTween(TEXT_ANCHORS[snapIndex], DURATION_TEXT); // text-to-text
-      snapLockUntil = performance.now() + SNAP_COOLDOWN;
-    } else if (dir < 0) {
-      if (snapIndex > 0) {
-        snapIndex -= 1;
-        startTween(TEXT_ANCHORS[snapIndex], DURATION_TEXT); // text-to-text
-      } else {
-        snapIndex = -1; // back into the free hero zone
-        targetProgress = FREE_END - FREE_STEP;
-        startTween(targetProgress, DURATION_HERO); // first text -> title
-      }
-      snapLockUntil = performance.now() + SNAP_COOLDOWN;
-    }
+    if (phase !== 'idle') return; // one guided step at a time
+    const to = clamp(stage + dir, 0, LAST_STAGE);
+    if (to === stage) return;
+    fromStage = stage;
+    toStage = to;
+    visibleStage = stage; // fade the current text out first
+    phase = 'out';
+    phaseStart = performance.now();
   }
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
     const dir = Math.sign(e.deltaY);
     if (dir === 0) return;
-    if (snapIndex < 0) {
-      // free scroll: move the target by the wheel delta (clamped for mouse wheels)
-      tweening = false; // free chase mode
-      const d = clamp(e.deltaY, -80, 80);
-      targetProgress = clamp(targetProgress + d * FREE_SENS, 0, FREE_END);
-      if (targetProgress >= FREE_END) enterTextZone();
-      return;
-    }
-    // text zone: require a deliberate scroll (threshold) before snapping,
-    // so an accidental little scroll doesn't jump and you can recover.
     const now = performance.now();
-    if (now - lastWheelTime > ACCUM_RESET_MS) wheelAccum = 0; // decay stale input
+    if (now - lastWheelTime > ACCUM_RESET_MS) wheelAccum = 0;
     lastWheelTime = now;
-    if (now < snapLockUntil) {
-      wheelAccum = 0; // ignore input during the cooldown
+    if (phase !== 'idle') {
+      wheelAccum = 0; // ignore input mid-transition
       return;
     }
     if (wheelAccum !== 0 && Math.sign(e.deltaY) !== Math.sign(wheelAccum)) wheelAccum = 0;
@@ -160,42 +112,42 @@
   }
 
   function onClick(e: MouseEvent) {
-    // let links/buttons (section cards, header) behave normally
     const target = e.target as HTMLElement | null;
-    if (target && target.closest('a, button')) return;
-    // lower half = forward, upper half = back (experimental)
-    const dir = e.clientY > window.innerHeight / 2 ? 1 : -1;
-    if (snapIndex < 0) {
-      if (dir > 0) enterTextZone(); // hero -> first text
-      return;
-    }
-    if (dir < 0 && snapIndex === 0) {
-      // clicking back from the first text returns fully to the hero
-      if (performance.now() < snapLockUntil) return;
-      snapIndex = -1;
-      targetProgress = 0;
-      startTween(0, DURATION_HERO);
-      snapLockUntil = performance.now() + SNAP_COOLDOWN;
-      return;
-    }
-    advance(dir);
+    if (target && target.closest('a, button')) return; // let links/buttons work
+    advance(e.clientY > window.innerHeight / 2 ? 1 : -1);
   }
 
   function frame() {
-    if (tweening) {
-      // bounded eased snap: reaches the anchor and STOPS (mountain settles with it)
-      const t = clamp((performance.now() - tweenStart) / tweenDuration, 0, 1);
-      scrollProgress = tweenFrom + (tweenTo - tweenFrom) * easeOutCubic(t);
+    const now = performance.now();
+    if (phase === 'out') {
+      const t = clamp((now - phaseStart) / FADE_OUT_MS, 0, 1);
+      textOpacity = 1 - easeInOutSine(t);
       if (t >= 1) {
-        scrollProgress = tweenTo;
-        tweening = false;
+        textOpacity = 0;
+        moveFrom = STAGE_ANCHORS[fromStage];
+        moveTo = STAGE_ANCHORS[toStage];
+        moveDur = clamp(Math.abs(moveTo - moveFrom) / MOUNTAIN_SPEED, MOVE_MIN_MS, MOVE_MAX_MS);
+        phase = 'move';
+        phaseStart = now;
       }
-    } else if (snapIndex < 0) {
-      // free hero zone: smoothly chase the wheel-driven target
-      scrollProgress += (targetProgress - scrollProgress) * FREE_SMOOTH;
-      if (Math.abs(targetProgress - scrollProgress) < 0.0003) scrollProgress = targetProgress;
+    } else if (phase === 'move') {
+      const t = clamp((now - phaseStart) / moveDur, 0, 1);
+      scrollProgress = moveFrom + (moveTo - moveFrom) * easeInOutSine(t);
+      if (t >= 1) {
+        scrollProgress = moveTo;
+        stage = toStage;
+        visibleStage = toStage;
+        phase = 'in';
+        phaseStart = now;
+      }
+    } else if (phase === 'in') {
+      const t = clamp((now - phaseStart) / FADE_IN_MS, 0, 1);
+      textOpacity = easeInOutSine(t);
+      if (t >= 1) {
+        textOpacity = 1;
+        phase = 'idle';
+      }
     }
-    // else: locked on a text anchor -> nothing moves (mountain at rest)
     rafId = requestAnimationFrame(frame);
   }
 

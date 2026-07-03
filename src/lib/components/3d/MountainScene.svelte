@@ -8,7 +8,7 @@
   /**
    * Mountain background scene for the home.
    * Driven entirely by `scrollProgress` (0..1):
-   *  - 0 .. ORBIT_END                 camera orbits 360° around the mountain
+   *  - 0 .. ORBIT_END                 camera orbits 1/3 turn around the mountain
    *  - SNOW_DIVE_START .. SNOW_ZONE   dive toward the snow field + whiteout
    *  - SNOW_ZONE .. CARDS_START       white gap (canvas hidden)
    *  - CARDS_START .. CARDS_END       mountain reappears top-down (cards phase)
@@ -20,15 +20,25 @@
   const SNOW_DIVE_START = 0.46;
   const CARDS_START = 0.9;
   const CARDS_END = 0.95;
+  const TEXT1_AT = 0.12; // must match STAGE_ANCHORS[1] in +page.svelte
+  const TEXT2_AT = 0.34; // must match STAGE_ANCHORS[2] in +page.svelte
 
   // --- model + framing constants (tuned to the mountain GLB) ---
   const MOUNTAIN_GLB_URL = '/models/snow-mountain.glb';
   const MOUNTAIN_ROTATION_Y = Math.PI / 2 + 0.12; // slight offset from 90°
   const CAM_Y_LOW = -2.9; // hero camera height
+  const ORBIT_LOOKAT_Y = 1.5; // look-at height above mountain center during orbit
   const TOP_DOWN_YAW = Math.PI / 2; // top-down view yaw (cards phase)
   const CARDS_TILT = 0.8; // cards-phase tilt: 0 = straight down, higher = more angled
-  const ORBIT_EASE_POWER = 1.45; // higher = slower rotation mid-scroll
-  const ORBIT_ARC = Math.PI * 2; // full turn
+  // each entry: [scrollStart, scrollEnd, arc as a fraction of a full turn]
+  const ORBIT_SEGMENTS: Array<[number, number, number]> = [
+    [0, TEXT1_AT, 1 / 6],
+    [TEXT1_AT, TEXT2_AT, 1 / 6],
+    [TEXT2_AT, ORBIT_END, 1 / 6]
+  ];
+  // total arc is less than a full turn now; the dive must still start from the same fixed
+  // orientation as before, so the hero (scroll 0) angle is shifted back by that same amount
+  const ORBIT_ARC = ORBIT_SEGMENTS.reduce((sum, [, , frac]) => sum + frac, 0) * Math.PI * 2;
   const FOG_COLOR = '#ffffff';
 
   let container: HTMLDivElement | undefined = $state(undefined);
@@ -149,7 +159,7 @@
     const snowU = smoothstep(SNOW_DIVE_START, snowZoneAt, scroll);
     const snowZoom = easeInOutCubic(snowU) * 2.15;
     const deepSnowBoost = easeInOutCubic(smoothstep(0.55, 1, snowU)) * 0.85;
-    return 1.2 + orbitZoom + snowZoom + deepSnowBoost;
+    return 2.6 + orbitZoom + snowZoom + deepSnowBoost;
   }
 
   function positionOnOrbit(angle: number, radius: number, cfg: OrbitConfig, target: THREE.Vector3): void {
@@ -160,24 +170,34 @@
     );
   }
 
+  // cfg.startAngle is the fixed orientation the mountain must reach right before the snow
+  // dive; since the visible orbit now covers less than a full turn, the hero (scroll 0)
+  // angle is shifted back by the same amount so the dive always starts from that fixed spot.
+  function orbitAngleAt(scroll: number, cfg: OrbitConfig): number {
+    let angle = cfg.startAngle - ORBIT_ARC;
+    for (const [segStart, segEnd, frac] of ORBIT_SEGMENTS) {
+      const span = Math.max(segEnd - segStart, 0.001);
+      const rawT = clamp((scroll - segStart) / span, 0, 1);
+      angle += frac * Math.PI * 2 * rawT;
+    }
+    return angle;
+  }
+
   function sampleCameraAt(scroll: number): boolean {
     const cfg = orbitConfig;
     if (!cfg) return false;
 
-    const orbitSpan = Math.max(ORBIT_END, 0.01);
-    const endAngle = cfg.startAngle + ORBIT_ARC;
+    const endAngle = cfg.startAngle;
 
     if (scroll <= SNOW_DIVE_START) {
-      const rawT = clamp(scroll / orbitSpan, 0, 1);
-      const orbitT = easeInOutQuint(Math.pow(rawT, ORBIT_EASE_POWER));
-      const angle = cfg.startAngle + ORBIT_ARC * orbitT;
+      const angle = orbitAngleAt(scroll, cfg);
       positionOnOrbit(angle, cfg.radius, cfg, _camPos);
-      _lookAt.copy(cfg.center).add(new THREE.Vector3(0, 2.2, 0));
+      _lookAt.copy(cfg.center).add(new THREE.Vector3(0, ORBIT_LOOKAT_Y, 0));
       return true;
     }
 
     positionOnOrbit(endAngle, cfg.radius, cfg, _orbitEndPos);
-    _orbitEndLookAt.copy(cfg.center).add(new THREE.Vector3(0, 2.2, 0));
+    _orbitEndLookAt.copy(cfg.center).add(new THREE.Vector3(0, ORBIT_LOOKAT_Y, 0));
 
     _snowDir.set(cfg.snowField.x - _orbitEndPos.x, 0, cfg.snowField.z - _orbitEndPos.z);
     if (_snowDir.lengthSq() < 0.01) {
