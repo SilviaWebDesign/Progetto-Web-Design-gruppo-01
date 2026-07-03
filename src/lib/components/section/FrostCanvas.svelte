@@ -110,7 +110,7 @@
   }
 
   /** Allinea il disegno canvas a object-fit: cover + object-position: center dell'img .sharp */
-  function drawImageCover(img: HTMLImageElement, w: number, h: number, bleed = 0) {
+  function drawImageCover(img: HTMLImageElement, w: number, h: number) {
     const iw = img.naturalWidth;
     const ih = img.naturalHeight;
     if (!iw || !ih) return;
@@ -118,17 +118,37 @@
     const scale = Math.max(w / iw, h / ih);
     const dw = iw * scale;
     const dh = ih * scale;
-    const dx = (w - dw) / 2 - bleed;
-    const dy = (h - dh) / 2 - bleed;
+    const dx = (w - dw) / 2;
+    const dy = (h - dh) / 2;
 
-    ctx!.drawImage(img, dx, dy, dw + bleed * 2, dh + bleed * 2);
+    ctx!.drawImage(img, dx, dy, dw, dh);
   }
 
   function drawBlurredImage(w: number, h: number) {
+    // Disegniamo la cover ESATTA (stessa scala/posizione di .sharp) su un
+    // canvas offscreen con `bleed` px di margine, poi lo blurriamo: il
+    // margine dà al blur pixel reali da campionare ai bordi senza dover
+    // "gonfiare" dw/dh, che distorcerebbe/spostrebbe l'immagine visibile.
     const bleed = BLUR_AMOUNT * 2;
+    const dpr    = window.devicePixelRatio || 1;
+    const pw     = w + bleed * 2;
+    const ph     = h + bleed * 2;
+
+    const padded    = document.createElement('canvas');
+    padded.width    = Math.round(pw * dpr);
+    padded.height   = Math.round(ph * dpr);
+    const paddedCtx = padded.getContext('2d')!;
+    paddedCtx.scale(dpr, dpr);
+    paddedCtx.translate(bleed, bleed);
+
+    const mainCtx = ctx;
+    ctx = paddedCtx;
+    drawImageCover(imgEl!, w, h);
+    ctx = mainCtx;
+
     ctx!.save();
     ctx!.filter = `blur(${BLUR_AMOUNT}px) brightness(1.15) saturate(0) contrast(1.08)`;
-    drawImageCover(imgEl!, w, h, bleed);
+    ctx!.drawImage(padded, -bleed, -bleed, pw, ph);
     ctx!.filter = 'none';
     ctx!.restore();
   }
