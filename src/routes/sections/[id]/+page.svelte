@@ -437,7 +437,37 @@ async function goToNextSection() {
       }
     }
 
+    // --- intro snap: settle the frost/phrase scroll onto rest beats ---
+   const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
+    const PHRASE_BEAT = 0.75; // viewport-height fraction where the phrase rests
+    const INTRO_COMMIT = 1.65; // beyond this (x vh) scroll is free (heading to the 3D)
+    let introSnapTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function introSnap() {
+      if (phase !== 'intro') return;
+      const vh = window.innerHeight;
+      const y = window.scrollY;
+      if (y > vh * INTRO_COMMIT) return; // committed to the 3D reveal -> leave it free
+      const beats = [0, vh * PHRASE_BEAT];
+      const nearest = beats.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
+      const dist = Math.abs(nearest - y);
+      if (dist < 4) return;
+      // duration scales with distance -> tiny fixes feel instant, no springy bounce
+      const duration = Math.min(0.7, 0.18 + (dist / vh) * 0.6);
+      get(lenisStore)?.scrollTo(nearest, {
+        duration,
+        easing: (t: number) => Math.sin((t * Math.PI) / 2) // easeOutSine, no overshoot
+      });
+    }
+
     function onWheel(e: WheelEvent) {
+      if (phase === 'intro') {
+        // free scroll, but settle onto the nearest intro beat when it pauses
+        if (introSnapTimer) clearTimeout(introSnapTimer);
+        introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        return;
+      }
+
       if (phase === 'topics') {
         const goingDown = e.deltaY > 0;
         if (!goingDown && currentTopic === 0) {
@@ -490,6 +520,7 @@ async function goToNextSection() {
     return () => {
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('resize', onFeedbackResize);
+      if (introSnapTimer) clearTimeout(introSnapTimer);
       ctx.revert();
       resetHeaderState();
     };
