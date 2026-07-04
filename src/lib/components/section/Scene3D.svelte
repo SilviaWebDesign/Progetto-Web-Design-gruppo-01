@@ -99,7 +99,8 @@
   let manualPulseElapsed = 0;
   const MANUAL_PULSE_DURATION = 1.5;
   const MANUAL_PULSE_AMPLITUDE = 0.4; 
-  const IDLE_PULSE_AMPLITUDE = 0.08; 
+  const IDLE_PULSE_AMPLITUDE = 0.06;
+  const IDLE_PULSE_SPEED = Math.PI * 0.8; // rallentata dell'20% rispetto al ciclo originale (Math.PI)
 
 
   const _hoverNDC = new THREE.Vector2();
@@ -870,7 +871,7 @@
         if (t >= 1) manualPulseActive = false;
       } else {
         particleMat.uniforms.uPulse.value =
-          Math.abs(Math.sin(elapsed * Math.PI)) * IDLE_PULSE_AMPLITUDE;
+          Math.abs(Math.sin(elapsed * IDLE_PULSE_SPEED)) * IDLE_PULSE_AMPLITUDE;
       }
     }
 
