@@ -32,9 +32,9 @@
   const CARDS_TILT = 0.8; // cards-phase tilt: 0 = straight down, higher = more angled
   // each entry: [scrollStart, scrollEnd, arc as a fraction of a full turn]
   const ORBIT_SEGMENTS: Array<[number, number, number]> = [
-    [0, TEXT1_AT, 1 / 6],
-    [TEXT1_AT, TEXT2_AT, 1 / 6],
-    [TEXT2_AT, ORBIT_END, 1 / 6]
+    [0, TEXT1_AT, 1 / 3],
+    [TEXT1_AT, TEXT2_AT, 1 / 3],
+    [TEXT2_AT, ORBIT_END, 1 / 4]
   ];
   // total arc is less than a full turn now; the dive must still start from the same fixed
   // orientation as before, so the hero (scroll 0) angle is shifted back by that same amount
