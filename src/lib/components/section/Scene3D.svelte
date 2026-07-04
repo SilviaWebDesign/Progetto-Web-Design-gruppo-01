@@ -604,17 +604,24 @@
     const resultGroup = source.clone();
     resultGroup.updateMatrixWorld(true);
 
+    // 1) measure the raw model and compute the fit scale
     const box = new THREE.Box3().setFromObject(resultGroup);
-    const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
-    resultGroup.position.sub(center);
 
     const fov = camera.fov * (Math.PI / 180);
     const visibleH = 2 * Math.tan(fov / 2) * camera.position.z;
     const maxDim = Math.max(size.x, size.y, size.z);
     const resultBase = (visibleH * 0.9) / maxDim;
     const settled = modelGroup.scale.x / baseScale;
-    resultGroup.scale.setScalar(resultBase * settled * 1.33);
+    const RESULT_MODEL_SCALE = 1.0; // feedback model size (lower = smaller, fits between the texts)
+    resultGroup.scale.setScalar(resultBase * settled * RESULT_MODEL_SCALE);
+
+    // 2) recenter AFTER scaling, on the SCALED bounding box -> real visual center
+    //    at the origin, regardless of where the GLB's pivot is
+    resultGroup.updateMatrixWorld(true);
+    const scaledBox = new THREE.Box3().setFromObject(resultGroup);
+    const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+    resultGroup.position.sub(scaledCenter);
 
     resultModelMaterials = [];
     resultGroup.traverse((node) => {

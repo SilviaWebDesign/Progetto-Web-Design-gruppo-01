@@ -871,7 +871,7 @@ async function goToNextSection() {
 
   .feedback__body {
     position: absolute;
-    bottom: 110px;
+    bottom: calc(var(--page-gutter) + 80px); /* sits above the CTA */
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
@@ -890,7 +890,7 @@ async function goToNextSection() {
 
   .feedback__cta {
     position: absolute;
-    bottom: 28px;
+    bottom: var(--page-gutter); /* same height as the "Continua" CTA */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
