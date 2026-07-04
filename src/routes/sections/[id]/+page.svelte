@@ -642,10 +642,10 @@ async function goToNextSection() {
         <button
           class="feedback__cta"
           onclick={finishFeedback}
-          aria-label={$allSectionsCompleted ? 'Scopri i tuoi risultati' : 'Passa al prossimo argomento'}
+          aria-label={$allSectionsCompleted ? 'Scopri i tuoi risultati' : 'Vai alla prossima sezione'}
         >
           <span class="feedback__cta-label">
-            {$allSectionsCompleted ? 'Scopri i tuoi risultati' : 'Passa al prossimo argomento'}
+            {$allSectionsCompleted ? 'Scopri i tuoi risultati' : 'Vai alla prossima sezione'}
           </span>
           <svg class="feedback__cta-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
             <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -909,9 +909,8 @@ async function goToNextSection() {
   .feedback__cta-label {
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-medium);
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-wide);
+    font-size: var(--font-size-sm);
+    color: inherit;
   }
 
   .feedback__cta-arrow {
