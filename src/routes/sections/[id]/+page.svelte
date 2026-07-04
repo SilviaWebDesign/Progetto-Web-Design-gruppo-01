@@ -61,7 +61,7 @@
   let phase = $state<Phase>('intro');
   let restored = $state(false);
 
-  const TOPICS_SCALE = 0.56; 
+  const TOPICS_SCALE = 0.48; 
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
@@ -373,8 +373,8 @@ async function goToNextSection() {
       );
       threeTl.to(
         proxy,
-        { scale: TOPICS_SCALE, ease: 'power2.inOut', duration: 0.28, onUpdate: () => scene3d?.setScale(proxy.scale) },
-        0.46
+        { scale: TOPICS_SCALE, ease: 'power2.inOut', duration: 0.46, onUpdate: () => scene3d?.setScale(proxy.scale) },
+        0.06
       );
 
       ScrollTrigger.create({
@@ -597,9 +597,9 @@ async function goToNextSection() {
       class:is-visible={phase === 'topics'}
       disabled={!anyLiked}
       onclick={goNext}
-      aria-label="Continua al prossimo argomento"
+      aria-label={currentTopic === lastTopic ? 'Scopri il tuo risultato' : 'Continua al prossimo argomento'}
     >
-      <span class="continue__label">Continua</span>
+      <span class="continue__label">{currentTopic === lastTopic ? 'Scopri il tuo risultato' : 'Continua'}</span>
       <svg class="continue__arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
         <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
