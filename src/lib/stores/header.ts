@@ -15,15 +15,23 @@ interface HeaderState {
   showSection: boolean;
   /** Force the header visible without real scroll (e.g. home cards phase). */
   forceVisible?: boolean;
+  /** Called when the centered section name is clicked (jump to section start). */
+  onSectionTitleClick?: () => void;
 }
 
 export const headerState = writable<HeaderState>({
   sectionTitle: '',
   showSection: false,
-  forceVisible: false
+  forceVisible: false,
+  onSectionTitleClick: undefined
 });
 
 /** Reset to defaults (e.g. when leaving a section page). */
 export function resetHeaderState() {
-  headerState.set({ sectionTitle: '', showSection: false, forceVisible: false });
+  headerState.set({
+    sectionTitle: '',
+    showSection: false,
+    forceVisible: false,
+    onSectionTitleClick: undefined
+  });
 }

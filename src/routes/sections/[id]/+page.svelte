@@ -268,7 +268,24 @@ function exitTopicsMode() {
     isTransitioning = false;
   }
 
-async function goToNextSection() {
+async function goToSectionStart() {
+    if (isTransitioning) return;
+    if (phase === 'feedback') {
+      await exitFeedbackPhase();
+    }
+    if (phase === 'topics') {
+      phase = 'intro';
+      scene3d?.unsettle(() => {
+        const lenis = get(lenisStore);
+        lenis?.start();
+        lenis?.scrollTo(0, { immediate: true, force: true });
+      });
+      return;
+    }
+    get(lenisStore)?.scrollTo(0, { immediate: true, force: true });
+  }
+
+  async function goToNextSection() {
     get(lenisStore)?.start();
     overlayVisible.set(true);
     await new Promise<void>((r) => setTimeout(r, 400));
@@ -352,7 +369,11 @@ async function goToNextSection() {
 
     history.scrollRestoration = 'manual';
 
-    headerState.update((s) => ({ ...s, sectionTitle: section.title }));
+    headerState.update((s) => ({
+      ...s,
+      sectionTitle: section.title,
+      onSectionTitleClick: goToSectionStart
+    }));
 
     const ctx = gsap.context(() => {
       const heroTl = gsap.timeline({

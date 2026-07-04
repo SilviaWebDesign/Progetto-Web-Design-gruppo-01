@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
   import { overlayVisible } from '$lib/stores/pageTransition';
   import { headerState } from '$lib/stores/header';
   import MountainScene from '$lib/components/3d/MountainScene.svelte';
@@ -68,6 +69,17 @@
   // reveal the global header at the cards stage
   $effect(() => {
     headerState.update((s) => ({ ...s, forceVisible: stage === LAST_STAGE }));
+  });
+
+  // landing on "/#sections" (e.g. from the header logo) jumps straight to
+  // the section-choice cards, skipping the intro narrative.
+  $effect(() => {
+    if (page.url.hash === '#sections') {
+      stage = LAST_STAGE;
+      visibleStage = LAST_STAGE;
+      scrollProgress = STAGE_ANCHORS[LAST_STAGE];
+      textOpacity = 1;
+    }
   });
 
   function advance(dir: number) {

@@ -33,6 +33,11 @@
   let sectionTitle = $derived($headerState.sectionTitle);
   let showSection = $derived($headerState.showSection);
   let forceVisible = $derived($headerState.forceVisible ?? false);
+  let onSectionTitleClick = $derived($headerState.onSectionTitleClick);
+
+  function handleSectionTitleClick() {
+    onSectionTitleClick?.();
+  }
 
   let menuOpen = $state(false);
   let scrolled = $state(false);
@@ -104,12 +109,17 @@
   class:header--menu-open={menuOpen}
 >
   <div class="header__inner">
-  <a class="header__logo" href="/">Quante facce ha una medaglia?</a>
+  <a class="header__logo" href="/#sections">Quante facce ha una medaglia?</a>
 
   {#if sectionTitle}
-    <span class="header__section" class:is-visible={showSection}>
+    <button
+      type="button"
+      class="header__section"
+      class:is-visible={showSection}
+      onclick={handleSectionTitleClick}
+    >
       {sectionTitle}
-    </span>
+    </button>
   {/if}
 
   <button
@@ -268,8 +278,14 @@
     align-items: center;
     height: var(--control-height);
 
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+
     font-family: var(--font-family-display);
-    font-size: var(--font-size-lg);   
+    font-size: var(--font-size-lg);
     font-weight: 900;
     font-variation-settings: 'wght' 900;
     font-stretch: condensed;
@@ -285,6 +301,16 @@
 
   .header__section.is-visible {
     opacity: 1;
+    pointer-events: auto;
+  }
+
+  .header__section:hover {
+    opacity: 0.85;
+  }
+
+  .header__section:focus-visible {
+    outline: 2px solid var(--color-text-primary);
+    outline-offset: 4px;
   }
 
   .header__logo:hover {
