@@ -66,6 +66,16 @@
     }
   }
 
+  /* Pages drive their own scroll (native scroll, Lenis, wheel-jacked
+     narrative, ...). A capturing listener on window runs before any
+     of those bubble-phase listeners, so it can veto the event outright
+     and keep the content behind the overlay from moving. */
+  function blockBackgroundScroll(event: Event) {
+    if (!menuOpen) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
   /* Lock body scroll while the menu drawer is open. */
   $effect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -75,9 +85,13 @@
     updateScrollState();
     window.addEventListener('scroll', updateScrollState, { passive: true });
     window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('wheel', blockBackgroundScroll, { capture: true, passive: false });
+    window.addEventListener('touchmove', blockBackgroundScroll, { capture: true, passive: false });
     return () => {
       window.removeEventListener('scroll', updateScrollState);
       window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('wheel', blockBackgroundScroll, { capture: true });
+      window.removeEventListener('touchmove', blockBackgroundScroll, { capture: true });
     };
   });
 </script>
@@ -87,6 +101,7 @@
   class="header"
   class:header--visible={alwaysVisible || scrolled || menuOpen || forceVisible}
   class:header--always={alwaysVisible}
+  class:header--menu-open={menuOpen}
 >
   <div class="header__inner">
   <a class="header__logo" href="/">Quante facce ha una medaglia?</a>
@@ -122,6 +137,18 @@
   aria-hidden={!menuOpen}
   onclick={(e) => e.target === e.currentTarget && closeMenu()}
 >
+  <button
+    type="button"
+    class="menu-overlay__close"
+    aria-label="Chiudi menu"
+    onclick={closeMenu}
+  >
+    <span class="menu-overlay__close-icon" aria-hidden="true">
+      <span class="menu-overlay__close-line"></span>
+      <span class="menu-overlay__close-line"></span>
+    </span>
+  </button>
+
   <nav id="site-menu" class="menu-overlay__panel" aria-label="Navigazione principale">
     <ul class="menu-overlay__list">
       {#each navLinks as link (link.href)}
@@ -168,6 +195,18 @@
 
   .header--always {
     z-index: 200;
+  }
+
+  /* Hide the bar itself while the menu overlay is open: the overlay
+     provides its own close control, so the header would otherwise
+     just sit there duplicating it. */
+  .header.header--menu-open {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .header.header--menu-open .header__inner {
+    pointer-events: none;
   }
 
   .header__inner {
@@ -280,11 +319,10 @@
     outline-offset: 4px;
   }
 
-  /* When the menu is open, the icon sits over the dark overlay → white. */
   .header__menu-button[aria-expanded='true'] {
-    color: var(--white, #ffffff);
+    color: var(--color-text-primary);
     position: relative;
-    z-index: 200; /* keep the button above the overlay so it stays clickable */
+    z-index: 200;
   }
 
   /* ============================================================
@@ -348,9 +386,12 @@
     z-index: 99;
 
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: center;
 
-    background: rgba(0, 0, 0, 0.85);
+    background: var(--color-background-card);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 
     opacity: 0;
     visibility: hidden;
@@ -371,10 +412,64 @@
     z-index: 199;
   }
 
+  .menu-overlay__close {
+    position: absolute;
+    top: var(--spacing-xl);
+    right: var(--page-gutter);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    z-index: 1;
+  }
+
+  .menu-overlay__close:focus-visible {
+    outline: 2px solid var(--color-text-primary);
+    outline-offset: 4px;
+  }
+
+  .menu-overlay__close-icon {
+    position: relative;
+    display: block;
+    width: 24px;
+    height: 24px;
+  }
+
+  .menu-overlay__close-line {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    width: 20px;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 2px;
+  }
+
+  .menu-overlay__close-line:nth-child(1) {
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  .menu-overlay__close-line:nth-child(2) {
+    transform: translateX(-50%) rotate(-45deg);
+  }
+
   .menu-overlay__panel {
-    width: min(400px, 100%);
-    height: 100%;
-    padding: 80px var(--spacing-xl) var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    padding: var(--spacing-xl) var(--page-gutter);
     box-sizing: border-box;
   }
 
@@ -385,18 +480,20 @@
 
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: var(--spacing-md);
   }
 
   .menu-overlay__link {
     font-family: var(--font-family-display);
-    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-size: var(--font-size-4xl);
     font-weight: 900;
     font-variation-settings: 'wght' 900;
     line-height: 1;
     text-transform: uppercase;
+    text-align: center;
 
-    color: var(--white, #ffffff);
+    color: var(--color-text-primary);
     text-decoration: none;
   }
 
@@ -405,7 +502,7 @@
   }
 
   .menu-overlay__link:focus-visible {
-    outline: 2px solid var(--white, #ffffff);
+    outline: 2px solid var(--color-text-primary);
     outline-offset: 4px;
   }
 </style>
