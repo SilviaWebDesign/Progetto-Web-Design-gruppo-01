@@ -11,7 +11,7 @@ export const sportSection: Section = {
   id: 'sport',
   title: 'Sport',
   description:
-    'Le Olimpiadi vivono grazie a gare, atleti e discipline differenti. Questi eventi possono essere occasioni di crescita e partecipazione oppure competizioni incentrate su visibilità e risultati, in equilibrio tra sportività e spettacolo.',
+    'Le Olimpiadi vivono grazie a gare, atleti\ne discipline differenti. Questi eventi\npossono essere occasioni di crescita\ne partecipazione oppure competizioni\nincentrate su visibilità e risultati,\nin equilibrio tra sportività e spettacolo.',
   object3D: '3d-skater',
   glbPath: '/models/sport-base.glb',
   frostImage: '/images/frost-sport.png',

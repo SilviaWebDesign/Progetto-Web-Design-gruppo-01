@@ -10,8 +10,8 @@ import type { Section } from '$lib/types';
 export const infrastructureSection: Section = {
   id: 'infrastructure',
   title: 'Infrastrutture',
-  description:
-    'Le Olimpiadi prendono forma attraverso cantieri, impianti e collegamenti tra territori. Queste opere possono essere lette come investimenti utili o come interventi costosi, il cui valore dipende da cosa resterà dopo l’evento.',
+ description:
+    'Le Olimpiadi prendono forma attraverso\ncantieri, impianti e collegamenti\ntra territori. Queste opere possono\nessere lette come investimenti utili\no come interventi costosi, il cui valore\ndipende da cosa resterà dopo l’evento.',
   object3D: '3d-crane',
   glbPath: '/models/infrastructure-base.glb',
   frostImage: '/images/frost-infrastructure.png',

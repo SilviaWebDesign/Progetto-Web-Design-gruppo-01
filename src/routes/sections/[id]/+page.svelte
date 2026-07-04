@@ -697,6 +697,7 @@ async function goToNextSection() {
     display: flex;
     align-items: center;
     text-align: left;
+    white-space: pre-line; /* honor the explicit line breaks in the description */
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-bold);
     font-size: 4.5vw;
@@ -762,7 +763,7 @@ async function goToNextSection() {
     text-align: center;
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-bold);
-    font-size: 0.73vw;
+    font-size: var(--font-size-xs); 
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
   }

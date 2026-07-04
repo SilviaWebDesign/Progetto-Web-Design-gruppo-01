@@ -11,7 +11,7 @@ export const sustainabilitySection: Section = {
   id: 'sustainability',
   title: 'Sostenibilità',
   description:
-    'Le Olimpiadi sono accompagnate da scelte che riguardano ambiente e risorse. Questi interventi possono essere letti come attenzione al territorio oppure come iniziative dal valore limitato, misurabile solo nel tempo.',
+    'Le Olimpiadi sono accompagnate da scelte\nche riguardano ambiente e risorse.\nQuesti interventi possono essere letti\ncome attenzione al territorio,\noppure come iniziative dal valore limitato,\nmisurabile solo nel tempo.',
   object3D: '3d-tree',
   glbPath: '/models/sustainability-base.glb',
   frostImage: '/images/frost-sustainability.png',
