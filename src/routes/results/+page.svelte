@@ -81,10 +81,16 @@
 
  <div class="results__ctas">
     <button class="results__cta results__cta--primary" type="button" onclick={goHome}>
-      Torna alla home
+      <span class="results__cta-label">Torna alla home</span>
+      <svg class="results__cta-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
+        <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
-    <button class="results__cta" type="button" onclick={goAbout}>
-      Scopri di più sul progetto
+    <button class="results__cta results__cta--secondary" type="button" onclick={goAbout}>
+      <span class="results__cta-label">Scopri di più sul progetto</span>
+      <svg class="results__cta-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
+        <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
   </div>
 </div>
@@ -160,6 +166,10 @@
   }
 
   .results__cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2xs);
     margin: 0;
     padding: 0;
     border: none;
@@ -169,9 +179,7 @@
     color: var(--color-text-primary);
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-medium);
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: var(--font-size-sm);
     opacity: 0.7;
     transition: opacity 0.25s ease;
   }
@@ -180,7 +188,26 @@
     opacity: 1;
   }
 
+  .results__cta-label {
+    color: inherit;
+  }
+
+  .results__cta-arrow {
+    width: 25px;
+    height: 10px;
+  }
+
   .results__cta--primary {
+    font-weight: var(--font-weight-bold);
+    opacity: 1;
+  }
+
+  .results__cta--primary .results__cta-arrow {
+    transform: rotate(180deg);
+  }
+
+  .results__cta--secondary {
+    color: var(--color-text-primary);
     font-weight: var(--font-weight-bold);
     opacity: 1;
   }
