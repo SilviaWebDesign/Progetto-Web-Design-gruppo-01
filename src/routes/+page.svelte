@@ -178,8 +178,8 @@
   </div>
 
   <section class="home__stage home__hero" style="opacity: {heroOpacity}; transform: translateY({heroLift}vh);" aria-hidden={heroOpacity < 0.05}>
+    <p class="home__brand">Milano-Cortina 2026</p>
     <div class="home__hero-inner">
-      <p class="home__brand">Milano-Cortina 2026</p>
       <h1 class="home__title">
         <span>Quante facce ha</span>
         <span>una medaglia?</span>
@@ -268,8 +268,11 @@
   }
 
   .home__brand {
+    position: absolute;
+    top: 8vh;
+    left: 50%;
+    transform: translateX(-50%);
     margin: 0;
-    transform: translateY(-25px); /* nudge the brand up, above the title */
     font: var(--text-home-subtitle-font);
     color: var(--color-text-primary);
   }
@@ -299,7 +302,6 @@
  .home__hint-arrow {
     width: 25px;
     height: 10px;
-    animation: home-bounce 2s infinite;
   }
 
   .home__hint-text {
@@ -376,9 +378,4 @@
     }
   }
 
-  @keyframes home-bounce {
-    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-    40% { transform: translateY(-6px); }
-    60% { transform: translateY(-3px); }
-  }
 </style>
