@@ -470,14 +470,25 @@ async function goToNextSection() {
 
       if (phase === 'topics') {
         const goingDown = e.deltaY > 0;
-        if (!goingDown && currentTopic === 0) {
-          exitTopicsMode();
+
+        // guards first, so leftover scroll momentum can't fire another action
+        if (wheelLock || isTransitioning) {
+          e.preventDefault();
           return;
         }
-        e.preventDefault();
-        if (wheelLock || isTransitioning) return;
         if (Math.abs(e.deltaY) < 10) return;
 
+        // at the first topic, scrolling up leaves topics mode
+        if (!goingDown && currentTopic === 0) {
+          wheelLock = true;
+          exitTopicsMode();
+          setTimeout(() => {
+            wheelLock = false;
+          }, 1000);
+          return;
+        }
+
+        e.preventDefault();
         wheelLock = true;
         if (goingDown) goNext();
         else goPrev();

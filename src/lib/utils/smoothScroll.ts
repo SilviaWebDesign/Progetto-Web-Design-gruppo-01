@@ -21,6 +21,8 @@ export interface SmoothScroll {
 
 export function initSmoothScroll(): SmoothScroll {
   const lenis = new Lenis({
+    lerp: 0.16, // higher = snappier, less glide (default ~0.1)
+    wheelMultiplier: 0.8, // slightly less scroll momentum per wheel tick
     duration: 1.1,
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     smoothWheel: true
