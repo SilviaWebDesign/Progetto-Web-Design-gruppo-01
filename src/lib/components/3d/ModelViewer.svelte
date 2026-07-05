@@ -22,6 +22,30 @@
   let rafId: number | null = null;
   let ro: ResizeObserver | null = null;
 
+  let fitGroup: THREE.Group | null = null;
+  let modelMaxHoriz = 1;
+  let modelMaxVert = 1;
+
+  // Fit the model on the tighter of width/height. Re-run on resize so a narrow
+  // viewport shrinks the model instead of clipping it at the sides.
+  function applyFit() {
+    if (!fitGroup || !camera || !containerEl) return;
+    const w = containerEl.clientWidth;
+    const h = containerEl.clientHeight;
+    const fov = camera.fov * (Math.PI / 180);
+    const dist = camera.position.z;
+    const visibleH = 2 * Math.tan(fov / 2) * dist;
+    const visibleW = visibleH * (w / h);
+    const scaleByH = (visibleH * fitFactor) / modelMaxVert;
+    const scaleByW = (visibleW * fitFactor) / modelMaxHoriz;
+    fitGroup.scale.setScalar(Math.min(scaleByH, scaleByW));
+    fitGroup.position.set(0, 0, 0);
+    fitGroup.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(fitGroup);
+    const center = box.getCenter(new THREE.Vector3());
+    fitGroup.position.sub(center);
+  }
+
   onMount(() => {
     if (!containerEl || !canvasEl || !src) return;
 
@@ -73,26 +97,14 @@
       const size = box.getSize(new THREE.Vector3());
       gltf.scene.position.sub(center);
 
-      const fov = camera.fov * (Math.PI / 180);
-      const dist = camera.position.z;
-      const visibleH = 2 * Math.tan(fov / 2) * dist;
-      const visibleW = visibleH * (w / h);
       // Worst-case horizontal extent during Y auto-rotation is the XZ diagonal
-      const maxHoriz = Math.hypot(size.x, size.z);
-      const maxVert = Math.max(size.y, Math.max(size.x, size.z));
-      const scaleByH = (visibleH * fitFactor) / maxVert;
-      const scaleByW = (visibleW * fitFactor) / maxHoriz;
-      const scale = Math.min(scaleByH, scaleByW);
+      modelMaxHoriz = Math.hypot(size.x, size.z);
+      modelMaxVert = Math.max(size.y, Math.max(size.x, size.z));
 
       const group = new THREE.Group();
       group.add(gltf.scene);
-      group.scale.setScalar(scale);
-      group.updateMatrixWorld(true);
-
-      // Re-center after scaling so the model sits in the middle of its box
-      const fittedBox = new THREE.Box3().setFromObject(group);
-      const fittedCenter = fittedBox.getCenter(new THREE.Vector3());
-      group.position.sub(fittedCenter);
+      fitGroup = group;
+      applyFit(); // fit to the current viewport (recomputed on resize)
 
       group.traverse((node) => {
         const mesh = node as THREE.Mesh;
@@ -127,6 +139,7 @@
       renderer.setSize(nw, nh);
       camera.aspect = nw / nh;
       camera.updateProjectionMatrix();
+      applyFit(); // re-fit so the model never clips on smaller screens
     });
     ro.observe(containerEl);
 
