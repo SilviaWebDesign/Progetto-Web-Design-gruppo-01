@@ -868,7 +868,7 @@ async function goToSectionStart() {
   }
 
   .continue:hover:not(:disabled) {
-    transform: translateX(-50%) scale(1.08); /* grow label + arrow together */
+    transform: translateX(-50%) scale(1.05); /* grow label + arrow together */
   }
 
   .continue__label {
@@ -888,7 +888,7 @@ async function goToSectionStart() {
   }
 
   .continue:hover .continue__arrow {
-    transform: scale(1.08);
+    transform: scale(1.05);
   }
 
   .continue.is-visible:not(:disabled) .continue__arrow {

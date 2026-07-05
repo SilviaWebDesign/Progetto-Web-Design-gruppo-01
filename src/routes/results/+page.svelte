@@ -194,7 +194,7 @@
   }
 
   .results__cta:hover {
-    transform: scale(1.08);
+    transform: scale(1.05);
   }
 
   .results__cta:hover {
