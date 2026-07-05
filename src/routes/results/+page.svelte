@@ -14,9 +14,9 @@
 
   // Per-model fit factor, tuned by eye so the three read balanced
   const FIT_FACTOR: Record<SectionId, number> = {
-    sustainability: 0.98,
+    sustainability: 0.94,
     sport: 1.12,
-    infrastructure: 0.95
+    infrastructure: 0.98
   };
 
   // OpinionState -> model file variant (same scheme as the section page)
@@ -119,8 +119,8 @@
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.35; /* discreet backdrop */
-    filter: grayscale(1); /* black & white */
+    opacity: 0.9; 
+    filter: grayscale(1) blur(12px); /* b&w + same blur as the section feedback */
   }
 
   .results__models {
@@ -133,8 +133,8 @@
     align-items: center;
     justify-content: center;
     gap: var(--spacing-md);
-    width: min(1200px, 92vw);
-    height: min(58vh, 640px);
+    width: min(1320px, 94vw);
+    height: min(66vh, 720px);
     pointer-events: none;
   }
 
@@ -166,7 +166,7 @@
   .results__ctas {
     position: fixed;
     left: 50%;
-    bottom: 28px;
+    bottom: var(--page-gutter); /* same height as CTAs across the project */
     transform: translateX(-50%);
     z-index: 1;
     display: flex;
