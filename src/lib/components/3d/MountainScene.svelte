@@ -482,5 +482,6 @@
     width: 100%;
     height: 100%;
     background: #ffffff;
+    filter: grayscale(1); /* render the mountain in black & white everywhere */
   }
 </style>

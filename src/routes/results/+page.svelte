@@ -120,7 +120,7 @@
     pointer-events: none;
     z-index: 0;
     opacity: 0.9; 
-    filter: grayscale(1) blur(12px); /* b&w + same blur as the section feedback */
+    filter: blur(12px); /* b&w + same blur as the section feedback */
   }
 
   .results__models {
