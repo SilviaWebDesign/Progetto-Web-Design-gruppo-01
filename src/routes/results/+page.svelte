@@ -187,10 +187,14 @@
     white-space: nowrap;
     color: var(--color-text-primary);
     font-family: var(--font-family-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-bold);
     font-size: var(--font-size-sm);
     opacity: 0.7;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.2s ease;
+  }
+
+  .results__cta:hover {
+    transform: scale(1.08);
   }
 
   .results__cta:hover {
@@ -199,6 +203,7 @@
 
   .results__cta-label {
     color: inherit;
+    text-transform: uppercase;
   }
 
   .results__cta-arrow {

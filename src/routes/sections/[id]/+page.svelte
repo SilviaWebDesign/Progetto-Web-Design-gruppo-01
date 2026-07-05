@@ -832,9 +832,10 @@ async function goToSectionStart() {
     color: var(--color-text-primary);
   }
 
-  .continue {
+   .continue {
     position: absolute;
     z-index: 7;
+    transition: transform 0.2s ease;
     left: 50%;
     bottom: var(--page-gutter);
     transform: translateX(-50%);
@@ -866,16 +867,30 @@ async function goToSectionStart() {
     cursor: default;
   }
 
+  .continue:hover {
+    transform: translateX(-50%) scale(1.08); /* grow label + arrow together */
+  }
+
   .continue__label {
     font-family: var(--font-family-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-bold);
     font-size: var(--font-size-sm);
+    text-transform: uppercase;
     color: inherit;
+  }
+
+  .continue:hover .continue__arrow {
+    transform: scale(1.08);
   }
 
   .continue__arrow {
     width: 25px;
     height: 10px;
+    transition: transform 0.2s ease;
+  }
+
+  .continue:hover .continue__arrow {
+    transform: scale(1.08);
   }
 
   .continue.is-visible:not(:disabled) .continue__arrow {
@@ -925,7 +940,8 @@ async function goToSectionStart() {
 
   .feedback__cta {
     position: absolute;
-    bottom: var(--page-gutter); /* same height as the "Continua" CTA */
+    transition: transform 0.2s ease;
+    bottom: var(--page-gutter);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -940,11 +956,16 @@ async function goToSectionStart() {
     color: var(--color-text-primary);
     pointer-events: auto;
   }
+  
+   .feedback__cta:hover {
+    transform: translateX(-50%) scale(1.08);
+  }
 
   .feedback__cta-label {
     font-family: var(--font-family-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-bold);
     font-size: var(--font-size-sm);
+    text-transform: uppercase;
     color: inherit;
   }
 
