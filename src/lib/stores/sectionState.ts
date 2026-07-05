@@ -55,6 +55,10 @@ function createSectionState() {
     /** Read the saved snapshot for one section, or null if none. */
     read(id: SectionId): SavedSectionState | null {
       return get(store)[id] ?? null;
+    },
+    /** Clear every saved section snapshot (e.g. when restarting the experience). */
+    clear() {
+      store.set(persist({}));
     }
   };
 }

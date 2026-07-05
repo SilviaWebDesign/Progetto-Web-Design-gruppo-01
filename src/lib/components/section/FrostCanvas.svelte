@@ -5,10 +5,10 @@
 
   // ─── Config — identico al prototipo frost-reveal ─────────────────────────
   const FROST_OPACITY            = 1.0;
-  const FROST_VEIL_OPACITY       = 0.42;
+  const FROST_VEIL_OPACITY       = 0.58;
   const GRAIN_OPACITY            = 0.30;
   const SCRATCH_OPACITY          = 0.16;
-  const BLUR_AMOUNT              = 23;
+  const BLUR_AMOUNT              = 30;
   const INITIAL_SNOWFLAKE_DENSITY = 40;
   const INITIAL_SPECKLE_DENSITY   = 600;
   const INITIAL_CRYSTAL_OPACITY   = 0.55;

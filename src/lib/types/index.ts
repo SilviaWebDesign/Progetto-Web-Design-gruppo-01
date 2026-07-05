@@ -101,6 +101,7 @@ export interface Section {
   glbPath: string;  // path to the .glb file in static/ (e.g. '/models/tree.glb')
   frostImage: string;
   modelFitFactor: number;
+  resultScale?: number; // per-section feedback model size (default 1)
   topics: Topic[];
   feedback: Record<OpinionState, string>;
 }

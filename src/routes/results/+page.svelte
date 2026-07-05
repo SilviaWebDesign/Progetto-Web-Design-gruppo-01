@@ -2,18 +2,21 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { progress, SECTION_ORDER } from '$lib/stores/progress';
+  import { sectionState } from '$lib/stores/sectionState';
   import { overlayVisible } from '$lib/stores/pageTransition';
+  import { headerState } from '$lib/stores/header';
   import ModelViewer from '$lib/components/3d/ModelViewer.svelte';
+  import MountainScene from '$lib/components/3d/MountainScene.svelte';
   import type { OpinionState, SectionId } from '$lib/types';
 
-  // Static blurred background — swap for any of our frost images
-  const RESULTS_BG = '/images/frost-infrastructure.png';
+  // Fixed mountain view used as the page background (no whiteout in this range)
+  const RESULT_MOUNTAIN_PROGRESS = 0.15;
 
   // Per-model fit factor, tuned by eye so the three read balanced
- const FIT_FACTOR: Record<SectionId, number> = {
-    sustainability: 0.98,
+  const FIT_FACTOR: Record<SectionId, number> = {
+    sustainability: 0.94,
     sport: 1.12,
-    infrastructure: 0.95
+    infrastructure: 0.98
   };
 
   // OpinionState -> model file variant (same scheme as the section page)
@@ -39,15 +42,21 @@
   );
 
   onMount(() => {
+    // keep the global header visible on this page (no real scroll to trigger it)
+    headerState.update((s) => ({ ...s, forceVisible: true }));
     // Reveal the page by fading the navigation veil out
     const t = setTimeout(() => overlayVisible.set(false), 60);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      headerState.update((s) => ({ ...s, forceVisible: false }));
+    };
   });
 
   async function goHome() {
     overlayVisible.set(true);
     await new Promise<void>((r) => setTimeout(r, 400));
-    progress.reset(); // fresh start next time
+    progress.reset(); // clear per-section results
+    sectionState.clear(); // clear resumable in-section state (phase/scroll/likes)
     goto('/');
   }
 
@@ -64,7 +73,9 @@
 </svelte:head>
 
 <div class="results">
-  <div class="results__bg" style="background-image: url({RESULTS_BG})" aria-hidden="true"></div>
+  <div class="results__bg" aria-hidden="true">
+    <MountainScene scrollProgress={RESULT_MOUNTAIN_PROGRESS} />
+  </div>
 
   <div class="results__models">
     {#each models as model (model.id)}
@@ -106,26 +117,24 @@
   .results__bg {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center;
-    opacity: 0.28;
-    filter: blur(12px);
     pointer-events: none;
     z-index: 0;
+    opacity: 0.9; 
+    filter: blur(12px); /* b&w + same blur as the section feedback */
   }
 
   .results__models {
     position: fixed;
     left: 50%;
-    top: 50%;
+    top: 38%; /* lifted up */
     transform: translate(-50%, -50%);
     z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--spacing-md);
-    width: min(1200px, 92vw);
-    height: min(58vh, 640px);
+    width: min(1320px, 94vw);
+    height: min(66vh, 720px);
     pointer-events: none;
   }
 
@@ -139,7 +148,7 @@
   .results__quote {
     position: fixed;
     left: 50%;
-    bottom: 108px;
+    bottom: 240px;
     transform: translateX(-50%);
     z-index: 1;
     margin: 0;
@@ -157,7 +166,7 @@
   .results__ctas {
     position: fixed;
     left: 50%;
-    bottom: 28px;
+    bottom: var(--page-gutter); /* same height as CTAs across the project */
     transform: translateX(-50%);
     z-index: 1;
     display: flex;
@@ -178,10 +187,14 @@
     white-space: nowrap;
     color: var(--color-text-primary);
     font-family: var(--font-family-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-bold);
     font-size: var(--font-size-sm);
     opacity: 0.7;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.2s ease;
+  }
+
+  .results__cta:hover {
+    transform: scale(1.05);
   }
 
   .results__cta:hover {
@@ -190,6 +203,7 @@
 
   .results__cta-label {
     color: inherit;
+    text-transform: uppercase;
   }
 
   .results__cta-arrow {

@@ -236,7 +236,6 @@
           <SectionChoiceCard {section} href={`/sections/${section.id}`} />
         {/each}
       </div>
-      <p class="home__cards-hint">Scegli una sezione per iniziare ad esplorare</p>
     </div>
   </section>
 </div>

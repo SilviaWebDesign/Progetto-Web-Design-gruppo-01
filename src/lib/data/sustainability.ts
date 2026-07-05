@@ -16,6 +16,7 @@ export const sustainabilitySection: Section = {
   glbPath: '/models/sustainability-base.glb',
   frostImage: '/images/frost-sustainability.png',
   modelFitFactor: 1.0,
+  resultScale: 0.9,
   topics: [
     {
       id: 'venue-reuse',

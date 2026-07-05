@@ -94,13 +94,16 @@
   }
 
   .text-block__source {
+    display: inline-block; /* so the hover scale can apply */
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 0.2em;
+    transition: transform 0.2s ease;
   }
 
   .text-block__source:hover,
   .text-block__source:focus-visible {
+    transform: scale(1.05); /* same grow-on-hover as the CTAs */
     text-decoration-thickness: 2px;
   }
 </style>

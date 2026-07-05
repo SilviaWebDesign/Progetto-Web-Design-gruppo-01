@@ -43,6 +43,7 @@
     api?: Scene3DApi;
     modelSrc: string;
     fitFactor?: number;
+    resultScale?: number;
     resultPaths?: string[];
     onModelLoaded?: () => void;
     orbitEnabled?: boolean;
@@ -51,6 +52,7 @@
     api = $bindable(),
     modelSrc,
     fitFactor = 1,
+    resultScale = 1,
     resultPaths = [],
     onModelLoaded,
     orbitEnabled = false
@@ -604,24 +606,33 @@
     const resultGroup = source.clone();
     resultGroup.updateMatrixWorld(true);
 
-    // 1) measure the raw model and compute the fit scale
-    const box = new THREE.Box3().setFromObject(resultGroup);
-    const size = box.getSize(new THREE.Vector3());
+    // --- fit the model into a "safe box" between the top heading and the bottom text ---
+    // box edges as fractions of viewport height (0 = top, 1 = bottom)
+    const RESULT_BOX_TOP = 0.2; // just below the heading
+    const RESULT_BOX_BOTTOM = 0.72; // just above the body text
+   const RESULT_BOX_FILL = 0.9; // how much of the box the model fills
+    const RESULT_BOX_LIFT = 0.06; // extra upward nudge (fraction of viewport height)
 
     const fov = camera.fov * (Math.PI / 180);
-    const visibleH = 2 * Math.tan(fov / 2) * camera.position.z;
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const resultBase = (visibleH * 0.9) / maxDim;
-    const settled = modelGroup.scale.x / baseScale;
-    const RESULT_MODEL_SCALE = 1.0; // feedback model size (lower = smaller, fits between the texts)
-    resultGroup.scale.setScalar(resultBase * settled * RESULT_MODEL_SCALE);
+    const visibleH = 2 * Math.tan(fov / 2) * camera.position.z; // world height at z = 0
+    const boxWorldH = (RESULT_BOX_BOTTOM - RESULT_BOX_TOP) * visibleH;
+    const boxCenterFrac = (RESULT_BOX_TOP + RESULT_BOX_BOTTOM) / 2;
+    const worldCenterY = (0.5 - boxCenterFrac) * visibleH; // > 0 = above screen center
 
-    // 2) recenter AFTER scaling, on the SCALED bounding box -> real visual center
-    //    at the origin, regardless of where the GLB's pivot is
+    // 1) scale so the model's largest dimension fills the box (rotation-safe)
+    const box = new THREE.Box3().setFromObject(resultGroup);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    resultGroup.scale.setScalar((boxWorldH * RESULT_BOX_FILL * resultScale) / maxDim);
+
+    // 2) recenter on the SCALED bounding box, then lift to the box center
     resultGroup.updateMatrixWorld(true);
     const scaledBox = new THREE.Box3().setFromObject(resultGroup);
     const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+    const RESULT_OPTICAL_LIFT = 0.04; // frazione di boxWorldH, da tarare a occhio
+
     resultGroup.position.sub(scaledCenter);
+    resultGroup.position.y += worldCenterY + RESULT_BOX_LIFT * visibleH;
 
     resultModelMaterials = [];
     resultGroup.traverse((node) => {

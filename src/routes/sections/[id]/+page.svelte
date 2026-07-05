@@ -70,6 +70,19 @@
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
+  // Shuffle each topic's comments once per session, so positive and negative
+  // are interspersed (not always 3 positive then 3 negative). Likes are keyed
+  // by comment id, so the reorder is purely visual.
+  function shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const shuffledComments = section.topics.map((t) => shuffle(t.comments));
+
   let topic = $derived(section.topics[currentTopic]);
   let counter = $derived(`${currentTopic + 1} / ${section.topics.length}`);
   let anyLiked = $derived(Object.values(topicLikes[currentTopic]).some(Boolean));
@@ -552,22 +565,10 @@ async function goToSectionStart() {
         e.preventDefault();
         if (isTransitioning) return;
 
+        // Forward is by clicking the CTA only (no scroll-to-advance).
+        // Scrolling up still returns to the topics (blocking that is a separate item).
         if (e.deltaY < 0) {
-          clearFeedbackAccum();
           exitFeedbackPhase();
-          return;
-        }
-
-        feedbackAccum += e.deltaY;
-        if (feedbackResetTimer) clearTimeout(feedbackResetTimer);
-        feedbackResetTimer = setTimeout(() => {
-          feedbackAccum = 0;
-          feedbackResetTimer = null;
-        }, FEEDBACK_RESET_MS);
-
-        if (feedbackAccum >= FEEDBACK_THRESHOLD) {
-          clearFeedbackAccum();
-          finishFeedback();
         }
       }
     }
@@ -605,6 +606,7 @@ async function goToSectionStart() {
       <Scene3D
         modelSrc={section.glbPath}
         fitFactor={section.modelFitFactor}
+        resultScale={section.resultScale}
         resultPaths={resultPaths}
         orbitEnabled={phase === 'feedback'}
         onModelLoaded={() => (modelLoaded = true)}
@@ -632,7 +634,7 @@ async function goToSectionStart() {
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
         <CardStack
           bind:api={cardStack}
-          comments={topic.comments}
+          comments={shuffledComments[currentTopic]}
           sectionId={section.id}
           likes={topicLikes[currentTopic]}
           onToggleLike={toggleLike}
@@ -818,9 +820,10 @@ async function goToSectionStart() {
     color: var(--color-text-primary);
   }
 
-  .continue {
+   .continue {
     position: absolute;
     z-index: 7;
+    transition: transform 0.2s ease;
     left: 50%;
     bottom: var(--page-gutter);
     transform: translateX(-50%);
@@ -852,16 +855,28 @@ async function goToSectionStart() {
     cursor: default;
   }
 
+  .continue:hover:not(:disabled) {
+    transform: translateX(-50%) scale(1.05); /* grow label + arrow together */
+  }
+
   .continue__label {
     font-family: var(--font-family-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-bold);
     font-size: var(--font-size-sm);
+    text-transform: uppercase;
     color: inherit;
   }
+
+
 
   .continue__arrow {
     width: 25px;
     height: 10px;
+    transition: transform 0.2s ease;
+  }
+
+  .continue:hover .continue__arrow {
+    transform: scale(1.05);
   }
 
   .continue.is-visible:not(:disabled) .continue__arrow {
@@ -877,7 +892,7 @@ async function goToSectionStart() {
 
   .feedback__heading {
     position: absolute;
-    top: 8vh;
+    top: 12vh;
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
@@ -892,7 +907,7 @@ async function goToSectionStart() {
 
   .feedback__body {
     position: absolute;
-    bottom: calc(var(--page-gutter) + 80px); /* sits above the CTA */
+    bottom: calc(var(--page-gutter) + 90px); /* sits above the CTA */
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
@@ -911,7 +926,8 @@ async function goToSectionStart() {
 
   .feedback__cta {
     position: absolute;
-    bottom: var(--page-gutter); /* same height as the "Continua" CTA */
+    transition: transform 0.2s ease;
+    bottom: var(--page-gutter);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -926,11 +942,16 @@ async function goToSectionStart() {
     color: var(--color-text-primary);
     pointer-events: auto;
   }
+  
+   .feedback__cta:hover {
+    transform: translateX(-50%) scale(1.08);
+  }
 
   .feedback__cta-label {
     font-family: var(--font-family-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-bold);
     font-size: var(--font-size-sm);
+    text-transform: uppercase;
     color: inherit;
   }
 
