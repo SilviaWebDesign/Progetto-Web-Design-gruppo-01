@@ -867,7 +867,7 @@ async function goToSectionStart() {
     cursor: default;
   }
 
-  .continue:hover {
+  .continue:hover:not(:disabled) {
     transform: translateX(-50%) scale(1.08); /* grow label + arrow together */
   }
 
@@ -879,9 +879,7 @@ async function goToSectionStart() {
     color: inherit;
   }
 
-  .continue:hover .continue__arrow {
-    transform: scale(1.08);
-  }
+
 
   .continue__arrow {
     width: 25px;
