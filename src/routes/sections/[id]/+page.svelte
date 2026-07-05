@@ -70,6 +70,19 @@
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
+  // Shuffle each topic's comments once per session, so positive and negative
+  // are interspersed (not always 3 positive then 3 negative). Likes are keyed
+  // by comment id, so the reorder is purely visual.
+  function shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const shuffledComments = section.topics.map((t) => shuffle(t.comments));
+
   let topic = $derived(section.topics[currentTopic]);
   let counter = $derived(`${currentTopic + 1} / ${section.topics.length}`);
   let anyLiked = $derived(Object.values(topicLikes[currentTopic]).some(Boolean));
@@ -633,7 +646,7 @@ async function goToSectionStart() {
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
         <CardStack
           bind:api={cardStack}
-          comments={topic.comments}
+          comments={shuffledComments[currentTopic]}
           sectionId={section.id}
           likes={topicLikes[currentTopic]}
           onToggleLike={toggleLike}
