@@ -361,17 +361,6 @@
     width: 100%;
   }
 
-  .home__cards-hint {
-    position: absolute;
-    top: calc(100% - 580px); /* ~100px below the cards, out of flow */
-    left: 0;
-    right: 0;
-    margin: 0;
-    text-align: center;
-    font: var(--text-home-subtitle-font); /* bold 16px (body) */
-    color: var(--color-text-primary);
-  }
-
   .home__cards-grid {
     width: 100%;
     display: grid;
