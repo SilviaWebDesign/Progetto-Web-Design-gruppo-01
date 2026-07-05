@@ -565,22 +565,10 @@ async function goToSectionStart() {
         e.preventDefault();
         if (isTransitioning) return;
 
+        // Forward is by clicking the CTA only (no scroll-to-advance).
+        // Scrolling up still returns to the topics (blocking that is a separate item).
         if (e.deltaY < 0) {
-          clearFeedbackAccum();
           exitFeedbackPhase();
-          return;
-        }
-
-        feedbackAccum += e.deltaY;
-        if (feedbackResetTimer) clearTimeout(feedbackResetTimer);
-        feedbackResetTimer = setTimeout(() => {
-          feedbackAccum = 0;
-          feedbackResetTimer = null;
-        }, FEEDBACK_RESET_MS);
-
-        if (feedbackAccum >= FEEDBACK_THRESHOLD) {
-          clearFeedbackAccum();
-          finishFeedback();
         }
       }
     }
