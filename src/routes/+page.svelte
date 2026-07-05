@@ -378,4 +378,13 @@
     }
   }
 
+  @media (max-width: 1100px) {
+    .home__cards-grid {
+      grid-template-columns: 1fr;
+      justify-content: center;
+      justify-items: center;
+      gap: clamp(10px, 2vh, 24px);
+    }
+  }
+
 </style>
