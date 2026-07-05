@@ -605,6 +605,7 @@ async function goToSectionStart() {
       <Scene3D
         modelSrc={section.glbPath}
         fitFactor={section.modelFitFactor}
+        resultScale={section.resultScale}
         resultPaths={resultPaths}
         orbitEnabled={phase === 'feedback'}
         onModelLoaded={() => (modelLoaded = true)}
@@ -877,7 +878,7 @@ async function goToSectionStart() {
 
   .feedback__heading {
     position: absolute;
-    top: 8vh;
+    top: 12vh;
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
@@ -892,7 +893,7 @@ async function goToSectionStart() {
 
   .feedback__body {
     position: absolute;
-    bottom: calc(var(--page-gutter) + 80px); /* sits above the CTA */
+    bottom: calc(var(--page-gutter) + 90px); /* sits above the CTA */
     left: 50%;
     transform: translateX(-50%);
     margin: 0;

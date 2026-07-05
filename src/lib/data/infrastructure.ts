@@ -16,6 +16,7 @@ export const infrastructureSection: Section = {
   glbPath: '/models/infrastructure-base.glb',
   frostImage: '/images/frost-infrastructure.png',
   modelFitFactor: 1.2,
+  resultScale: 1.1,
   topics: [
     {
       id: 'olympic-village',
