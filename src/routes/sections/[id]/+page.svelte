@@ -203,9 +203,15 @@
     phase = 'topics';
     get(lenisStore)?.stop();
     scene3d?.settle();
-    void tick().then(async () => {
+    void (async () => {
+      await tick();
+      // the CardStack api can bind a frame or two after phase flips to 'topics';
+      // wait for it, otherwise the entrance is skipped and the cards stay hidden (#3)
+      for (let i = 0; i < 20 && !cardStack; i++) {
+        await new Promise((r) => requestAnimationFrame(r));
+      }
       await cardStack?.animateIn();
-    });
+    })();
   }
 
 

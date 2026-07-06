@@ -85,9 +85,16 @@
   }
 
   /** Cards re-enter from the right edge, one after another. */
-  function animateIn(): Promise<void> {
-    const items = getItems();
-    if (!items.length) return Promise.resolve();
+  async function animateIn(): Promise<void> {
+    // On the first entry the {#each} items can land a frame after this is called;
+    // wait for them so the entrance never silently no-ops (cards default to
+    // opacity:0 and would stay invisible). Fixes #3.
+    let items = getItems();
+    for (let i = 0; i < 10 && !items.length; i++) {
+      await new Promise((r) => requestAnimationFrame(r));
+      items = getItems();
+    }
+    if (!items.length) return;
 
     gsap.set(items, { x: 0, opacity: 1 });
     const distances = items.map((item) => exitDistanceFor(item));
