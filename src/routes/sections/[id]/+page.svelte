@@ -174,10 +174,10 @@
     get(lenisStore)?.stop();
     scene3d?.settle();
     void tick().then(async () => {
-      // hide the heading immediately so it isn't seen in place before its animation
-      const h = document.querySelector('.stage__heading') as HTMLElement | null;
+      await cardStack?.animateIn();
     });
   }
+
 
 function exitTopicsMode() {
     if (phase !== 'topics') return;
@@ -608,6 +608,7 @@ async function goToSectionStart() {
           likes={topicLikes[currentTopic]}
           onToggleLike={toggleLike}
           topicId={topic.id}
+          active={phase === 'topics'}
         />
       </div>
     </div>
