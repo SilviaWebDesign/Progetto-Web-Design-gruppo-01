@@ -14,8 +14,8 @@
 
   // Per-model fit factor, tuned by eye so the three read balanced
   const FIT_FACTOR: Record<SectionId, number> = {
-    sustainability: 0.94,
-    sport: 1.12,
+    sustainability: 0.80,
+    sport:  1.0,
     infrastructure: 0.98
   };
 
@@ -143,6 +143,10 @@
     height: 100%;
     min-width: 0;
     pointer-events: auto;
+  }
+
+  .results__model:first-child {
+    transform: translateX(3vw); /* nudge the plant toward the others, without resizing */
   }
 
   .results__quote {
