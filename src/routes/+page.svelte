@@ -369,6 +369,18 @@
  .home__hint-arrow {
     width: 25px;
     height: 10px;
+    animation: home-cta-bounce 1.6s ease-in-out infinite;
+  }
+
+  @keyframes home-cta-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home__hint-arrow {
+      animation: none;
+    }
   }
 
   .home__hint-text {
