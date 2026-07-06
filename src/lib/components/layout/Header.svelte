@@ -109,7 +109,7 @@
   class:header--menu-open={menuOpen}
 >
   <div class="header__inner">
-  <a class="header__logo" href="/#sections">Quante facce ha una medaglia?</a>
+  <a class="header__logo" href="/">Quante facce ha una medaglia?</a>
 
   {#if sectionTitle}
     <button
