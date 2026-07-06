@@ -563,13 +563,7 @@ async function goToSectionStart() {
 
       if (phase === 'feedback') {
         e.preventDefault();
-        if (isTransitioning) return;
-
-        // Forward is by clicking the CTA only (no scroll-to-advance).
-        // Scrolling up still returns to the topics (blocking that is a separate item).
-        if (e.deltaY < 0) {
-          exitFeedbackPhase();
-        }
+        // one-way: scrolling back to the topics is disabled here (approach A).
       }
     }
 
