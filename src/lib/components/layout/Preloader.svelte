@@ -20,7 +20,7 @@
     if (!visible) return;
     const timer = setInterval(() => {
       msgIndex = (msgIndex + 1) % MESSAGES.length;
-    }, 1600);
+    }, 2600);
     return () => clearInterval(timer);
   });
 
@@ -33,7 +33,6 @@
 {#if visible}
   <div class="preloader" role="status" aria-live="polite" transition:fade={{ duration: 400 }}>
     <div class="preloader__inner">
-      <p class="preloader__brand">Milano-Cortina 2026</p>
       <p class="preloader__msg">{MESSAGES[msgIndex]}</p>
       <div class="preloader__bar">
         <div class="preloader__fill" style="width: {pct}%"></div>
