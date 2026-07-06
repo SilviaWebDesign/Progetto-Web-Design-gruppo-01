@@ -16,6 +16,7 @@ export const sportSection: Section = {
   glbPath: '/models/sport-base.glb',
   frostImage: '/images/frost-sport.png',
   modelFitFactor: 0.8,
+  cardFitFactor: 0.52,
   topics: [
     {
       id: 'alysa-liu',

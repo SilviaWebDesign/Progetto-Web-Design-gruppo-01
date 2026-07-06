@@ -38,7 +38,7 @@
     <div class="section-choice-card__object" aria-hidden="true">
       <div class="section-choice-card__glow" aria-hidden="true"></div>
       <div class="section-choice-card__scene">
-        <CardModel src={section.glbPath} paused={isHovered} />
+        <CardModel src={section.glbPath} paused={isHovered} fitFactor={section.cardFitFactor} />
       </div>
     </div>
 
