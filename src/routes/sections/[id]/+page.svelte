@@ -862,7 +862,7 @@ async function goToSectionStart() {
 
   .feedback__heading {
     position: absolute;
-    top: 12vh;
+    top: 14vh;
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
@@ -877,7 +877,7 @@ async function goToSectionStart() {
 
   .feedback__body {
     position: absolute;
-    bottom: calc(var(--page-gutter) + 90px); /* sits above the CTA */
+    bottom: calc(var(--page-gutter) + 60px); /* sits above the CTA */
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
