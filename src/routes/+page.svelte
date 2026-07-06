@@ -5,10 +5,29 @@
   import { headerState } from '$lib/stores/header';
   import MountainScene from '$lib/components/3d/MountainScene.svelte';
   import SectionChoiceCard from '$lib/components/cards/SectionChoiceCard.svelte';
+  import Preloader from '$lib/components/layout/Preloader.svelte';
   import { sections } from '$lib/data/sections';
+  import { preloadAssets } from '$lib/utils/preloadAssets';
+
+  const PRELOAD_URLS = ['/models/snow-mountain.glb', ...sections.map((s) => s.glbPath)];
+  const PRELOAD_FLAG = 'home-assets-ready';
+  const PRELOAD_MIN_MS = 1400; // minimum time the bar is shown (so it always fills)
+  let preloadProgress = $state(0);
+  let preloading = $state(true);
+  let revealed = $state(false); // true one frame after preload ends -> enables fade-in
+  let mountainReady = $state(false); // true after the mountain's first render
 
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
-  const easeInOutSine = (t: number) => -(Math.cos(Math.PI * clamp(t, 0, 1)) - 1) / 2;
+  const easeOutCubic = (t: number) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const rangeProgress = (p: number, s: number, e: number) =>
+    p <= s ? 0 : p >= e ? 1 : (p - s) / (e - s);
+  function stageOpacity(p: number, inS: number, inE: number, outS: number, outE: number) {
+    if (p < inS) return 0;
+    if (p < inE) return easeOutCubic(rangeProgress(p, inS, inE));
+    if (p < outS) return 1;
+    if (p < outE) return 1 - easeOutCubic(rangeProgress(p, outS, outE));
+    return 0;
+  }
 
   // --- narrative content ---
   const TEXT1_LINES = [
@@ -28,138 +47,120 @@
   ];
 
   // mountain scrollProgress at each stage (hero, text1, text2, text3, cards)
-  const STAGE_ANCHORS = [0, 0.12, 0.34, 0.69, 0.95];
-  const LAST_STAGE = STAGE_ANCHORS.length - 1;
+  const ANCHORS = [0, 0.12, 0.34, 0.69, 0.95];
+  const LAST = ANCHORS.length - 1;
 
   // --- feel controls (tune these) ---
-  const MOUNTAIN_SPEED = 0.00001; // mountain move speed (progress/ms) — LOWER = slower rotation
-  const MOVE_MIN_MS = 1100; // shortest mountain move
-  const MOVE_MAX_MS = 4500; // longest mountain move (the dive)
-  const FADE_OUT_MS = 300; // text fade-out before the mountain moves
-  const FADE_IN_MS = 550; // text fade-in after the mountain settles
-  const SNAP_THRESHOLD = 60; // wheel delta to trigger a move (higher = less sensitive)
-  const ACCUM_RESET_MS = 180; // reset wheel accumulator after a pause
+  const WHEEL_SENS = 0.00035; // free-scroll speed (progress per wheel unit)
+  const SMOOTH = 0.09; // how fast scrollProgress chases the target
+  const SNAP_IDLE_MS = 140; // pause after which it magnetically settles on a text
+  const GESTURE_GAP_MS = 220; // pause that counts as "lifting the finger" (new gesture)
 
-  let scrollProgress = $state(STAGE_ANCHORS[0]); // -> MountainScene
-  let stage = $state(0); // committed stage
-  let visibleStage = $state(0); // which text is on screen
-  let textOpacity = $state(1); // 0..1 for the visible text
+  const WHITE_ZONE_AT = 0.66; // just inside the white zone, BEFORE the text-3 anchor (0.69)
+  const TEXT3_FADE_MS = 900; // soft, time-based fade for the final text
 
-  // transition state machine: idle -> out -> move -> in -> idle
-  let phase: 'idle' | 'out' | 'move' | 'in' = 'idle';
-  let phaseStart = 0;
-  let fromStage = 0;
-  let toStage = 0;
-  let moveFrom = 0;
-  let moveTo = 0;
-  let moveDur = 0;
-
-  let wheelAccum = 0;
-  let lastWheelTime = 0;
+  let scrollProgress = $state(0); // -> MountainScene + texts
+  let text3Fade = $state(0); // 0..1 time-based opacity of the final text
+  let target = 0; // where scrollProgress eases toward
+  let gestureAnchor = 0; // anchor the current gesture may move ONE step from
+  let lastWheel = 0;
+  let snapTimer: ReturnType<typeof setTimeout> | null = null;
   let rafId = 0;
 
-  // per-stage opacities derived from the single visible text (no overlap)
-  let heroOpacity = $derived(visibleStage === 0 ? textOpacity : 0);
-  let heroLift = $derived(visibleStage === 0 ? (1 - textOpacity) * -8 : 0); // vh
-  let text1Opacity = $derived(visibleStage === 1 ? textOpacity : 0);
-  let text2Opacity = $derived(visibleStage === 2 ? textOpacity : 0);
-  let text3Opacity = $derived(visibleStage === 3 ? textOpacity : 0);
-  let cardsOpacity = $derived(visibleStage === 4 ? textOpacity : 0);
+  // continuous cross-fade opacities from scrollProgress (prototype curves)
+  let heroOpacity = $derived(1 - easeOutCubic(clamp(scrollProgress / ANCHORS[1], 0, 1)));
+  let heroLift = $derived(easeOutCubic(clamp(scrollProgress / ANCHORS[1], 0, 1)) * -8); // vh
+  let text1Opacity = $derived(stageOpacity(scrollProgress, 0.06, 0.11, 0.13, 0.18));
+  let text2Opacity = $derived(stageOpacity(scrollProgress, 0.28, 0.33, 0.35, 0.4));
+  // scroll-driven presence (like two versions ago) × a soft time-based fade-in
+  let text3Opacity = $derived(stageOpacity(scrollProgress, 0.6, 0.68, 0.86, 0.94) * text3Fade);
+  let cardsOpacity = $derived(easeOutCubic(rangeProgress(scrollProgress, 0.9, 0.95)));
 
-  // reveal the global header at the cards stage
+  // show the final CTA while the last text is up (and cards not yet in)
+  let showFinalCta = $derived(text3Opacity > 0.6 && cardsOpacity < 0.05);
+
   $effect(() => {
-    headerState.update((s) => ({ ...s, forceVisible: stage === LAST_STAGE }));
+    // header appears from the first text onward (stays hidden only on the hero)
+    headerState.update((s) => ({ ...s, forceVisible: scrollProgress > 0.06 }));
   });
 
-  // landing on "/#sections" (e.g. from the header logo) jumps straight to
-  // the section-choice cards, skipping the intro narrative.
+  // landing on "/#sections" jumps straight to the cards
   $effect(() => {
     if (page.url.hash === '#sections') {
-      stage = LAST_STAGE;
-      visibleStage = LAST_STAGE;
-      scrollProgress = STAGE_ANCHORS[LAST_STAGE];
-      textOpacity = 1;
+      target = ANCHORS[LAST];
+      scrollProgress = ANCHORS[LAST];
+      gestureAnchor = LAST;
     }
   });
 
-  function advance(dir: number) {
-    if (phase !== 'idle') return; // one guided step at a time
-    const to = clamp(stage + dir, 0, LAST_STAGE);
-    if (to === stage) return;
-    fromStage = stage;
-    toStage = to;
-    visibleStage = stage; // fade the current text out first
-    phase = 'out';
-    phaseStart = performance.now();
+  function nearestAnchorIndex(p: number) {
+    let best = 0;
+    for (let i = 1; i < ANCHORS.length; i++) {
+      if (Math.abs(ANCHORS[i] - p) < Math.abs(ANCHORS[best] - p)) best = i;
+    }
+    return best;
+  }
+
+  function scheduleSnap() {
+    if (snapTimer) clearTimeout(snapTimer);
+    snapTimer = setTimeout(() => {
+      target = ANCHORS[nearestAnchorIndex(target)]; // magnetic settle onto a text
+    }, SNAP_IDLE_MS);
   }
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    const dir = Math.sign(e.deltaY);
-    if (dir === 0) return;
     const now = performance.now();
-    if (now - lastWheelTime > ACCUM_RESET_MS) wheelAccum = 0;
-    lastWheelTime = now;
-    if (phase !== 'idle') {
-      wheelAccum = 0; // ignore input mid-transition
-      return;
-    }
-    if (wheelAccum !== 0 && Math.sign(e.deltaY) !== Math.sign(wheelAccum)) wheelAccum = 0;
-    wheelAccum += e.deltaY;
-    if (Math.abs(wheelAccum) >= SNAP_THRESHOLD) {
-      const d = Math.sign(wheelAccum);
-      wheelAccum = 0;
-      advance(d);
-    }
+    // a long-enough pause = "finger lifted" -> start a fresh gesture from here
+    if (now - lastWheel > GESTURE_GAP_MS) gestureAnchor = nearestAnchorIndex(scrollProgress);
+    lastWheel = now;
+
+    // resistance: one gesture may move at most one anchor step (a "check-point")
+    const lo = ANCHORS[Math.max(0, gestureAnchor - 1)];
+    const hi = ANCHORS[Math.min(LAST, gestureAnchor + 1)];
+
+    const d = clamp(e.deltaY, -80, 80);
+    target = clamp(target + d * WHEEL_SENS, lo, hi);
+    scheduleSnap();
+  }
+
+  function step(dir: number) {
+    const i = clamp(nearestAnchorIndex(target) + dir, 0, LAST);
+    gestureAnchor = i;
+    target = ANCHORS[i];
   }
 
   function onKey(e: KeyboardEvent) {
     if (e.key === 'ArrowDown' || e.key === 'PageDown') {
       e.preventDefault();
-      advance(1);
+      step(1);
     } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
       e.preventDefault();
-      advance(-1);
+      step(-1);
     }
   }
 
-  function onClick(e: MouseEvent) {
-    const target = e.target as HTMLElement | null;
-    if (target && target.closest('a, button')) return; // let links/buttons work
-    advance(e.clientY > window.innerHeight / 2 ? 1 : -1);
+  function goToCards() {
+    gestureAnchor = LAST;
+    target = ANCHORS[LAST];
   }
+
+  let lastFrame = 0;
 
   function frame() {
     const now = performance.now();
-    if (phase === 'out') {
-      const t = clamp((now - phaseStart) / FADE_OUT_MS, 0, 1);
-      textOpacity = 1 - easeInOutSine(t);
-      if (t >= 1) {
-        textOpacity = 0;
-        moveFrom = STAGE_ANCHORS[fromStage];
-        moveTo = STAGE_ANCHORS[toStage];
-        moveDur = clamp(Math.abs(moveTo - moveFrom) / MOUNTAIN_SPEED, MOVE_MIN_MS, MOVE_MAX_MS);
-        phase = 'move';
-        phaseStart = now;
-      }
-    } else if (phase === 'move') {
-      const t = clamp((now - phaseStart) / moveDur, 0, 1);
-      scrollProgress = moveFrom + (moveTo - moveFrom) * easeInOutSine(t);
-      if (t >= 1) {
-        scrollProgress = moveTo;
-        stage = toStage;
-        visibleStage = toStage;
-        phase = 'in';
-        phaseStart = now;
-      }
-    } else if (phase === 'in') {
-      const t = clamp((now - phaseStart) / FADE_IN_MS, 0, 1);
-      textOpacity = easeInOutSine(t);
-      if (t >= 1) {
-        textOpacity = 1;
-        phase = 'idle';
-      }
-    }
+    const dt = lastFrame ? now - lastFrame : 16;
+    lastFrame = now;
+
+    scrollProgress += (target - scrollProgress) * SMOOTH;
+    if (Math.abs(target - scrollProgress) < 0.0002) scrollProgress = target;
+
+    // soft fade-in once we've entered the white zone (so the text eases in
+    // instead of popping); eases back out when we leave it
+    const inWhiteZone = scrollProgress >= WHITE_ZONE_AT;
+    const dir = inWhiteZone ? 1 : -1;
+    text3Fade = clamp(text3Fade + (dir * dt) / TEXT3_FADE_MS, 0, 1);
+
     rafId = requestAnimationFrame(frame);
   }
 
@@ -168,12 +169,38 @@
     frame();
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKey);
-    window.addEventListener('click', onClick);
+
+    // preload heavy 3D assets once per session (guarantees they're cached
+    // before the home is revealed, even on slow connections)
+    if (sessionStorage.getItem(PRELOAD_FLAG)) {
+      preloading = false;
+      requestAnimationFrame(() => (revealed = true));
+    } else {
+      // animate the bar over at least PRELOAD_MIN_MS, and never faster than
+      // the real download; whichever finishes last hides the overlay
+      const start = performance.now();
+      let realProgress = 0;
+      const load = preloadAssets(PRELOAD_URLS, (p) => (realProgress = p));
+
+      const tick = () => {
+        const timed = clamp((performance.now() - start) / PRELOAD_MIN_MS, 0, 1);
+        preloadProgress = Math.min(timed, Math.max(realProgress, timed * 0.15 + realProgress * 0.85));
+        if (preloadProgress < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          sessionStorage.setItem(PRELOAD_FLAG, '1');
+          preloading = false;
+          requestAnimationFrame(() => (revealed = true));
+        }
+      };
+      load.finally(() => {}); // ensure caching proceeds
+      requestAnimationFrame(tick);
+    }
     return () => {
       cancelAnimationFrame(rafId);
+      if (snapTimer) clearTimeout(snapTimer);
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKey);
-      window.removeEventListener('click', onClick);
       headerState.update((s) => ({ ...s, forceVisible: false }));
     };
   });
@@ -183,10 +210,10 @@
   <title>Quante facce ha una medaglia?</title>
 </svelte:head>
 
-<div class="home">
+<div class="home" class:is-revealed={revealed}>
   <!-- 3D mountain background, driven by scrollProgress -->
-  <div class="home__bg" aria-hidden="true">
-    <MountainScene {scrollProgress} />
+  <div class="home__bg" class:is-ready={mountainReady} aria-hidden="true">
+    {#if !preloading}<MountainScene {scrollProgress} onReady={() => (mountainReady = true)} />{/if}
   </div>
 
   <section class="home__stage home__hero" style="opacity: {heroOpacity}; transform: translateY({heroLift}vh);" aria-hidden={heroOpacity < 0.05}>
@@ -223,13 +250,21 @@
     </div>
   </section>
 
-  <section class="home__stage home__text home__text--center" style="opacity: {text3Opacity}" aria-hidden={text3Opacity < 0.05}>
+  <section class="home__stage home__text home__text--center" class:is-active={showFinalCta} style="opacity: {text3Opacity}" aria-hidden={text3Opacity < 0.05}>
     <div class="home__lines">
       {#each TEXT3_LINES as line}<p class="home__line">{line}</p>{/each}
     </div>
+    {#if showFinalCta}
+      <button class="home__final-cta" onclick={goToCards} aria-label="Scopri le sezioni">
+        <span>Scopri le sezioni</span>
+        <svg class="home__hint-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
+          <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    {/if}
   </section>
 
-  <section class="home__stage home__cards" style="opacity: {cardsOpacity}" aria-hidden={cardsOpacity < 0.05}>
+  <section class="home__stage home__cards" class:is-active={cardsOpacity > 0.9} style="opacity: {cardsOpacity}" aria-hidden={cardsOpacity < 0.05}>
     <div class="home__cards-block">
       <div class="home__cards-grid">
         {#each sections as section (section.id)}
@@ -239,6 +274,8 @@
     </div>
   </section>
 </div>
+
+<Preloader progress={preloadProgress} visible={preloading} />
 
 <style>
   .home {
@@ -255,10 +292,29 @@
     background: var(--color-background-page);
   }
 
+  .home {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+
+  .home.is-revealed {
+    opacity: 1;
+  }
+
+  .home__bg {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+
+  .home__bg.is-ready {
+    opacity: 1;
+  }
+
   /* Every stage is a fixed full-screen layer; they cross-fade via opacity */
   .home__stage {
     position: fixed;
     inset: 0;
+    pointer-events: none;
     z-index: 1;
     display: flex;
     flex-direction: column;
@@ -317,7 +373,8 @@
 
   .home__hint-text {
     font: var(--text-home-subtitle-font);
-    font-weight: var(--font-weight-regular);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
   }
 
   /* Narrative texts: bottom-aligned like the hero title (prototype positions) */
@@ -356,20 +413,13 @@
     justify-content: center;
   }
 
+  .home__stage.is-active {
+    pointer-events: auto; /* cards clickable only when fully shown */
+  }
+
   .home__cards-block {
     position: relative;
     width: 100%;
-  }
-
-  .home__cards-hint {
-    position: absolute;
-    top: calc(100% - 580px); /* ~100px below the cards, out of flow */
-    left: 0;
-    right: 0;
-    margin: 0;
-    text-align: center;
-    font: var(--text-home-subtitle-font); /* bold 16px (body) */
-    color: var(--color-text-primary);
   }
 
   .home__cards-grid {
@@ -389,4 +439,36 @@
     }
   }
 
+  @media (max-width: 1100px) {
+    .home__cards-grid {
+      grid-template-columns: 1fr;
+      justify-content: center;
+      justify-items: center;
+      gap: clamp(10px, 2vh, 24px);
+    }
+  }
+
+.home__final-cta {
+    position: absolute;
+    left: 50%;
+    bottom: var(--page-gutter); /* same height as the other CTAs */
+    transform: translateX(-50%);
+    margin: 0;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-3xs);
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    transition: transform 0.2s ease;
+  }
+  .home__final-cta:hover {
+    transform: translateX(-50%) scale(1.08); /* keep centering while growing */
+  }
 </style>

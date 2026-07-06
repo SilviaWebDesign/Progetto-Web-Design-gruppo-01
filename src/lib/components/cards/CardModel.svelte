@@ -31,11 +31,6 @@
   let loaded = $state(false);
   const clock = new THREE.Clock();
 
-  // keep the latest `paused` readable inside the rAF loop
-  let pausedRef = paused;
-  $effect(() => {
-    pausedRef = paused;
-  });
 
  function fitModel(object: THREE.Object3D) {
     // 1) measure the raw model and scale it to fill the frame
@@ -90,7 +85,7 @@
     rafId = requestAnimationFrame(animate);
     if (!renderer || !scene || !camera) return;
     const dt = clock.getDelta();
-    if (modelRoot && !pausedRef) modelRoot.rotation.y += ROTATION_SPEED * dt;
+    if (modelRoot && !paused) modelRoot.rotation.y += ROTATION_SPEED * dt;
     renderer.render(scene, camera);
   }
 
