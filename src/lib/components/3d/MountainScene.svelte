@@ -230,7 +230,7 @@
 
   function applySnowWhiteout(scroll: number): void {
     const whiteT = smoothstep(SNOW_DIVE_START, snowZoneAt, scroll);
-    const insideT = smoothstep(0.3, 0.96, whiteT);
+    const insideT = smoothstep(0.08, 0.34, whiteT);
     if (!snowMountainModel) return;
 
     snowMountainModel.visible = insideT < 0.97;
