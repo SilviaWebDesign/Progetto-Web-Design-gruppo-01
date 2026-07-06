@@ -46,7 +46,11 @@
   const SNAP_IDLE_MS = 140; // pause after which it magnetically settles on a text
   const GESTURE_GAP_MS = 220; // pause that counts as "lifting the finger" (new gesture)
 
+  const WHITE_ZONE_AT = 0.66; // just inside the white zone, BEFORE the text-3 anchor (0.69)
+  const TEXT3_FADE_MS = 900; // soft, time-based fade for the final text
+
   let scrollProgress = $state(0); // -> MountainScene + texts
+  let text3Fade = $state(0); // 0..1 time-based opacity of the final text
   let target = 0; // where scrollProgress eases toward
   let gestureAnchor = 0; // anchor the current gesture may move ONE step from
   let lastWheel = 0;
@@ -58,14 +62,16 @@
   let heroLift = $derived(easeOutCubic(clamp(scrollProgress / ANCHORS[1], 0, 1)) * -8); // vh
   let text1Opacity = $derived(stageOpacity(scrollProgress, 0.06, 0.11, 0.13, 0.18));
   let text2Opacity = $derived(stageOpacity(scrollProgress, 0.28, 0.33, 0.35, 0.4));
-  let text3Opacity = $derived(stageOpacity(scrollProgress, 0.58, 0.68, 0.72, 0.86));
+  // scroll-driven presence (like two versions ago) × a soft time-based fade-in
+  let text3Opacity = $derived(stageOpacity(scrollProgress, 0.6, 0.68, 0.86, 0.94) * text3Fade);
   let cardsOpacity = $derived(easeOutCubic(rangeProgress(scrollProgress, 0.9, 0.95)));
 
   // show the final CTA while the last text is up (and cards not yet in)
   let showFinalCta = $derived(text3Opacity > 0.6 && cardsOpacity < 0.05);
 
   $effect(() => {
-    headerState.update((s) => ({ ...s, forceVisible: scrollProgress > 0.9 }));
+    // header appears from the first text onward (stays hidden only on the hero)
+    headerState.update((s) => ({ ...s, forceVisible: scrollProgress > 0.06 }));
   });
 
   // landing on "/#sections" jumps straight to the cards
@@ -129,9 +135,22 @@
     target = ANCHORS[LAST];
   }
 
+  let lastFrame = 0;
+
   function frame() {
+    const now = performance.now();
+    const dt = lastFrame ? now - lastFrame : 16;
+    lastFrame = now;
+
     scrollProgress += (target - scrollProgress) * SMOOTH;
     if (Math.abs(target - scrollProgress) < 0.0002) scrollProgress = target;
+
+    // soft fade-in once we've entered the white zone (so the text eases in
+    // instead of popping); eases back out when we leave it
+    const inWhiteZone = scrollProgress >= WHITE_ZONE_AT;
+    const dir = inWhiteZone ? 1 : -1;
+    text3Fade = clamp(text3Fade + (dir * dt) / TEXT3_FADE_MS, 0, 1);
+
     rafId = requestAnimationFrame(frame);
   }
 
@@ -297,7 +316,8 @@
 
   .home__hint-text {
     font: var(--text-home-subtitle-font);
-    font-weight: var(--font-weight-regular);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
   }
 
   /* Narrative texts: bottom-aligned like the hero title (prototype positions) */
@@ -372,7 +392,11 @@
   }
 
 .home__final-cta {
-    margin-top: var(--spacing-lg);
+    position: absolute;
+    left: 50%;
+    bottom: var(--page-gutter); /* same height as the other CTAs */
+    transform: translateX(-50%);
+    margin: 0;
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -388,6 +412,6 @@
     transition: transform 0.2s ease;
   }
   .home__final-cta:hover {
-    transform: scale(1.08);
+    transform: translateX(-50%) scale(1.08); /* keep centering while growing */
   }
 </style>
