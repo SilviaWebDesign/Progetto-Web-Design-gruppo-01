@@ -62,11 +62,6 @@
   let restored = $state(false);
 
   const TOPICS_SCALE = 0.48; // compacted model size in topics (lower = smaller, less overlap)
-  const HEADING_IN_SCALE = 1.8; // comment title: starting (centered) size
-  const HEADING_FADE_MS = 1050; // comment title: soft fade-in
-  const HEADING_APPEAR_DELAY_MS = 350;
-  const HEADING_HOLD_MS = 2000; // comment title: it repositions this long after appearing
-  const HEADING_IN_MS = 1200; // comment title: reposition/resize duration
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
@@ -172,23 +167,6 @@
     isTransitioning = false;
   }
 
-  function animateHeadingIn() {
-    const el = document.querySelector('.stage__heading') as HTMLElement | null;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    // dx = how far to move it to be horizontally centered in the viewport
-    const dx = window.innerWidth / 2 - (rect.left + rect.width / 2);
-    gsap.set(el, { x: dx, scale: HEADING_IN_SCALE, opacity: 0, transformOrigin: 'center center' });
-    const tl = gsap.timeline({ delay: HEADING_APPEAR_DELAY_MS / 1000 });
-    // 1) soft fade in — big and centered
-    tl.to(el, { opacity: 1, duration: HEADING_FADE_MS / 1000, ease: 'sine.inOut' }, 0);
-    // 2) after the hold, glide to its normal spot and size
-    tl.to(
-      el,
-      { x: 0, scale: 1, duration: HEADING_IN_MS / 1000, ease: 'power3.inOut' },
-      HEADING_HOLD_MS / 1000
-    );
-  }
 
   function enterTopicsMode() {
     if (phase !== 'intro') return;
@@ -198,9 +176,6 @@
     void tick().then(async () => {
       // hide the heading immediately so it isn't seen in place before its animation
       const h = document.querySelector('.stage__heading') as HTMLElement | null;
-      if (h) gsap.set(h, { opacity: 0 });
-      await cardStack?.animateIn(); // wait for the cards (and text) to settle
-      animateHeadingIn();
     });
   }
 
