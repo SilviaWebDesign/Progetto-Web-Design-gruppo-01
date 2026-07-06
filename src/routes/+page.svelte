@@ -362,7 +362,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-3xs);
+    gap: var(--spacing-2xs);
     color: var(--color-text-primary);
   }
 
@@ -457,7 +457,7 @@
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-3xs);
+    gap: var(--spacing-2xs);
     border: none;
     background: none;
     cursor: pointer;
