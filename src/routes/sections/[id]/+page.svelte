@@ -501,20 +501,42 @@ async function goToSectionStart() {
    const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
     const PHRASE_BEAT = 0.75; // viewport-height fraction where the phrase rests
     const INTRO_COMMIT = 1.65; // beyond this (x vh) scroll is free (heading to the 3D)
+    const INTRO_COMMIT_FRAC = 0.2; // #11 — how far into a gap a deliberate scroll must go
+                                   // to commit to the next beat (lower = more forgiving/forward)
     let introSnapTimer: ReturnType<typeof setTimeout> | null = null;
+    let introDir = 1; // last intro wheel direction: 1 = down, -1 = up
 
     function introSnap() {
       if (phase !== 'intro') return;
       const vh = window.innerHeight;
       const y = window.scrollY;
       if (y > vh * INTRO_COMMIT) return; // committed to the 3D reveal -> leave it free
-      const beats = [0, vh * PHRASE_BEAT];
-      const nearest = beats.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
-      const dist = Math.abs(nearest - y);
+
+      const title = 0;
+      const phraseY = vh * PHRASE_BEAT;
+
+      // Directional commit (like the home scroll): a deliberate scroll settles onto
+      // the beat it heads TOWARD, instead of the geometrically nearest one — so a
+      // small downward move no longer gets thrown back to the title (#11).
+      let target: number;
+      if (y <= phraseY) {
+        const progress = (y - title) / (phraseY - title || 1); // 0..1 within the gap
+        target =
+          introDir > 0
+            ? progress > INTRO_COMMIT_FRAC ? phraseY : title
+            : progress < 1 - INTRO_COMMIT_FRAC ? title : phraseY;
+      } else {
+        // past the phrase, in the run-up to the 3D reveal:
+        // scrolling down flows on (no snap-back); scrolling up settles on the phrase
+        if (introDir > 0) return;
+        target = phraseY;
+      }
+
+      const dist = Math.abs(target - y);
       if (dist < 4) return;
       // duration scales with distance -> tiny fixes feel instant, no springy bounce
       const duration = Math.min(0.7, 0.18 + (dist / vh) * 0.6);
-      get(lenisStore)?.scrollTo(nearest, {
+      get(lenisStore)?.scrollTo(target, {
         duration,
         easing: (t: number) => Math.sin((t * Math.PI) / 2) // easeOutSine, no overshoot
       });
@@ -522,7 +544,8 @@ async function goToSectionStart() {
 
     function onWheel(e: WheelEvent) {
       if (phase === 'intro') {
-        // free scroll, but settle onto the nearest intro beat when it pauses
+        // free scroll, but settle onto the intro beat we're heading toward on pause
+        if (e.deltaY !== 0) introDir = e.deltaY > 0 ? 1 : -1;
         if (introSnapTimer) clearTimeout(introSnapTimer);
         introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
         return;
