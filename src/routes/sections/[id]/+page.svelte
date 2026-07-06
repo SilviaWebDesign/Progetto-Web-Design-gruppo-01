@@ -381,6 +381,10 @@ async function goToSectionStart() {
 
     history.scrollRestoration = 'manual';
 
+    // Fresh entry: reset the persistent Lenis scroll right away (see #2). Re-asserted
+    // in the deferred block below once the layout settles.
+    resetScrollToTop();
+
     headerState.update((s) => ({
       ...s,
       sectionTitle: section.title,
@@ -452,10 +456,20 @@ async function goToSectionStart() {
       else window.addEventListener('load', () => resolve(), { once: true });
     });
 
+    function resetScrollToTop() {
+    // Fresh entry (menu re-selection / "next section"): Lenis is a persistent
+    // singleton that keeps the previous section's scroll position across SPA
+    // navigation, so without this the intro opens scrolled down (#2).
+    if (resumeFromSave) return;
+    const lenis = get(lenisStore);
+    lenis?.start();
+    lenis?.scrollTo(0, { immediate: true, force: true });
+    ScrollTrigger.update();
+    }
+
      function restoreScrollForPhase() {
       if (!resumeFromSave || !saved) return;
       if (saved.phase !== 'topics' && saved.phase !== 'feedback') return;
-
       phase = saved.phase; // guards in enter/exitTopicsMode now bail out
       const lenis = get(lenisStore);
       lenis?.scrollTo(document.documentElement.scrollHeight, {
@@ -471,6 +485,7 @@ async function goToSectionStart() {
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           ScrollTrigger.refresh();
+          resetScrollToTop();
           restoreScrollForPhase();
         })
       );
