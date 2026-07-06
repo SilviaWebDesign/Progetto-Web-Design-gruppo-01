@@ -15,7 +15,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { browser } from '$app/environment';
-  import { goto } from '$app/navigation';
+  import { afterNavigate, goto } from '$app/navigation';
   import gsap from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -61,7 +61,35 @@
   let phase = $state<Phase>('intro');
   let restored = $state(false);
 
-  const TOPICS_SCALE = 0.48; // compacted model size in topics (lower = smaller, less overlap)
+  // #8 — tell a reload apart from a fresh (re)entry.
+  // resumeFromSave is true ONLY on a real page load / reload ('enter'); on menu
+  // re-selection or "next section" navigation we always restart from the intro,
+  // keeping any likes already given (they reappear when the user reaches topics).
+  let resumeFromSave = $state(false);
+  let navHandled = false;
+
+  afterNavigate((nav) => {
+    if (navHandled) return; // only react to the navigation that mounted us
+    navHandled = true;
+
+    const saved = sectionState.read(section.id);
+    resumeFromSave = nav.type === 'enter';
+
+    if (saved) {
+      // Likes are always remembered, so the user sees them again.
+      if (saved.topicLikes.length === section.topics.length) {
+        topicLikes = saved.topicLikes;
+      }
+      // Phase / current topic / result come back only on a real reload.
+      if (resumeFromSave) {
+        currentTopic = saved.currentTopic;
+        currentResult = saved.currentResult;
+      }
+    }
+    restored = true;
+  });
+
+  const TOPICS_SCALE = 0.48;
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
@@ -313,7 +341,7 @@ async function goToSectionStart() {
 
   let sceneRestored = $state(false);
   $effect(() => {
-    if (sceneRestored || !restored || !modelLoaded) return;
+    if (sceneRestored || !restored || !modelLoaded || !resumeFromSave) return;
     const saved = sectionState.read(section.id);
     if (saved?.phase !== 'topics' && saved?.phase !== 'feedback') return;
 
@@ -340,16 +368,10 @@ async function goToSectionStart() {
   onMount(() => {
     if (!browser || !scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
 
+    // State restore (likes / topic / result) is handled in afterNavigate above,
+    // so it can tell a reload apart from a menu re-selection (#8).
     const saved = sectionState.read(section.id);
-    if (saved) {
-      currentTopic = saved.currentTopic;
-      if (saved.topicLikes.length === section.topics.length) {
-        topicLikes = saved.topicLikes;
-      }
-      currentResult = saved.currentResult;
-    }
-    restored = true;
-    
+
     // Reveal this section by fading out the navigation veil.
     if (get(overlayVisible)) {
       setTimeout(() => overlayVisible.set(false), 60);
@@ -429,7 +451,7 @@ async function goToSectionStart() {
     });
 
      function restoreScrollForPhase() {
-      if (!saved) return;
+      if (!resumeFromSave || !saved) return;
       if (saved.phase !== 'topics' && saved.phase !== 'feedback') return;
 
       phase = saved.phase; // guards in enter/exitTopicsMode now bail out
