@@ -336,12 +336,19 @@
 
   .home__brand {
     position: absolute;
-    top: 8vh;
+    top: 10vh;
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
     font: var(--text-home-subtitle-font);
     color: var(--color-text-primary);
+  }
+
+  @media (min-width: 769px) {
+    .home__brand {
+      font-size: 1.35rem;
+      font-weight: var(--font-weight-bold);
+    }
   }
 
   .home__title {
@@ -353,7 +360,7 @@
     font-weight: var(--font-weight-black);
     /* hero element -> vw calibrated to 1512 (150px / 1512 * 100 = 9.92vw) */
     font-size: 9.92vw;
-    line-height: var(--line-height-tight);
+    line-height: var(--line-height-solid);
     text-transform: uppercase;
     color: var(--color-text-primary);
   }
