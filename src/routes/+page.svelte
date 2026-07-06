@@ -38,8 +38,8 @@
   const TEXT2_LINES = [
     'Attraversa il percorso, tra',
     'sostenibilità, sport e infrastrutture,',
-    'e prendi posizione davanti alle',
-    'informazioni.'
+    'e prendi posizione davanti',
+    'alle informazioni.'
   ];
   const TEXT3_LINES = [
     'Le tue scelte plasmeranno la realtà',
@@ -290,6 +290,8 @@
     inset: 0;
     z-index: 0;
     background: var(--color-background-page);
+    opacity: 0; /* revealed once the mountain's first frame is ready */
+    transition: opacity 0.8s ease;
   }
 
   .home {
@@ -299,11 +301,6 @@
 
   .home.is-revealed {
     opacity: 1;
-  }
-
-  .home__bg {
-    opacity: 0;
-    transition: opacity 0.8s ease;
   }
 
   .home__bg.is-ready {
@@ -336,12 +333,19 @@
 
   .home__brand {
     position: absolute;
-    top: 8vh;
+    top: 10vh;
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
     font: var(--text-home-subtitle-font);
     color: var(--color-text-primary);
+  }
+
+  @media (min-width: 769px) {
+    .home__brand {
+      font-size: 1.35rem;
+      font-weight: var(--font-weight-bold);
+    }
   }
 
   .home__title {
@@ -353,7 +357,7 @@
     font-weight: var(--font-weight-black);
     /* hero element -> vw calibrated to 1512 (150px / 1512 * 100 = 9.92vw) */
     font-size: 9.92vw;
-    line-height: var(--line-height-tight);
+    line-height: var(--line-height-solid);
     text-transform: uppercase;
     color: var(--color-text-primary);
   }
@@ -369,6 +373,18 @@
  .home__hint-arrow {
     width: 25px;
     height: 10px;
+    animation: home-cta-bounce 1.6s ease-in-out infinite;
+  }
+
+  @keyframes home-cta-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home__hint-arrow {
+      animation: none;
+    }
   }
 
   .home__hint-text {
@@ -451,7 +467,7 @@
 .home__final-cta {
     position: absolute;
     left: 50%;
-    bottom: var(--page-gutter); /* same height as the other CTAs */
+    bottom: var(--cta-bottom); 
     transform: translateX(-50%);
     margin: 0;
     display: inline-flex;

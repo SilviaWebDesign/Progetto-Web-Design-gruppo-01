@@ -177,11 +177,12 @@
      BODY
      ============================================================ */
 
-  .comment-card__body { 
-    flex: 1; 
-    margin: 0; 
+  .comment-card__body {
+    flex: 1;
+    margin: 0;
     padding-left: 0.5em;
     text-indent: -0.5em;
+    white-space: pre-line; /* honor explicit line breaks in comment.body */
   }
 
   .comment-card[data-size='sm'] .comment-card__body {

@@ -45,6 +45,7 @@
 
   /* Line height */
   --line-height-none:   0.72; /* 72% — section hero title (sport/sustainability spread) */
+  --line-height-solid:  1;    /* 100% — home hero title */
   --line-height-tight:  1.2;  /* 120% — section-intro, card-body */
   --line-height-normal: 1.3;  /* 130% — section titles */
   --line-height-loose:  1.5;  /* 150% — body text default (added on demand) */

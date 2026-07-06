@@ -608,8 +608,8 @@
 
     // --- fit the model into a "safe box" between the top heading and the bottom text ---
     // box edges as fractions of viewport height (0 = top, 1 = bottom)
-    const RESULT_BOX_TOP = 0.2; // just below the heading
-    const RESULT_BOX_BOTTOM = 0.72; // just above the body text
+    const RESULT_BOX_TOP = 0.24; // just below the heading
+    const RESULT_BOX_BOTTOM = 0.68; // just above the body text
    const RESULT_BOX_FILL = 0.9; // how much of the box the model fills
     const RESULT_BOX_LIFT = 0.06; // extra upward nudge (fraction of viewport height)
 

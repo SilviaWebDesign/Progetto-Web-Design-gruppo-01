@@ -13,9 +13,9 @@
 -->
 
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { browser } from '$app/environment';
-  import { goto } from '$app/navigation';
+  import { afterNavigate, goto } from '$app/navigation';
   import gsap from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -53,7 +53,9 @@
   let cardStack = $state<CardStackApi | undefined>(undefined);
 
   let currentTopic = $state(0);
-  let topicLikes = $state<Record<string, boolean>[]>(section.topics.map(() => ({})));
+  let topicLikes = $state<Record<string, boolean>[]>(
+    untrack(() => section.topics.map(() => ({})))
+  );
   let currentResult = $state<OpinionState | null>(null);
   let isTransitioning = $state(false);
 
@@ -61,7 +63,35 @@
   let phase = $state<Phase>('intro');
   let restored = $state(false);
 
-  const TOPICS_SCALE = 0.48; // compacted model size in topics (lower = smaller, less overlap)
+  // #8 — tell a reload apart from a fresh (re)entry.
+  // resumeFromSave is true ONLY on a real page load / reload ('enter'); on menu
+  // re-selection or "next section" navigation we always restart from the intro,
+  // keeping any likes already given (they reappear when the user reaches topics).
+  let resumeFromSave = $state(false);
+  let navHandled = false;
+
+  afterNavigate((nav) => {
+    if (navHandled) return; // only react to the navigation that mounted us
+    navHandled = true;
+
+    const saved = sectionState.read(section.id);
+    resumeFromSave = nav.type === 'enter';
+
+    if (saved) {
+      // Likes are always remembered, so the user sees them again.
+      if (saved.topicLikes.length === section.topics.length) {
+        topicLikes = saved.topicLikes;
+      }
+      // Phase / current topic / result come back only on a real reload.
+      if (resumeFromSave) {
+        currentTopic = saved.currentTopic;
+        currentResult = saved.currentResult;
+      }
+    }
+    restored = true;
+  });
+
+  const TOPICS_SCALE = 0.48;
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
@@ -76,7 +106,7 @@
     }
     return a;
   }
-  const shuffledComments = section.topics.map((t) => shuffle(t.comments));
+  const shuffledComments = untrack(() => section.topics.map((t) => shuffle(t.comments)));
 
   let topic = $derived(section.topics[currentTopic]);
   let counter = $derived(`${currentTopic + 1} / ${section.topics.length}`);
@@ -313,7 +343,7 @@ async function goToSectionStart() {
 
   let sceneRestored = $state(false);
   $effect(() => {
-    if (sceneRestored || !restored || !modelLoaded) return;
+    if (sceneRestored || !restored || !modelLoaded || !resumeFromSave) return;
     const saved = sectionState.read(section.id);
     if (saved?.phase !== 'topics' && saved?.phase !== 'feedback') return;
 
@@ -340,16 +370,10 @@ async function goToSectionStart() {
   onMount(() => {
     if (!browser || !scrollArea || !titleWrap || !frostLayer || !phraseEl) return;
 
+    // State restore (likes / topic / result) is handled in afterNavigate above,
+    // so it can tell a reload apart from a menu re-selection (#8).
     const saved = sectionState.read(section.id);
-    if (saved) {
-      currentTopic = saved.currentTopic;
-      if (saved.topicLikes.length === section.topics.length) {
-        topicLikes = saved.topicLikes;
-      }
-      currentResult = saved.currentResult;
-    }
-    restored = true;
-    
+
     // Reveal this section by fading out the navigation veil.
     if (get(overlayVisible)) {
       setTimeout(() => overlayVisible.set(false), 60);
@@ -429,7 +453,7 @@ async function goToSectionStart() {
     });
 
      function restoreScrollForPhase() {
-      if (!saved) return;
+      if (!resumeFromSave || !saved) return;
       if (saved.phase !== 'topics' && saved.phase !== 'feedback') return;
 
       phase = saved.phase; // guards in enter/exitTopicsMode now bail out
@@ -462,37 +486,47 @@ async function goToSectionStart() {
     });
 
     let wheelLock = false;
-    let feedbackAccum = 0;
-    let feedbackResetTimer: ReturnType<typeof setTimeout> | null = null;
-    const FEEDBACK_THRESHOLD = 450;
-    const FEEDBACK_RESET_MS = 700;
-
-    function clearFeedbackAccum() {
-      feedbackAccum = 0;
-      if (feedbackResetTimer) {
-        clearTimeout(feedbackResetTimer);
-        feedbackResetTimer = null;
-      }
-    }
 
     // --- intro snap: settle the frost/phrase scroll onto rest beats ---
-   const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
+    const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
     const PHRASE_BEAT = 0.75; // viewport-height fraction where the phrase rests
     const INTRO_COMMIT = 1.65; // beyond this (x vh) scroll is free (heading to the 3D)
+    const INTRO_COMMIT_FRAC = 0.2; // #11 — how far into a gap a deliberate scroll must go
+                                   // to commit to the next beat (lower = more forgiving/forward)
     let introSnapTimer: ReturnType<typeof setTimeout> | null = null;
+    let introDir = 1; // last intro wheel direction: 1 = down, -1 = up
 
     function introSnap() {
       if (phase !== 'intro') return;
       const vh = window.innerHeight;
       const y = window.scrollY;
       if (y > vh * INTRO_COMMIT) return; // committed to the 3D reveal -> leave it free
-      const beats = [0, vh * PHRASE_BEAT];
-      const nearest = beats.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
-      const dist = Math.abs(nearest - y);
+
+      const title = 0;
+      const phraseY = vh * PHRASE_BEAT;
+
+      // Directional commit (like the home scroll): a deliberate scroll settles onto
+      // the beat it heads TOWARD, instead of the geometrically nearest one — so a
+      // small downward move no longer gets thrown back to the title (#11).
+      let target: number;
+      if (y <= phraseY) {
+        const progress = (y - title) / (phraseY - title || 1); // 0..1 within the gap
+        target =
+          introDir > 0
+            ? progress > INTRO_COMMIT_FRAC ? phraseY : title
+            : progress < 1 - INTRO_COMMIT_FRAC ? title : phraseY;
+      } else {
+        // past the phrase, in the run-up to the 3D reveal:
+        // scrolling down flows on (no snap-back); scrolling up settles on the phrase
+        if (introDir > 0) return;
+        target = phraseY;
+      }
+
+      const dist = Math.abs(target - y);
       if (dist < 4) return;
       // duration scales with distance -> tiny fixes feel instant, no springy bounce
       const duration = Math.min(0.7, 0.18 + (dist / vh) * 0.6);
-      get(lenisStore)?.scrollTo(nearest, {
+      get(lenisStore)?.scrollTo(target, {
         duration,
         easing: (t: number) => Math.sin((t * Math.PI) / 2) // easeOutSine, no overshoot
       });
@@ -500,7 +534,8 @@ async function goToSectionStart() {
 
     function onWheel(e: WheelEvent) {
       if (phase === 'intro') {
-        // free scroll, but settle onto the nearest intro beat when it pauses
+        // free scroll, but settle onto the intro beat we're heading toward on pause
+        if (e.deltaY !== 0) introDir = e.deltaY > 0 ? 1 : -1;
         if (introSnapTimer) clearTimeout(introSnapTimer);
         introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
         return;
@@ -769,7 +804,7 @@ async function goToSectionStart() {
   .stage__right {
     grid-column: 3;
     justify-self: end;
-    width: 354px;
+    width: 385px;
     display: flex;
     flex-direction: column;
     gap: 19px;
@@ -795,7 +830,7 @@ async function goToSectionStart() {
     z-index: 7;
     transition: transform 0.2s ease;
     left: 50%;
-    bottom: var(--page-gutter);
+    bottom: var(--cta-bottom);
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
@@ -862,7 +897,7 @@ async function goToSectionStart() {
 
   .feedback__heading {
     position: absolute;
-    top: 12vh;
+    top: 14vh;
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
@@ -877,7 +912,7 @@ async function goToSectionStart() {
 
   .feedback__body {
     position: absolute;
-    bottom: calc(var(--page-gutter) + 90px); /* sits above the CTA */
+    bottom: calc(var(--page-gutter) + 60px); /* sits above the CTA */
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
@@ -897,7 +932,7 @@ async function goToSectionStart() {
   .feedback__cta {
     position: absolute;
     transition: transform 0.2s ease;
-    bottom: var(--page-gutter);
+    bottom: var(--cta-bottom);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
