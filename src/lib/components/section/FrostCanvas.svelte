@@ -146,11 +146,86 @@
     drawImageCover(imgEl!, w, h);
     ctx = mainCtx;
 
+    if (canvasFilterSupported(ctx!)) {
+      // Native path (Chrome/Firefox, Safari 17+): unchanged look.
+      ctx!.save();
+      ctx!.filter = `blur(${BLUR_AMOUNT}px) brightness(1.15) saturate(0) contrast(1.08)`;
+      ctx!.drawImage(padded, -bleed, -bleed, pw, ph);
+      ctx!.filter = 'none';
+      ctx!.restore();
+      return;
+    }
+
+    // Safari fallback: ctx.filter (blur) is unsupported, so reproduce the same
+    // look without it — soft blur via downscale/upscale + a brightness/contrast
+    // pixel pass. saturate(0) is already applied via CSS on the canvas element.
+    const blurred = blurByRescale(padded, BLUR_AMOUNT * dpr);
+    applyBrightnessContrast(blurred, 1.15, 1.08);
     ctx!.save();
-    ctx!.filter = `blur(${BLUR_AMOUNT}px) brightness(1.15) saturate(0) contrast(1.08)`;
-    ctx!.drawImage(padded, -bleed, -bleed, pw, ph);
-    ctx!.filter = 'none';
+    ctx!.imageSmoothingEnabled = true;
+    ctx!.imageSmoothingQuality = 'high';
+    ctx!.drawImage(blurred, -bleed, -bleed, pw, ph);
     ctx!.restore();
+  }
+
+  // Whether CanvasRenderingContext2D.filter actually applies (false on older Safari).
+  let _canvasFilterOk: boolean | null = null;
+  function canvasFilterSupported(c: CanvasRenderingContext2D): boolean {
+    if (_canvasFilterOk !== null) return _canvasFilterOk;
+    const prev = c.filter;
+    c.filter = 'blur(1px)';
+    _canvasFilterOk = c.filter === 'blur(1px)'; // Safari ignores it -> stays 'none'
+    c.filter = prev;
+    return _canvasFilterOk;
+  }
+
+  // Universal soft blur (works on Safari): shrink then grow with smoothing so each
+  // pixel spreads over ~radiusPx. Two passes give a smoother, gaussian-like falloff.
+  const SAFARI_BLUR_PASSES = 2; // knob: more passes = softer/wider blur on Safari
+  function blurByRescale(source: HTMLCanvasElement, radiusPx: number): HTMLCanvasElement {
+    const k = Math.max(2, radiusPx / SAFARI_BLUR_PASSES); // downscale factor per pass
+    let current = source;
+    for (let p = 0; p < SAFARI_BLUR_PASSES; p++) {
+      const sw = Math.max(1, Math.round(source.width / k));
+      const sh = Math.max(1, Math.round(source.height / k));
+      const small = document.createElement('canvas');
+      small.width = sw;
+      small.height = sh;
+      const sc = small.getContext('2d')!;
+      sc.imageSmoothingEnabled = true;
+      sc.imageSmoothingQuality = 'high';
+      sc.drawImage(current, 0, 0, sw, sh);
+
+      const big = document.createElement('canvas');
+      big.width = source.width;
+      big.height = source.height;
+      const bc = big.getContext('2d')!;
+      bc.imageSmoothingEnabled = true;
+      bc.imageSmoothingQuality = 'high';
+      bc.drawImage(small, 0, 0, source.width, source.height);
+      current = big;
+    }
+    return current;
+  }
+
+  // Bake CSS-equivalent brightness() then contrast() into the canvas pixels.
+  function applyBrightnessContrast(cv: HTMLCanvasElement, brightness: number, contrast: number) {
+    const cx = cv.getContext('2d')!;
+    let img: ImageData;
+    try {
+      img = cx.getImageData(0, 0, cv.width, cv.height);
+    } catch {
+      return; // tainted canvas (cross-origin) -> skip rather than break the frost
+    }
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      for (let k = 0; k < 3; k++) {
+        let v = d[i + k] * brightness; // brightness()
+        v = (v - 128) * contrast + 128; // contrast()
+        d[i + k] = v < 0 ? 0 : v > 255 ? 255 : v;
+      }
+    }
+    cx.putImageData(img, 0, 0);
   }
 
   function drawFrostColor(w: number, h: number) {
