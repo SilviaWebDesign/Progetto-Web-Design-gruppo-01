@@ -769,7 +769,7 @@ async function goToSectionStart() {
   .stage__right {
     grid-column: 3;
     justify-self: end;
-    width: 354px;
+    width: 385px;
     display: flex;
     flex-direction: column;
     gap: 19px;

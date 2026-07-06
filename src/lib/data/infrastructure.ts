@@ -34,27 +34,27 @@ export const infrastructureSection: Section = {
         {
           id: 'olympic-village-pos-1',
           sentiment: 'positive',
-          body: 'Finalmente un progetto che ha a cuore il risparmio energetico, è ammirevole.'
+          body: 'Finalmente un progetto che ha a cuore\nil risparmio energetico, è ammirevole.'
         },
         {
           id: 'olympic-village-pos-2',
           sentiment: 'positive',
-          body: 'Diventando student housing, il Villaggio può contribuire in modo utile alla città.'
+          body: 'Diventando student housing, il Villaggio\npuò contribuire in modo utile alla città.'
         },
         {
           id: 'olympic-village-pos-3',
           sentiment: 'positive',
-          body: 'Ha contribuito a creare una bella atmosfera tra gli atleti, e rafforzare la sportività, che è fondamentale.'
+          body: 'Ha contribuito a creare una bella\natmosfera tra gli atleti, e rafforzare\nla sportività, che è fondamentale.'
         },
         {
           id: 'olympic-village-neg-1',
           sentiment: 'negative',
-          body: 'Il villaggio olimpico ha distrutto Porta Romana.'
+          body: 'Il villaggio olimpico ha distrutto\nPorta Romana.'
         },
         {
           id: 'olympic-village-neg-2',
           sentiment: 'negative',
-          body: 'La quota di affitto non è accessibile, sarà l’ennesimo studentato soltanto per ricchi.'
+          body: 'La quota di affitto non è accessibile,\nsarà l’ennesimo studentato soltanto\nper ricchi.'
         },
         {
           id: 'olympic-village-neg-3',
@@ -75,12 +75,12 @@ export const infrastructureSection: Section = {
         {
           id: 'santa-giulia-arena-pos-1',
           sentiment: 'positive',
-          body: "L’arena è completamente accessibile alle persone con disabilità, un grande passo avanti per l’Italia, finalmente."
+          body: "L’arena è completamente accessibile\nalle persone con disabilità, un grande\npasso avanti per l’Italia, finalmente."
         },
         {
           id: 'santa-giulia-arena-pos-2',
           sentiment: 'positive',
-          body: 'Design estremamente moderno, un ottimo passo verso la riqualificazione di Santa Giulia.'
+          body: 'Design estremamente moderno,\nun ottimo passo verso la riqualificazione\ndi Santa Giulia.'
         },
         {
           id: 'santa-giulia-arena-pos-3',
@@ -116,7 +116,7 @@ export const infrastructureSection: Section = {
         {
           id: 'sliding-centre-pos-1',
           sentiment: 'positive',
-          body: "Le Olimpiadi Invernali sono state l’occasione perfetta per ristrutturare la pista, finalmente si potrà praticare di nuovo il bob a Cortina!"
+          body: "Le Olimpiadi Invernali sono state\nl’occasione perfetta per ristrutturare\nla pista, finalmente si potrà praticare\ndi nuovo il bob a Cortina!"
         },
         {
           id: 'sliding-centre-pos-2',
@@ -131,7 +131,7 @@ export const infrastructureSection: Section = {
         {
           id: 'sliding-centre-neg-1',
           sentiment: 'negative',
-          body: "La pista è stata costruita su un terreno franabile, è assurdo che questo progetto sia stato anche solo approvato."
+          body: "La pista è stata costruita su un terreno\nfranabile, è assurdo che questo progetto\nsia stato anche solo approvato."
         },
         {
           id: 'sliding-centre-neg-2',

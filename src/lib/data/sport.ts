@@ -30,7 +30,7 @@ export const sportSection: Section = {
         {
           id: 'alysa-liu-pos-1',
           sentiment: 'positive',
-          body: 'Sembra divertirsi davvero mentre gareggia, il che ormai è raro negli sport di alto livello, Liu è un ottimo esempio per i giovani atleti.'
+          body: 'Sembra divertirsi davvero mentre gareggia,\normai è raro negli sport di alto livello, Liu\nè un ottimo esempio per i giovani atleti.'
         },
         {
           id: 'alysa-liu-pos-2',
@@ -40,17 +40,17 @@ export const sportSection: Section = {
         {
           id: 'alysa-liu-pos-3',
           sentiment: 'positive',
-          body: 'Il suo atteggiamento “senza pressione” rompe gli schemi tradizionali del pattinaggio, rendendo lo sport più moderno e pop.'
+          body: 'Il suo atteggiamento “senza pressione”\nrompe gli schemi tradizionali\ndel pattinaggio, rendendo lo sport\npiù moderno e pop.'
         },
         {
           id: 'alysa-liu-neg-1',
           sentiment: 'negative',
-          body: 'La sua storia di discontinuità con lo sport dimostra che non prende sul serio la sua disciplina.'
+          body: 'La sua storia di discontinuità con lo sport\ndimostra che non prende sul serio\nla sua disciplina.'
         },
         {
           id: 'alysa-liu-neg-2',
           sentiment: 'negative',
-          body: 'La sua performance al Gala Olimpico è stata un insulto al pattinaggio artistico, avrebbe dovuto esibirsi su musica classica, non pop.'
+          body: 'La sua performance al Gala Olimpico\nè stata un insulto al pattinaggio artistico,\navrebbe dovuto esibirsi su musica classica,\nnon pop.'
         },
         {
           id: 'alysa-liu-neg-3',
@@ -74,17 +74,17 @@ export const sportSection: Section = {
         {
           id: 'vladyslav-heraskevych-pos-1',
           sentiment: 'positive',
-          body: 'Il casco commemorativo non era propaganda politica ma un gesto umano di memoria verso colleghi e amici scomparsi, il provvedimento è stato ingiusto.'
+          body: 'Il casco commemorativo non era\npropaganda politica ma un gesto umano di\nmemoria verso colleghi e amici scomparsi,\nil provvedimento è stato ingiusto.'
         },
         {
           id: 'vladyslav-heraskevych-pos-2',
           sentiment: 'positive',
-          body: 'Gli atleti dovrebbero avere la possibilità di esprimersi anche riguardo a temi non relazionati allo sport, in quanto personaggi pubblici la loro voce fa la differenza.'
+          body: 'Gli atleti dovrebbero avere la possibilità\ndi esprimersi anche riguardo a temi non\nrelazionati allo sport, in quanto personaggi\npubblici la loro voce fa la differenza.'
         },
         {
           id: 'vladyslav-heraskevych-pos-3',
           sentiment: 'positive',
-          body: 'Gesti come questo rendono le Olimpiadi più autentiche, perché mostrano il lato umano dietro la competizione.'
+          body: 'Gesti come questo rendono le Olimpiadi\npiù autentiche, perché mostrano il lato\numano dietro la competizione.'
         },
         {
           id: 'vladyslav-heraskevych-neg-1',
@@ -99,7 +99,7 @@ export const sportSection: Section = {
         {
           id: 'vladyslav-heraskevych-neg-3',
           sentiment: 'negative',
-          body: 'Il Comitato Olimpico ha agito correttamente, un’eccezione avrebbe causato più difficoltà a far rispettare la stessa regola in altri casi.'
+          body: 'Il Comitato Olimpico ha agito\ncorrettamente, un’eccezione avrebbe\ncausato più difficoltà a far rispettare\nla stessa regola in altri casi.'
         }
       ]
     },
@@ -123,12 +123,12 @@ export const sportSection: Section = {
         {
           id: 'jutta-leerdam-pos-2',
           sentiment: 'positive',
-          body: 'La presunta collaborazione con Nike attesta semplicemente il livello sportivo di Leerman, tanto alto da poter influenzare il pubblico.'
+          body: 'La presunta collaborazione con Nike\nattesta semplicemente il livello sportivo\ndi Leerman, tanto alto da poter influenzare\nil pubblico.'
         },
         {
           id: 'jutta-leerdam-pos-3',
           sentiment: 'positive',
-          body: 'La sua popolarità, aumentata anche dalle controversie, dona più visibilità al pattinaggio di velocità, sport spesso poco seguito.'
+          body: 'La sua popolarità, aumentata anche\ndalle controversie, dona più visibilità\nal pattinaggio di velocità, sport spesso\npoco seguito.'
         },
         {
           id: 'jutta-leerdam-neg-1',
@@ -138,7 +138,7 @@ export const sportSection: Section = {
         {
           id: 'jutta-leerdam-neg-2',
           sentiment: 'negative',
-          body: 'Questo gesto ha spostato l’attenzione mediatica dal risultato all’immagine dell’atleta, perdendo ogni legame con lo sport.'
+          body: 'Questo gesto ha spostato l’attenzione\nmediatica dal risultato all’immagine\ndell’atleta, perdendo ogni legame\ncon lo sport.'
         },
         {
           id: 'jutta-leerdam-neg-3',

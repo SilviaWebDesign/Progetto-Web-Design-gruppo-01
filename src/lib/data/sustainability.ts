@@ -30,7 +30,7 @@ export const sustainabilitySection: Section = {
         {
           id: 'venue-reuse-pos-1',
           sentiment: 'positive',
-          body: 'Questa scelta favorisce una migliore gestione del territorio, senza stravolgere le aree urbane e montane coinvolte.'
+          body: 'Questa scelta favorisce una migliore\ngestione del territorio, senza stravolgere\nle aree urbane e montane coinvolte.'
         },
         {
           id: 'venue-reuse-pos-2',
@@ -40,22 +40,22 @@ export const sustainabilitySection: Section = {
         {
           id: 'venue-reuse-pos-3',
           sentiment: 'positive',
-          body: 'Usare sedi esistenti è una scelta molto più sensata che costruire tutto da zero, l’impatto ambientale è ridotto significativamente.'
+          body: 'Usare sedi esistenti è una scelta molto\npiù sensata che costruire tutto da zero,\nl’impatto ambientale è ridotto\nsignificativamente.'
         },
         {
           id: 'venue-reuse-neg-1',
           sentiment: 'negative',
-          body: 'Le Olimpiadi potevano essere un’occasione per costruire nuovi impianti più moderni nelle sedi coinvolte, per restare al passo coi tempi.'
+          body: 'Le Olimpiadi potevano essere un’occasione\nper costruire nuovi impianti più moderni\nnelle sedi coinvolte, per restare al passo\ncoi tempi.'
         },
         {
           id: 'venue-reuse-neg-2',
           sentiment: 'negative',
-          body: 'La comunicazione riguardo al riuso delle strutture non è stata trasparente, era solo una strategia di marketing e green-washing.'
+          body: 'La comunicazione riguardo al riuso\ndelle strutture non è stata trasparente,\nera solo una strategia di marketing\ne green-washing.'
         },
         {
           id: 'venue-reuse-neg-3',
           sentiment: 'negative',
-          body: 'Molti impianti esistenti rischiano di non essere davvero adeguati agli standard richiesti per le competizioni olimpiche.'
+          body: 'Molti impianti esistenti rischiano di\nnon essere davvero adeguati agli standard\nrichiesti per le competizioni olimpiche.'
         }
 
       ]
@@ -75,7 +75,7 @@ export const sustainabilitySection: Section = {
         {
           id: 'climate-impact-pos-1',
           sentiment: 'positive',
-          body: 'Il fatto che parte delle emissioni sia legata a infrastrutture permanenti suggerisce investimenti utili anche dopo i Giochi.'
+          body: 'Il fatto che parte delle emissioni sia legata\na infrastrutture permanenti suggerisce\ninvestimenti utili anche dopo i Giochi.'
         },
         {
           id: 'climate-impact-pos-2',
@@ -85,17 +85,17 @@ export const sustainabilitySection: Section = {
         {
           id: 'climate-impact-pos-3',
           sentiment: 'positive',
-          body: 'Suddividere le emissioni per fasi consente di individuare con precisione le aree su cui intervenire per ridurre l’impatto ambientale.'
+          body: 'Suddividere le emissioni per fasi consente\ndi individuare con precisione le aree\nsu cui intervenire per ridurre l’impatto\nambientale.'
         },
         {
           id: 'climate-impact-neg-1',
           sentiment: 'negative',
-          body: 'Un milione di tonnellate di CO₂ sono ancora troppe per poter chiamare queste Olimpiadi “sostenibili”.'
+          body: 'Un milione di tonnellate di CO₂ sono\nancora troppe per poter chiamare\nqueste Olimpiadi “sostenibili”.'
         },
         {
           id: 'climate-impact-neg-2',
           sentiment: 'negative',
-          body: 'Possono spacciarla come una conquista, ma bisogna vedere cosa viene considerato nel conteggio, conviene diffidare.'
+          body: 'Possono spacciarla come una conquista,\nma bisogna vedere cosa viene considerato\nnel conteggio, conviene diffidare.'
         },
        {
           id: 'climate-impact-neg-3',
@@ -119,7 +119,7 @@ export const sustainabilitySection: Section = {
         {
           id: 'artificial-snow-pos-1',
           sentiment: 'positive',
-          body: 'Garantire piste adeguate può avere ricadute positive anche sul turismo invernale delle località coinvolte.'
+          body: 'Garantire piste adeguate può avere\nricadute positive anche sul turismo\ninvernale delle località coinvolte.'
         },
         {
           id: 'artificial-snow-pos-2',
@@ -134,12 +134,12 @@ export const sustainabilitySection: Section = {
         {
           id: 'artificial-snow-neg-1',
           sentiment: 'negative',
-          body: 'Produrre una tale quantità di metri cubi di neve artificiale comporta un enorme consumo di acqua ed energia.'
+          body: 'Produrre una tale quantità di metri cubi\ndi neve artificiale comporta un enorme\nconsumo di acqua ed energia.'
         },
         {
           id: 'artificial-snow-neg-2',
           sentiment: 'negative',
-          body: 'La necessità di produrre neve artificiale è indicatore di un’edizione dei Giochi poco sostenibile.'
+          body: 'La necessità di produrre neve artificiale\nè indicatore di un’edizione dei Giochi\npoco sostenibile.'
         },
         {
           id: 'artificial-snow-neg-3',
