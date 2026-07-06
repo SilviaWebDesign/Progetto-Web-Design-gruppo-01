@@ -290,6 +290,8 @@
     inset: 0;
     z-index: 0;
     background: var(--color-background-page);
+    opacity: 0; /* revealed once the mountain's first frame is ready */
+    transition: opacity 0.8s ease;
   }
 
   .home {
@@ -299,11 +301,6 @@
 
   .home.is-revealed {
     opacity: 1;
-  }
-
-  .home__bg {
-    opacity: 0;
-    transition: opacity 0.8s ease;
   }
 
   .home__bg.is-ready {

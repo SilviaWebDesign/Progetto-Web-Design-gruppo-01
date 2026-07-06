@@ -62,11 +62,6 @@
     gap: var(--spacing-md);
     text-align: center;
   }
-  .preloader__brand {
-    margin: 0;
-    font: var(--text-home-subtitle-font);
-    text-transform: uppercase;
-  }
   .preloader__msg {
     margin: 0;
     min-height: 1.4em;

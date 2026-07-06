@@ -13,7 +13,7 @@
 -->
 
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { browser } from '$app/environment';
   import { afterNavigate, goto } from '$app/navigation';
   import gsap from 'gsap';
@@ -53,7 +53,9 @@
   let cardStack = $state<CardStackApi | undefined>(undefined);
 
   let currentTopic = $state(0);
-  let topicLikes = $state<Record<string, boolean>[]>(section.topics.map(() => ({})));
+  let topicLikes = $state<Record<string, boolean>[]>(
+    untrack(() => section.topics.map(() => ({})))
+  );
   let currentResult = $state<OpinionState | null>(null);
   let isTransitioning = $state(false);
 
@@ -104,7 +106,7 @@
     }
     return a;
   }
-  const shuffledComments = section.topics.map((t) => shuffle(t.comments));
+  const shuffledComments = untrack(() => section.topics.map((t) => shuffle(t.comments)));
 
   let topic = $derived(section.topics[currentTopic]);
   let counter = $derived(`${currentTopic + 1} / ${section.topics.length}`);
@@ -484,21 +486,9 @@ async function goToSectionStart() {
     });
 
     let wheelLock = false;
-    let feedbackAccum = 0;
-    let feedbackResetTimer: ReturnType<typeof setTimeout> | null = null;
-    const FEEDBACK_THRESHOLD = 450;
-    const FEEDBACK_RESET_MS = 700;
-
-    function clearFeedbackAccum() {
-      feedbackAccum = 0;
-      if (feedbackResetTimer) {
-        clearTimeout(feedbackResetTimer);
-        feedbackResetTimer = null;
-      }
-    }
 
     // --- intro snap: settle the frost/phrase scroll onto rest beats ---
-   const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
+    const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
     const PHRASE_BEAT = 0.75; // viewport-height fraction where the phrase rests
     const INTRO_COMMIT = 1.65; // beyond this (x vh) scroll is free (heading to the 3D)
     const INTRO_COMMIT_FRAC = 0.2; // #11 — how far into a gap a deliberate scroll must go

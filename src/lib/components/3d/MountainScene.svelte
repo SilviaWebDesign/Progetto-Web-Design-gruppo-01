@@ -24,22 +24,13 @@
   const SNOW_DIVE_START = 0.46;
   const CARDS_START = 0.9;
   const CARDS_END = 0.95;
-  const TEXT1_AT = 0.12; // must match STAGE_ANCHORS[1] in +page.svelte
-  const TEXT2_AT = 0.34; // must match STAGE_ANCHORS[2] in +page.svelte
 
   // --- model + framing constants (tuned to the mountain GLB) ---
   const MOUNTAIN_GLB_URL = '/models/snow-mountain.glb';
   const MOUNTAIN_ROTATION_Y = Math.PI / 2 + 0.12; // slight offset from 90°
   const CAM_Y_LOW = -2.9; // hero camera height
   const ORBIT_LOOKAT_Y = 2.2; // look-at height above mountain center (matches the prototype)
-  const TOP_DOWN_YAW = Math.PI / 2; // top-down view yaw (cards phase)
   const CARDS_TILT = 0.8; // cards-phase tilt: 0 = straight down, higher = more angled
-  // each entry: [scrollStart, scrollEnd, arc as a fraction of a full turn]
-  const ORBIT_SEGMENTS: Array<[number, number, number]> = [
-    [0, TEXT1_AT, 1 / 3],
-    [TEXT1_AT, TEXT2_AT, 1 / 3],
-    [TEXT2_AT, ORBIT_END, 1 / 4]
-  ];
   // total arc is less than a full turn now; the dive must still start from the same fixed
   // orientation as before, so the hero (scroll 0) angle is shifted back by that same amount
   const ORBIT_TURNS = 0.35; // fraction of a full turn during the intro (1 = full, like proto)
