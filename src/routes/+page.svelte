@@ -38,8 +38,8 @@
   const TEXT2_LINES = [
     'Attraversa il percorso, tra',
     'sostenibilità, sport e infrastrutture,',
-    'e prendi posizione davanti alle',
-    'informazioni.'
+    'e prendi posizione davanti',
+    'alle informazioni.'
   ];
   const TEXT3_LINES = [
     'Le tue scelte plasmeranno la realtà',
