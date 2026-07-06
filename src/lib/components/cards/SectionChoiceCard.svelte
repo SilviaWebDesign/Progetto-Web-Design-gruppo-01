@@ -191,4 +191,70 @@
     white-space: nowrap;
     border: 0;
   }
+
+  /* --- strip layout (narrow screens): title overlaid on the 3D --- */
+  @media (max-width: 1150px) {
+    .section-choice-card {
+      aspect-ratio: 354 / 157; /* squashed like the Figma */
+      height: auto;
+      /* scales with the viewport, but capped so all three fit without scrolling */
+      width: min(
+        calc(100vw - 2 * var(--page-gutter)),
+        calc((100dvh - 220px) / 3 * (354 / 157))
+      );
+    }
+
+    .section-choice-card__surface {
+      border-radius: var(--radius-s);
+    }
+
+    /* the 3D fills the whole strip */
+    .section-choice-card__object {
+      inset: 0;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      transform: none;
+      overflow: hidden;
+    }
+
+    /* title overlaid on the model: centered vertically, left-aligned */
+    .section-choice-card__title {
+      top: 50%;
+      bottom: auto;
+      left: var(--spacing-md);
+      right: var(--spacing-md);
+      transform: translateY(-50%);
+      text-align: center;
+      white-space: nowrap;
+      font-size: clamp(2.25rem, 10vmin, 64px);
+      z-index: 2;
+    }
+
+    .section-choice-card__glow {
+      width: 70%;
+      height: 64%;
+      filter: blur(12px);
+    }
+
+    .section-choice-card__halo {
+      inset: -20px;
+      filter: blur(18px);
+    }
+
+    /* dim the model and lift the surface so the title stays readable */
+    .section-choice-card__scene {
+      opacity: 0.72;
+    }
+
+    .section-choice-card__surface {
+      background: rgba(255, 255, 255, 0.62);
+    }
+
+    /* soft glow right behind the title for extra contrast */
+    .section-choice-card__title {
+      text-shadow: 0 0 18px rgba(255, 255, 255, 0.9), 0 0 6px rgba(255, 255, 255, 0.9);
+    }
+  }
 </style>

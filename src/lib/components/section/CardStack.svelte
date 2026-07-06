@@ -37,10 +37,11 @@
     onToggleLike: (id: string) => void;
     /** Identifies the current topic so each stack keys uniquely. */
     topicId: string;
+    active: boolean;
     api?: CardStackApi;
   }
 
-  let { comments, sectionId, likes, onToggleLike, topicId, api = $bindable() }: Props =
+  let { comments, sectionId, likes, onToggleLike, topicId, active, api = $bindable() }: Props =
     $props();
 
   let stackEl = $state<HTMLDivElement | null>(null);
@@ -48,6 +49,14 @@
   const STAGGER = 0.075;
   const DURATION = 0.42;
   const OFFSCREEN_PAD = 32;
+  const HINT_FIRST_DELAY_MS = 10000;
+  const HINT_REPEAT_MS = 30000;
+  const HINT_MAX_REPEATS = 3;        // dopo N ripetizioni senza like, smette di insistere
+  const HINT_NUDGE_DISTANCE = 22;   // px — ampiezza dello scarto laterale
+  const HINT_NUDGE_DURATION = 1.6;  // s — durata di un ciclo completo
+  const HINT_STAGGER = 0.09;        // s — ritardo tra una card e la successiva
+
+
 
   function getItems(): HTMLElement[] {
     if (!stackEl) return [];
@@ -101,7 +110,51 @@
     gsap.set(items, { opacity: 0, x: 0 });
   }
 
-  api = { animateOut, animateIn, resetHidden };
+  function nudgeCards() {
+  const items = getItems();
+  if (!items.length) return;
+  gsap.to(items, {
+    keyframes: { x: [0, HINT_NUDGE_DISTANCE, -HINT_NUDGE_DISTANCE, HINT_NUDGE_DISTANCE * 0.5, 0] },
+    duration: HINT_NUDGE_DURATION,
+    stagger: HINT_STAGGER,
+    ease: 'sine.inOut'
+  });
+  }
+
+
+  let hintTimer: ReturnType<typeof setTimeout> | null = null;
+  let hintCount = 0;
+  let lastTopicId = '';
+
+  function scheduleHint(delay: number) {
+    clearHint();
+    if (hintCount >= HINT_MAX_REPEATS) return;
+    hintTimer = setTimeout(() => {
+      nudgeCards();
+      hintCount += 1;
+      scheduleHint(HINT_REPEAT_MS);
+    }, delay);
+  }
+
+  function clearHint() {
+    if (hintTimer) clearTimeout(hintTimer);
+    hintTimer = null;
+  }
+
+
+    api = { animateOut, animateIn, resetHidden };
+
+    $effect(() => {
+    const hasLiked = Object.values(likes).some(Boolean);
+    if (topicId !== lastTopicId) {
+      lastTopicId = topicId;
+      hintCount = 0;
+    }
+    if (active && !hasLiked) scheduleHint(HINT_FIRST_DELAY_MS);
+    else clearHint();
+    return clearHint;
+  });
+
 </script>
 
 
