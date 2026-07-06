@@ -124,7 +124,7 @@
     ctx!.drawImage(img, dx, dy, dw, dh);
   }
 
-  function drawBlurredImage(w: number, h: number) {
+ function drawBlurredImage(w: number, h: number) {
     // Disegniamo la cover ESATTA (stessa scala/posizione di .sharp) su un
     // canvas offscreen con `bleed` px di margine, poi lo blurriamo: il
     // margine dà al blur pixel reali da campionare ai bordi senza dover
@@ -134,20 +134,20 @@
     const pw     = w + bleed * 2;
     const ph     = h + bleed * 2;
 
-    const padded    = document.createElement('canvas');
-    padded.width    = Math.round(pw * dpr);
-    padded.height   = Math.round(ph * dpr);
-    const paddedCtx = padded.getContext('2d')!;
-    paddedCtx.scale(dpr, dpr);
-    paddedCtx.translate(bleed, bleed);
+    if (canvasFilterSupported()) {
+      // Native path (Chrome/Firefox, Safari that actually renders it): unchanged look.
+      const padded    = document.createElement('canvas');
+      padded.width    = Math.round(pw * dpr);
+      padded.height   = Math.round(ph * dpr);
+      const paddedCtx = padded.getContext('2d')!;
+      paddedCtx.scale(dpr, dpr);
+      paddedCtx.translate(bleed, bleed);
 
-    const mainCtx = ctx;
-    ctx = paddedCtx;
-    drawImageCover(imgEl!, w, h);
-    ctx = mainCtx;
+      const mainCtx = ctx;
+      ctx = paddedCtx;
+      drawImageCover(imgEl!, w, h);
+      ctx = mainCtx;
 
-    if (canvasFilterSupported(ctx!)) {
-      // Native path (Chrome/Firefox, Safari 17+): unchanged look.
       ctx!.save();
       ctx!.filter = `blur(${BLUR_AMOUNT}px) brightness(1.15) saturate(0) contrast(1.08)`;
       ctx!.drawImage(padded, -bleed, -bleed, pw, ph);
@@ -156,56 +156,143 @@
       return;
     }
 
-    // Safari fallback: ctx.filter (blur) is unsupported, so reproduce the same
-    // look without it — soft blur via downscale/upscale + a brightness/contrast
-    // pixel pass. saturate(0) is already applied via CSS on the canvas element.
-    const blurred = blurByRescale(padded, BLUR_AMOUNT * dpr);
-    applyBrightnessContrast(blurred, 1.15, 1.08);
+    // Safari fallback: ctx.filter (blur) is unsupported. Real box blur (3 passes ≈
+    // gaussian) at CSS resolution — no "zoom" from downscaling. A full-cover background
+    // fills the bleed margins so the blur finds no transparent (black) edges to halo.
+    // saturate(0) is already applied via CSS on the canvas element.
+    const work = document.createElement('canvas');
+    work.width  = Math.round(pw);
+    work.height = Math.round(ph);
+    const wctx  = work.getContext('2d')!;
+    coverRect(wctx, imgEl!, 0, 0, pw, ph);        // fills the margins (no dark halo)
+    coverRect(wctx, imgEl!, bleed, bleed, w, h);  // exact frame, identical to the native path
+
+    blurCanvasInPlace(work, SAFARI_BLUR_RADIUS);
+    applyBrightnessContrast(work, 1.15, 1.08);
+
     ctx!.save();
     ctx!.imageSmoothingEnabled = true;
     ctx!.imageSmoothingQuality = 'high';
-    ctx!.drawImage(blurred, -bleed, -bleed, pw, ph);
+    ctx!.drawImage(work, -bleed, -bleed, pw, ph);
     ctx!.restore();
   }
 
-  // Whether CanvasRenderingContext2D.filter actually applies (false on older Safari).
+  // Whether CanvasRenderingContext2D.filter actually RENDERS a blur. Recent Safari
+  // exposes the .filter property (so a string read-back passes) but doesn't paint the
+  // blur — so we must test the real pixels, not just that the property is settable.
   let _canvasFilterOk: boolean | null = null;
-  function canvasFilterSupported(c: CanvasRenderingContext2D): boolean {
+  function canvasFilterSupported(): boolean {
     if (_canvasFilterOk !== null) return _canvasFilterOk;
-    const prev = c.filter;
-    c.filter = 'blur(1px)';
-    _canvasFilterOk = c.filter === 'blur(1px)'; // Safari ignores it -> stays 'none'
-    c.filter = prev;
+    try {
+      const a = document.createElement('canvas');
+      a.width = 20;
+      a.height = 1;
+      const actx = a.getContext('2d')!;
+      actx.fillStyle = '#000';
+      actx.fillRect(0, 0, 10, 1);
+      actx.fillStyle = '#fff';
+      actx.fillRect(10, 0, 10, 1);
+
+      const b = document.createElement('canvas');
+      b.width = 20;
+      b.height = 1;
+      const bctx = b.getContext('2d')!;
+      bctx.filter = 'blur(3px)';
+      bctx.drawImage(a, 0, 0);
+      bctx.filter = 'none';
+
+      // pixel just left of the edge was pure black; if blur renders, the white side
+      // bleeds in and brightens it.
+      const v = bctx.getImageData(9, 0, 1, 1).data[0];
+      _canvasFilterOk = v > 10;
+    } catch {
+      _canvasFilterOk = false;
+    }
     return _canvasFilterOk;
   }
 
-  // Universal soft blur (works on Safari): shrink then grow with smoothing so each
-  // pixel spreads over ~radiusPx. Two passes give a smoother, gaussian-like falloff.
-  const SAFARI_BLUR_PASSES = 2; // knob: more passes = softer/wider blur on Safari
-  function blurByRescale(source: HTMLCanvasElement, radiusPx: number): HTMLCanvasElement {
-    const k = Math.max(2, radiusPx / SAFARI_BLUR_PASSES); // downscale factor per pass
-    let current = source;
-    for (let p = 0; p < SAFARI_BLUR_PASSES; p++) {
-      const sw = Math.max(1, Math.round(source.width / k));
-      const sh = Math.max(1, Math.round(source.height / k));
-      const small = document.createElement('canvas');
-      small.width = sw;
-      small.height = sh;
-      const sc = small.getContext('2d')!;
-      sc.imageSmoothingEnabled = true;
-      sc.imageSmoothingQuality = 'high';
-      sc.drawImage(current, 0, 0, sw, sh);
+  // Object-fit: cover of an image into an arbitrary target rect.
+  function coverRect(
+    c: CanvasRenderingContext2D,
+    img: HTMLImageElement,
+    tx: number,
+    ty: number,
+    tw: number,
+    th: number
+  ) {
+    const iw = img.naturalWidth;
+    const ih = img.naturalHeight;
+    if (!iw || !ih) return;
+    const s  = Math.max(tw / iw, th / ih);
+    const dw = iw * s;
+    const dh = ih * s;
+    c.drawImage(img, tx + (tw - dw) / 2, ty + (th - dh) / 2, dw, dh);
+  }
 
-      const big = document.createElement('canvas');
-      big.width = source.width;
-      big.height = source.height;
-      const bc = big.getContext('2d')!;
-      bc.imageSmoothingEnabled = true;
-      bc.imageSmoothingQuality = 'high';
-      bc.drawImage(small, 0, 0, source.width, source.height);
-      current = big;
+  const SAFARI_BLUR_PASSES = 3; // box-blur passes (≈ gaussian); knob for smoothness
+  const SAFARI_BLUR_RADIUS = BLUR_AMOUNT; // blur radius (CSS px) on Safari; matches blur(30px)
+
+  // Real separable box blur (3 passes ≈ gaussian). Sliding-window running sum, so cost
+  // is independent of the radius and there is no downscale "zoom" artifact.
+  function blurCanvasInPlace(cv: HTMLCanvasElement, radius: number) {
+    const cx = cv.getContext('2d')!;
+    const w = cv.width;
+    const h = cv.height;
+    if (w < 3 || h < 3) return;
+    let img: ImageData;
+    try {
+      img = cx.getImageData(0, 0, w, h);
+    } catch {
+      return; // tainted (cross-origin) -> skip rather than break the frost
     }
-    return current;
+    const a = img.data;
+    const b = new Uint8ClampedArray(a.length);
+    const r = Math.max(1, Math.round(radius));
+    for (let p = 0; p < SAFARI_BLUR_PASSES; p++) {
+      boxBlurH(a, b, w, h, r);
+      boxBlurV(b, a, w, h, r);
+    }
+    cx.putImageData(img, 0, 0);
+  }
+
+  function boxBlurH(src: Uint8ClampedArray, dst: Uint8ClampedArray, w: number, h: number, r: number) {
+    const n = r + r + 1;
+    for (let y = 0; y < h; y++) {
+      const row = y * w * 4;
+      for (let c = 0; c < 4; c++) {
+        let sum = 0;
+        for (let i = -r; i <= r; i++) {
+          const x = i < 0 ? 0 : i >= w ? w - 1 : i;
+          sum += src[row + x * 4 + c];
+        }
+        for (let x = 0; x < w; x++) {
+          dst[row + x * 4 + c] = sum / n;
+          const xa = x + r + 1 >= w ? w - 1 : x + r + 1;
+          const xs = x - r < 0 ? 0 : x - r;
+          sum += src[row + xa * 4 + c] - src[row + xs * 4 + c];
+        }
+      }
+    }
+  }
+
+  function boxBlurV(src: Uint8ClampedArray, dst: Uint8ClampedArray, w: number, h: number, r: number) {
+    const n = r + r + 1;
+    for (let x = 0; x < w; x++) {
+      const col = x * 4;
+      for (let c = 0; c < 4; c++) {
+        let sum = 0;
+        for (let i = -r; i <= r; i++) {
+          const y = i < 0 ? 0 : i >= h ? h - 1 : i;
+          sum += src[y * w * 4 + col + c];
+        }
+        for (let y = 0; y < h; y++) {
+          dst[y * w * 4 + col + c] = sum / n;
+          const ya = y + r + 1 >= h ? h - 1 : y + r + 1;
+          const ys = y - r < 0 ? 0 : y - r;
+          sum += src[ya * w * 4 + col + c] - src[ys * w * 4 + col + c];
+        }
+      }
+    }
   }
 
   // Bake CSS-equivalent brightness() then contrast() into the canvas pixels.
