@@ -27,7 +27,7 @@
   const MOUNTAIN_GLB_URL = '/models/snow-mountain.glb';
   const MOUNTAIN_ROTATION_Y = Math.PI / 2 + 0.12; // slight offset from 90°
   const CAM_Y_LOW = -2.9; // hero camera height
-  const ORBIT_LOOKAT_Y = 1.5; // look-at height above mountain center during orbit
+  const ORBIT_LOOKAT_Y = 2.2; // look-at height above mountain center (matches the prototype)
   const TOP_DOWN_YAW = Math.PI / 2; // top-down view yaw (cards phase)
   const CARDS_TILT = 0.8; // cards-phase tilt: 0 = straight down, higher = more angled
   // each entry: [scrollStart, scrollEnd, arc as a fraction of a full turn]
@@ -38,7 +38,8 @@
   ];
   // total arc is less than a full turn now; the dive must still start from the same fixed
   // orientation as before, so the hero (scroll 0) angle is shifted back by that same amount
-  const ORBIT_ARC = ORBIT_SEGMENTS.reduce((sum, [, , frac]) => sum + frac, 0) * Math.PI * 2;
+  const ORBIT_TURNS = 0.35; // fraction of a full turn during the intro (1 = full, like proto)
+  const ORBIT_ARC = ORBIT_TURNS * Math.PI * 2;
   const FOG_COLOR = '#ffffff';
 
   let container: HTMLDivElement | undefined = $state(undefined);
@@ -90,6 +91,7 @@
     const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
     return t * t * (3 - 2 * t);
   }
+  const easeInOutSine = (t: number) => -(Math.cos(Math.PI * clamp(t, 0, 1)) - 1) / 2;
 
   // --- mountain GLB load + fit (no DRACO; our GLBs are uncompressed) ---
   let loadPromise: Promise<GLTF> | null = null;
@@ -159,7 +161,7 @@
     const snowU = smoothstep(SNOW_DIVE_START, snowZoneAt, scroll);
     const snowZoom = easeInOutCubic(snowU) * 2.15;
     const deepSnowBoost = easeInOutCubic(smoothstep(0.55, 1, snowU)) * 0.85;
-    return 2.6 + orbitZoom + snowZoom + deepSnowBoost;
+    return 1.2 + orbitZoom + snowZoom + deepSnowBoost;
   }
 
   function positionOnOrbit(angle: number, radius: number, cfg: OrbitConfig, target: THREE.Vector3): void {
@@ -174,20 +176,16 @@
   // dive; since the visible orbit now covers less than a full turn, the hero (scroll 0)
   // angle is shifted back by the same amount so the dive always starts from that fixed spot.
   function orbitAngleAt(scroll: number, cfg: OrbitConfig): number {
-    let angle = cfg.startAngle - ORBIT_ARC;
-    for (const [segStart, segEnd, frac] of ORBIT_SEGMENTS) {
-      const span = Math.max(segEnd - segStart, 0.001);
-      const rawT = clamp((scroll - segStart) / span, 0, 1);
-      angle += frac * Math.PI * 2 * rawT;
-    }
-    return angle;
+    // start facing the hero-front, rotate forward by ORBIT_ARC across the orbit span
+    const t = clamp(scroll / Math.max(ORBIT_END, 0.001), 0, 1);
+    return cfg.startAngle + ORBIT_ARC * easeInOutSine(t);
   }
 
   function sampleCameraAt(scroll: number): boolean {
     const cfg = orbitConfig;
     if (!cfg) return false;
 
-    const endAngle = cfg.startAngle;
+    const endAngle = cfg.startAngle + ORBIT_ARC;
 
     if (scroll <= SNOW_DIVE_START) {
       const angle = orbitAngleAt(scroll, cfg);
