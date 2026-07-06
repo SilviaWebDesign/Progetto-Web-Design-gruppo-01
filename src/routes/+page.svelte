@@ -109,6 +109,7 @@
   }
 
   function onWheel(e: WheelEvent) {
+    if (!revealed) return; // ignore input until the home is shown (no scroll-during-preload jump, #4)
     e.preventDefault();
     const now = performance.now();
     // a long-enough pause = "finger lifted" -> start a fresh gesture from here
@@ -131,6 +132,7 @@
   }
 
   function onKey(e: KeyboardEvent) {
+    if (!revealed) return; // match onWheel: no navigation before the home is shown (#4)
     if (e.key === 'ArrowDown' || e.key === 'PageDown') {
       e.preventDefault();
       step(1);
