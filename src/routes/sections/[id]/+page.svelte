@@ -795,7 +795,7 @@ async function goToSectionStart() {
     z-index: 7;
     transition: transform 0.2s ease;
     left: 50%;
-    bottom: var(--page-gutter);
+    bottom: var(--cta-bottom);
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
@@ -897,7 +897,7 @@ async function goToSectionStart() {
   .feedback__cta {
     position: absolute;
     transition: transform 0.2s ease;
-    bottom: var(--page-gutter);
+    bottom: var(--cta-bottom);
     left: 50%;
     transform: translateX(-50%);
     display: flex;

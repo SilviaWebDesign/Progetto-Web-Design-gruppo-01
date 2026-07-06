@@ -451,7 +451,7 @@
 .home__final-cta {
     position: absolute;
     left: 50%;
-    bottom: var(--page-gutter); /* same height as the other CTAs */
+    bottom: var(--cta-bottom); 
     transform: translateX(-50%);
     margin: 0;
     display: inline-flex;

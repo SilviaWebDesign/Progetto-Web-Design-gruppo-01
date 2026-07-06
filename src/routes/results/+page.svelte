@@ -166,7 +166,7 @@
   .results__ctas {
     position: fixed;
     left: 50%;
-    bottom: var(--page-gutter); /* same height as CTAs across the project */
+    bottom: var(--cta-bottom);
     transform: translateX(-50%);
     z-index: 1;
     display: flex;
