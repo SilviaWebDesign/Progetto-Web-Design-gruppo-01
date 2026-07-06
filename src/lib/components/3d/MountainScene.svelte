@@ -13,7 +13,11 @@
    *  - SNOW_ZONE .. CARDS_START       white gap (canvas hidden)
    *  - CARDS_START .. CARDS_END       mountain reappears top-down (cards phase)
    */
-  let { scrollProgress = 0, snowZoneAt = 0.62 } = $props();
+  let {
+    scrollProgress = 0,
+    snowZoneAt = 0.62,
+    onReady
+  }: { scrollProgress?: number; snowZoneAt?: number; onReady?: () => void } = $props();
 
   // --- scroll phase thresholds (must match the home anchors scale) ---
   const ORBIT_END = 0.45;
@@ -464,6 +468,8 @@
         setupMountainMaterials(snowMountainModel);
         scene.add(snowMountainModel);
         resizeRenderer();
+        // let the parent fade the canvas in once the first frame has rendered
+        requestAnimationFrame(() => requestAnimationFrame(() => onReady?.()));
       } catch (err) {
         console.error('[MountainScene] mountain load failed:', err);
       }

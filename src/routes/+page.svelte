@@ -5,7 +5,17 @@
   import { headerState } from '$lib/stores/header';
   import MountainScene from '$lib/components/3d/MountainScene.svelte';
   import SectionChoiceCard from '$lib/components/cards/SectionChoiceCard.svelte';
+  import Preloader from '$lib/components/layout/Preloader.svelte';
   import { sections } from '$lib/data/sections';
+  import { preloadAssets } from '$lib/utils/preloadAssets';
+
+  const PRELOAD_URLS = ['/models/snow-mountain.glb', ...sections.map((s) => s.glbPath)];
+  const PRELOAD_FLAG = 'home-assets-ready';
+  const PRELOAD_MIN_MS = 1400; // minimum time the bar is shown (so it always fills)
+  let preloadProgress = $state(0);
+  let preloading = $state(true);
+  let revealed = $state(false); // true one frame after preload ends -> enables fade-in
+  let mountainReady = $state(false); // true after the mountain's first render
 
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
   const easeOutCubic = (t: number) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
@@ -159,6 +169,33 @@
     frame();
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKey);
+
+    // preload heavy 3D assets once per session (guarantees they're cached
+    // before the home is revealed, even on slow connections)
+    if (sessionStorage.getItem(PRELOAD_FLAG)) {
+      preloading = false;
+      requestAnimationFrame(() => (revealed = true));
+    } else {
+      // animate the bar over at least PRELOAD_MIN_MS, and never faster than
+      // the real download; whichever finishes last hides the overlay
+      const start = performance.now();
+      let realProgress = 0;
+      const load = preloadAssets(PRELOAD_URLS, (p) => (realProgress = p));
+
+      const tick = () => {
+        const timed = clamp((performance.now() - start) / PRELOAD_MIN_MS, 0, 1);
+        preloadProgress = Math.min(timed, Math.max(realProgress, timed * 0.15 + realProgress * 0.85));
+        if (preloadProgress < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          sessionStorage.setItem(PRELOAD_FLAG, '1');
+          preloading = false;
+          requestAnimationFrame(() => (revealed = true));
+        }
+      };
+      load.finally(() => {}); // ensure caching proceeds
+      requestAnimationFrame(tick);
+    }
     return () => {
       cancelAnimationFrame(rafId);
       if (snapTimer) clearTimeout(snapTimer);
@@ -173,10 +210,10 @@
   <title>Quante facce ha una medaglia?</title>
 </svelte:head>
 
-<div class="home">
+<div class="home" class:is-revealed={revealed}>
   <!-- 3D mountain background, driven by scrollProgress -->
-  <div class="home__bg" aria-hidden="true">
-    <MountainScene {scrollProgress} />
+  <div class="home__bg" class:is-ready={mountainReady} aria-hidden="true">
+    {#if !preloading}<MountainScene {scrollProgress} onReady={() => (mountainReady = true)} />{/if}
   </div>
 
   <section class="home__stage home__hero" style="opacity: {heroOpacity}; transform: translateY({heroLift}vh);" aria-hidden={heroOpacity < 0.05}>
@@ -238,6 +275,8 @@
   </section>
 </div>
 
+<Preloader progress={preloadProgress} visible={preloading} />
+
 <style>
   .home {
     position: relative;
@@ -251,6 +290,24 @@
     inset: 0;
     z-index: 0;
     background: var(--color-background-page);
+  }
+
+  .home {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+
+  .home.is-revealed {
+    opacity: 1;
+  }
+
+  .home__bg {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+
+  .home__bg.is-ready {
+    opacity: 1;
   }
 
   /* Every stage is a fixed full-screen layer; they cross-fade via opacity */
