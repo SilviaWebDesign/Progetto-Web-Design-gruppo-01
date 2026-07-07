@@ -1053,6 +1053,15 @@ function exitTopicsMode() {
       display: flex;
       margin-top: auto;
     }
+
+    /* comments: scrollable list showing ~1.5 cards (tune --m-comments-h).
+       :global needed because .card-stack lives inside the CardStack component. */
+    .stage.m-cards-visible :global(.card-stack) {
+      overflow-y: auto;
+      max-height: var(--m-comments-h, 26vh);
+      overscroll-behavior: contain; /* don't chain the scroll to the page */
+      -webkit-overflow-scrolling: touch;
+    }
   }
 
    .continue {
