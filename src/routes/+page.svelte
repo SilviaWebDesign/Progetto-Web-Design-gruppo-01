@@ -531,7 +531,7 @@
     }
   }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1150px) {
     .home__cards-grid {
       grid-template-columns: 1fr;
       justify-content: center;
