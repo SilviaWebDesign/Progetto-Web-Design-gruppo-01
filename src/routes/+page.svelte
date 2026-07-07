@@ -552,8 +552,8 @@
     transform: translateX(-50%) scale(1.08); /* keep centering while growing */
   }
 
-  /* ── Mobile (≤768px): reflow typography, calibrated to the 390px Figma frame.
-     Desktop composition is untouched. Tune the clamp values to taste. ── */
+  /* ── Mobile (≤768px): typography calibrated so it matches the Figma sizes at the
+     390px frame (56 / 20 / 24 / 10), while staying scalable. Desktop untouched. ── */
   @media (max-width: 768px) {
     .home__stage {
       padding: 88px var(--page-gutter) 40px;
@@ -561,12 +561,11 @@
 
     .home__brand {
       top: 12vh;
-      font-size: clamp(0.8rem, 3.6vw, 1rem); /* ~14px @390 */
+      font-size: clamp(1.1rem, 5.13vw, 1.35rem); /* 20px @390 */
     }
 
     .home__title {
-      /* keep it on two lines: bounded so it fits "QUANTE FACCE HA" on one row */
-      font-size: clamp(2rem, 9.9vw, 2.5rem); /* ~38.6px @390 */
+      font-size: clamp(3rem, 14.36vw, 3.75rem); /* 56px @390 */
     }
 
     /* narrative blocks: readable size + vertically centered like the Figma */
@@ -578,11 +577,12 @@
       margin-bottom: 0;
     }
     .home__line {
-      font-size: clamp(1.15rem, 5.4vw, 1.5rem); /* ~21px @390 */
+      font-size: clamp(1.35rem, 6.15vw, 1.6rem); /* 24px @390 */
     }
 
-    .home__hint-text {
-      font-size: clamp(0.7rem, 3vw, 0.85rem);
+    .home__hint-text,
+    .home__final-cta {
+      font-size: clamp(0.6rem, 2.56vw, 0.7rem); /* 10px @390 */
     }
   }
 </style>
