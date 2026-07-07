@@ -52,6 +52,9 @@
   let phraseEl = $state<HTMLParagraphElement | null>(null);
   let scene3d = $state<Scene3DApi | undefined>(undefined);
   let cardStack = $state<CardStackApi | undefined>(undefined);
+  // Mobile topics: false = mode A (expanded text, object below), true = mode B
+  // (compact text + comments visible, object shrunk between them). Desktop ignores it.
+  let mobileCardsVisible = $state(false);
 
   let currentTopic = $state(0);
   let topicLikes = $state<Record<string, boolean>[]>(
@@ -790,8 +793,14 @@ function exitTopicsMode() {
     </div>
 
     <!-- ── Topics stage ── -->
-    <div class="stage" class:is-visible={phase === 'topics'}>
-      <div class="stage__text">
+    <div class="stage" class:is-visible={phase === 'topics'} class:m-cards-visible={mobileCardsVisible}>
+      <div
+        class="stage__text"
+        role="button"
+        tabindex="0"
+        onclick={() => { if ($isMobile) mobileCardsVisible = !mobileCardsVisible; }}
+        onkeydown={(e) => { if ($isMobile && (e.key === 'Enter' || e.key === ' ')) mobileCardsVisible = !mobileCardsVisible; }}
+      >
         <TextBlock {counter} title={topic.title} body={topic.description} sources={topic.sources} />
       </div>
 
@@ -1011,6 +1020,39 @@ function exitTopicsMode() {
     font-size: var(--font-size-xs); 
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
+  }
+
+  /* ── Mobile topics (S4.1): stack vertically; mode A = text + object (scene behind),
+     mode B (.m-cards-visible) = text on top + comments at the bottom. ── */
+  @media (max-width: 768px) {
+    .stage {
+      display: flex;
+      flex-direction: column;
+      grid-template-columns: none;
+      gap: 0;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 96px var(--page-gutter) 0; /* below the header */
+    }
+
+    .stage__center {
+      display: none;
+    }
+
+    .stage__text {
+      justify-self: stretch;
+      cursor: pointer; /* tap toggles mode A/B */
+    }
+
+    .stage__right {
+      width: auto;
+      display: none;
+    }
+
+    .stage.m-cards-visible .stage__right {
+      display: flex;
+      margin-top: auto;
+    }
   }
 
    .continue {
