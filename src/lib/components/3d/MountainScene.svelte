@@ -21,7 +21,9 @@
 
   // --- scroll phase thresholds (must match the home anchors scale) ---
   const ORBIT_END = 0.45;
-  const SNOW_DIVE_START = 0.38;
+  const SNOW_DIVE_START = 0.38; // dive start; LOWER = slower/longer dive (spread over more scroll)
+  const SNOW_ZOOM_AMP = 1.4;       // dive zoom-in magnitude (was 2.15; LOWER = less "rushing into" the mountain)
+  const DEEP_SNOW_BOOST_AMP = 0.4; // extra zoom near the bottom of the dive (was 0.85)
   const CARDS_START = 0.9;
   const CARDS_END = 0.95;
 
@@ -154,8 +156,8 @@
     const orbitU = clamp(scroll / Math.max(ORBIT_END, 0.01), 0, 1);
     const orbitZoom = easeInOutCubic(orbitU) * 0.85;
     const snowU = smoothstep(SNOW_DIVE_START, snowZoneAt, scroll);
-    const snowZoom = easeInOutCubic(snowU) * 2.15;
-    const deepSnowBoost = easeInOutCubic(smoothstep(0.55, 1, snowU)) * 0.85;
+    const snowZoom = easeInOutCubic(snowU) * SNOW_ZOOM_AMP;
+    const deepSnowBoost = easeInOutCubic(smoothstep(0.55, 1, snowU)) * DEEP_SNOW_BOOST_AMP;
     return 1.2 + orbitZoom + snowZoom + deepSnowBoost;
   }
 
