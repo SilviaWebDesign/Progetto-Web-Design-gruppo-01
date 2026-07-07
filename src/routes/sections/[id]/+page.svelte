@@ -720,9 +720,9 @@ function exitTopicsMode() {
       class:is-visible={phase === 'topics'}
       disabled={!anyLiked}
       onclick={goNext}
-      aria-label={currentTopic === lastTopic ? 'Scopri il tuo risultato' : 'Continua al prossimo argomento'}
+      aria-label={currentTopic === lastTopic ? 'Termina la sezione' : 'Continua al prossimo argomento'}
     >
-      <span class="continue__label">{currentTopic === lastTopic ? 'Scopri il tuo risultato' : 'Continua'}</span>
+      <span class="continue__label">{currentTopic === lastTopic ? 'Termina la sezione' : 'Continua'}</span>
       <svg class="continue__arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
         <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
