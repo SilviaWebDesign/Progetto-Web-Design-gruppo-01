@@ -41,7 +41,7 @@
 
   // On mobile the 'center' formula leaves side padding; the SVG mode fits the word
   // to the full device width (like infrastructure), so use it there too.
-  let mode = $derived($isMobile && MODE[id] === 'center' ? 'svg' : MODE[id]);let mode = $derived(MODE[id]);
+  let mode = $derived($isMobile && MODE[id] === 'center' ? 'svg' : MODE[id]);
   let upper = $derived(title.toUpperCase());
   let glyphs = $derived(upper.split(''));
 
