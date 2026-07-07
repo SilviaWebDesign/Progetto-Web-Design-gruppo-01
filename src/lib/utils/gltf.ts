@@ -8,7 +8,7 @@ function getDracoLoader(): DRACOLoader {
   if (!dracoLoader) {
     dracoLoader = new DRACOLoader();
     // Google-hosted decoder; also handles uncompressed GLBs transparently.
-    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+    dracoLoader.setDecoderPath('/draco/');
   }
   return dracoLoader;
 }
