@@ -29,7 +29,7 @@
   const MOUNTAIN_GLB_URL = '/models/snow-mountain.glb';
   const MOUNTAIN_ROTATION_Y = Math.PI / 2 + 0.12; // slight offset from 90°
   const CAM_Y_LOW = -2.9; // hero camera height
-  const ORBIT_LOOKAT_Y = 2.2; // look-at height above mountain center (matches the prototype)
+  const ORBIT_LOOKAT_Y = 0.8; // look-at height above mountain center (matches the prototype)
   const CARDS_TILT = 0.8; // cards-phase tilt: 0 = straight down, higher = more angled
   // total arc is less than a full turn now; the dive must still start from the same fixed
   // orientation as before, so the hero (scroll 0) angle is shifted back by that same amount
@@ -121,7 +121,7 @@
 
     model.scale.set(scaleFactor, scaleFactor, scaleFactor);
     model.position.x = -center.x * scaleFactor - 2.5;
-    model.position.y = -center.y * scaleFactor - 1.5;
+    model.position.y = -center.y * scaleFactor - 1.5; // mountain vertical position (raise = less negative)
     model.position.z = -center.z * scaleFactor - 10.5;
     model.updateMatrixWorld(true);
 
