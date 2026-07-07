@@ -95,10 +95,10 @@
   const PART_SPRING = 0.04;         // pull back toward home (higher = snappier return)
   const PART_DAMPING = 0.86;        // velocity kept per frame (higher = longer wake)
   const CURSOR_RADIUS_FRAC = 0.056; // ray reach (perpendicular), fraction of model extent
-  const CURSOR_PUSH_FRAC = 0.045;   // per-frame impulse at center, fraction of extent
-  const PART_MAX_OFFSET_FRAC = 0.6; // clamp so particles never fly too far from home
+  const CURSOR_PUSH_FRAC = 0.028;   // per-frame impulse at center, fraction of extent
+  const PART_MAX_OFFSET_FRAC = 0.4; // clamp so particles never fly too far from home
   const PART_SLEEP_V2 = 1e-8;       // below this max speed^2 (and no hover) -> sleep
-  const CURSOR_SPEED_BOOST = 40;    // faster cursor -> stronger plow (0 = speed-independent)
+  const CURSOR_SPEED_BOOST = 24;    // faster cursor -> stronger plow (0 = speed-independent)
   const CURSOR_BOOST_MAX = 3;       // cap the extra push so a fast flick can't explode it
   let cursorRadius = 0;             // resolved in buildParticles (needs the cloud extent)
   let cursorPush = 0;

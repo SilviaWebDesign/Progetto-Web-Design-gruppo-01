@@ -38,6 +38,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* No text selection anywhere: this is an editorial/interactive site, not a
+   document to copy from. Form fields (if any) keep normal selection. */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* Images/media should be responsive by default and stop at parent width. */
 img, picture, svg, video, canvas {
   max-width: 100%;
