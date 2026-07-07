@@ -55,6 +55,31 @@
   // Mobile topics: false = mode A (expanded text, object below), true = mode B
   // (compact text + comments visible, object shrunk between them). Desktop ignores it.
   let mobileCardsVisible = $state(false);
+  let textFading = false;
+
+  // Toggle mobile topics A/B with a CROSS-FADE (smart-animate feel): fade the
+  // text out, swap the size class while it's invisible, fade back in. No
+  // font-size transition -> no visible scaling/sliding.
+  function setMobileCards(next: boolean) {
+    if (next === mobileCardsVisible || textFading) return;
+    textFading = true;
+    gsap.to('.stage__text', {
+      opacity: 0,
+      duration: 0.22,
+      ease: 'power2.in',
+      onComplete: () => {
+        mobileCardsVisible = next;
+        requestAnimationFrame(() => {
+          gsap.to('.stage__text', {
+            opacity: 1,
+            duration: 0.28,
+            ease: 'power2.out',
+            onComplete: () => { textFading = false; }
+          });
+        });
+      }
+    });
+  }
 
   let currentTopic = $state(0);
   let topicLikes = $state<Record<string, boolean>[]>(
@@ -701,6 +726,12 @@ function exitTopicsMode() {
       }
 
       if (phase === 'topics') {
+        // In mode B (mobile), let the comments list scroll natively instead of
+        // hijacking the gesture for topic navigation.
+        if ($isMobile && mobileCardsVisible) {
+          const el = e.target as Element | null;
+          if (el && el.closest('.card-stack')) return; // comments own this touch
+        }
         e.preventDefault(); // we own the gesture: no native scroll in topics
         if (wheelLock || isTransitioning || touchSwiped) return;
         touchAccum += dy;
@@ -798,8 +829,8 @@ function exitTopicsMode() {
         class="stage__text"
         role="button"
         tabindex="0"
-        onclick={() => { if ($isMobile) mobileCardsVisible = !mobileCardsVisible; }}
-        onkeydown={(e) => { if ($isMobile && (e.key === 'Enter' || e.key === ' ')) mobileCardsVisible = !mobileCardsVisible; }}
+        onclick={() => { if ($isMobile) setMobileCards(!mobileCardsVisible); }}
+        onkeydown={(e) => { if ($isMobile && (e.key === 'Enter' || e.key === ' ')) setMobileCards(!mobileCardsVisible); }}
       >
         <TextBlock {counter} title={topic.title} body={topic.description} sources={topic.sources} />
       </div>
@@ -1050,10 +1081,8 @@ function exitTopicsMode() {
       width: 100%;
       max-height: none;
     }
-    .stage__text :global(.text-block__title),
-    .stage__text :global(.text-block__body) {
-      transition: font-size 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    }
+    /* size changes happen while the text is faded out (see setMobileCards),
+       so NO font-size transition here — that caused the visible scaling. */
     /* Mode A (expanded) */
     .stage__text :global(.text-block__title) {
       font-size: 36px;
