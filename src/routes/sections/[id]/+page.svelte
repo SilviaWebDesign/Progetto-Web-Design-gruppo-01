@@ -553,14 +553,19 @@ function exitTopicsMode() {
           restoreScrollForPhase();
         })
       );
-      if ('requestIdleCallback' in window) {
-        (
-          window as Window & {
-            requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void;
-          }
-        ).requestIdleCallback(() => scene3d?.preloadResultModels(), { timeout: 1000 });
-      } else {
-        setTimeout(() => scene3d?.preloadResultModels(), 2000);
+      // On mobile, don't eagerly preload all result models: loading several GLBs at
+      // once spikes memory and crashes the tab on mobile Safari. The one needed model
+      // still loads on demand in morphToResult when the user reaches the feedback.
+      if (!$isMobile) {
+        if ('requestIdleCallback' in window) {
+          (
+            window as Window & {
+              requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void;
+            }
+          ).requestIdleCallback(() => scene3d?.preloadResultModels(), { timeout: 1000 });
+        } else {
+          setTimeout(() => scene3d?.preloadResultModels(), 2000);
+        }
       }
     });
 
