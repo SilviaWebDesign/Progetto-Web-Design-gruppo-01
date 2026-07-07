@@ -95,6 +95,7 @@
   });
 
   const TOPICS_SCALE = 0.48;
+  const INTRO_MODEL_SCALE = 0.85; // model size when it first appears (before shrinking to TOPICS_SCALE)
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
@@ -318,7 +319,7 @@ function exitTopicsMode() {
       currentTopic = 0;
       currentResult = null;
       phase = 'intro';
-      scene3d?.setScale(1); // reset from TOPICS_SCALE so the intro model isn't stuck small
+      scene3d?.setScale(INTRO_MODEL_SCALE); // reset from TOPICS_SCALE so the intro model isn't stuck small
       // Clear leftover GSAP inline styles from earlier topic crossfades so the
       // topic texts re-enter clean when the user scrolls back down.
       gsap.set(['.stage__text', '.stage__heading'], { clearProps: 'opacity,transform' });
@@ -458,7 +459,7 @@ function exitTopicsMode() {
       heroTl.fromTo(phraseEl, { opacity: 0, y: 40 }, { opacity: 1, y: 0, ease: 'power2.out' }, 0.35);
       heroTl.to(phraseEl, { opacity: 0, y: -40, ease: 'power2.in' }, 0.7);
 
-      const proxy = { rot: 0, scale: 1, appear: 0 };
+      const proxy = { rot: 0, scale: INTRO_MODEL_SCALE, appear: 0 };
 
       const threeTl = gsap.timeline({
         scrollTrigger: {
@@ -646,7 +647,15 @@ function exitTopicsMode() {
 
       if (phase === 'feedback') {
         e.preventDefault();
-        // one-way: scrolling back to the topics is disabled here (approach A).
+        // Scrolling DOWN advances like the CTA (the whole site is scroll-driven,
+        // so users expect scroll to continue). Scrolling up stays disabled
+        // (one-way, approach A: no going back to topics).
+        if (wheelLock || isTransitioning) return;
+        if (e.deltaY > 10) {
+          wheelLock = true;
+          finishFeedback();
+          setTimeout(() => { wheelLock = false; }, 1000);
+        }
       }
     }
 
@@ -760,7 +769,7 @@ function exitTopicsMode() {
     </div>
 
     <div class="phrase-anchor" class:is-hidden={!inIntro}>
-      <p class="phrase" bind:this={phraseEl}>{section.description}</p>
+      <p class="phrase" bind:this={phraseEl}><span class="phrase__text">{section.description}</span></p>
     </div>
 
     <!-- ── Topics stage ── -->
@@ -900,6 +909,13 @@ function exitTopicsMode() {
     color: var(--color-text-primary);
     opacity: 0;
     will-change: transform, opacity;
+  }
+
+  .phrase__text {
+    width: 100%;
+    /* Safari drops white-space:pre-line on flex containers, so the explicit
+       newlines must live on the text node itself, not on the flex .phrase. */
+    white-space: pre-line;
   }
 
   .layer--frost.is-hidden,
