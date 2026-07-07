@@ -8,8 +8,9 @@
   interface Props {
     src: string | null;
     fitFactor?: number;
+    onReady?: () => void;
   }
-  let { src, fitFactor = 0.9 }: Props = $props();
+  let { src, fitFactor = 0.9, onReady }: Props = $props();
 
  let containerEl = $state<HTMLDivElement | null>(null);
   let canvasEl = $state<HTMLCanvasElement | null>(null);
@@ -122,7 +123,8 @@
       });
 
       scene.add(group);
-      loaded = true; 
+      loaded = true;
+      onReady?.(); // report to parent that the model is loaded & fitted (results preloader)
     });
 
     function loop() {

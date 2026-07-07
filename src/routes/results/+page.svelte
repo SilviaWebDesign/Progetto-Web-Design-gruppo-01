@@ -7,6 +7,8 @@
   import { headerState } from '$lib/stores/header';
   import ModelViewer from '$lib/components/3d/ModelViewer.svelte';
   import MountainScene from '$lib/components/3d/MountainScene.svelte';
+  import Preloader from '$lib/components/layout/Preloader.svelte';
+  import { preloadAssets } from '$lib/utils/preloadAssets';
   import type { OpinionState, SectionId } from '$lib/types';
 
   // Fixed mountain view used as the page background (no whiteout in this range)
@@ -41,13 +43,50 @@
     }))
   );
 
+  // --- Loading gate: hold a preloader until the result models are ready ---
+  const PRELOAD_MIN_MS = 900; // keep the screen up at least this long (no flash)
+  let loadProgress = $state(0);
+  let assetsReady = $state(false);
+  let readyCount = 0;
+  let minElapsed = false;
+
+  function expectedModels() {
+    return models.filter((m) => m.src).length;
+  }
+  function maybeReveal() {
+    if (assetsReady) return;
+    const expected = expectedModels();
+    if (expected === 0 || (readyCount >= expected && minElapsed)) assetsReady = true;
+  }
+  function onModelReady() {
+    readyCount += 1;
+    maybeReveal();
+  }
+
   onMount(() => {
     // keep the global header visible on this page (no real scroll to trigger it)
     headerState.update((s) => ({ ...s, forceVisible: true }));
+
+    // Warm the cache for the result models (+ mountain bg) and drive the bar.
+    const urls = [
+      ...models.map((m) => m.src).filter((s): s is string => !!s),
+      '/models/snow-mountain.glb'
+    ];
+    void preloadAssets(urls, (p) => (loadProgress = p));
+
+    const minT = setTimeout(() => {
+      minElapsed = true;
+      maybeReveal();
+    }, PRELOAD_MIN_MS);
+    // Safety net: never trap the user behind the preloader.
+    const maxT = setTimeout(() => (assetsReady = true), 8000);
+
     // Reveal the page by fading the navigation veil out
     const t = setTimeout(() => overlayVisible.set(false), 60);
     return () => {
       clearTimeout(t);
+      clearTimeout(minT);
+      clearTimeout(maxT);
       headerState.update((s) => ({ ...s, forceVisible: false }));
     };
   });
@@ -72,6 +111,8 @@
   <title>I tuoi risultati — Quante facce ha una medaglia?</title>
 </svelte:head>
 
+<Preloader progress={loadProgress} visible={!assetsReady} />
+
 <div class="results">
   <div class="results__bg" aria-hidden="true">
     <MountainScene scrollProgress={RESULT_MOUNTAIN_PROGRESS} />
@@ -80,7 +121,7 @@
   <div class="results__models">
     {#each models as model (model.id)}
       <div class="results__model">
-        <ModelViewer src={model.src} fitFactor={model.fitFactor} />
+        <ModelViewer src={model.src} fitFactor={model.fitFactor} onReady={onModelReady} />
       </div>
     {/each}
   </div>

@@ -7,22 +7,7 @@
   }
   let { progress, visible }: Props = $props();
 
-  const MESSAGES = [
-    'Spalando la neve…',
-    'Lucidando le medaglie…',
-    'Cercando il punto di vista giusto…',
-    'Montando la montagna…',
-    'Affilando i pattini…'
-  ];
-  let msgIndex = $state(0);
-
-  $effect(() => {
-    if (!visible) return;
-    const timer = setInterval(() => {
-      msgIndex = (msgIndex + 1) % MESSAGES.length;
-    }, 2600);
-    return () => clearInterval(timer);
-  });
+  const LABEL = 'Caricamento in corso';
 
   let pct = $derived(Math.round(clamp01(progress) * 100));
   function clamp01(v: number) {
@@ -33,7 +18,7 @@
 {#if visible}
   <div class="preloader" role="status" aria-live="polite" transition:fade={{ duration: 400 }}>
     <div class="preloader__inner">
-      <p class="preloader__msg">{MESSAGES[msgIndex]}</p>
+      <p class="preloader__msg">{LABEL}</p>
       <div class="preloader__bar">
         <div class="preloader__fill" style="width: {pct}%"></div>
       </div>
