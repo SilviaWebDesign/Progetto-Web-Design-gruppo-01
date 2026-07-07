@@ -1044,6 +1044,39 @@ function exitTopicsMode() {
       cursor: pointer; /* tap toggles mode A/B */
     }
 
+    /* text block: fit the phone width (not the 437px desktop column), with two
+       sizes that morph smoothly between mode A (expanded) and B (compact). */
+    .stage__text :global(.text-block) {
+      width: 100%;
+      max-height: none;
+    }
+    .stage__text :global(.text-block__title),
+    .stage__text :global(.text-block__body) {
+      transition: font-size 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    /* Mode A (expanded) */
+    .stage__text :global(.text-block__title) {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+    .stage__text :global(.text-block__body) {
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+    .stage__text :global(.text-block__counter) {
+      margin-bottom: 12px;
+    }
+    .stage__text :global(.text-block__sources) {
+      font-size: 14px;
+    }
+    /* Mode B (compact) */
+    .stage.m-cards-visible .stage__text :global(.text-block__title) {
+      font-size: 24px;
+    }
+    .stage.m-cards-visible .stage__text :global(.text-block__body) {
+      font-size: 15px;
+    }
+
     .stage__right {
       width: auto;
       display: none;
