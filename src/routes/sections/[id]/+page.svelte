@@ -314,10 +314,13 @@ function exitTopicsMode() {
         scene3d?.returnToParticles();
       }
 
-      // Rewind to the very start of the section: first topic, no result. Likes
-      // are kept on purpose (they reappear once topics are reached again, #8).
+      // Rewind to the very start of the section and reset it COMPLETELY: first
+      // topic, no result, likes/choices cleared, and this section removed from
+      // progress (redoing it from scratch, desktop fix A4).
       currentTopic = 0;
       currentResult = null;
+      topicLikes = section.topics.map(() => ({}));
+      progress.clearSection(section.id);
       phase = 'intro';
       scene3d?.setScale(INTRO_MODEL_SCALE); // reset from TOPICS_SCALE so the intro model isn't stuck small
       // Clear leftover GSAP inline styles from earlier topic crossfades so the

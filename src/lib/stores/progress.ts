@@ -49,6 +49,14 @@ function createProgress() {
     markCompleted(id: SectionId, result: OpinionState) {
       update((map) => persist({ ...map, [id]: result }));
     },
+    /** Removes a single section's result (e.g. redoing it from scratch). */
+    clearSection(id: SectionId) {
+      update((map) => {
+        const next = { ...map };
+        delete next[id];
+        return persist(next);
+      });
+    },
     /** Clears all progress (e.g. to restart the experience). */
     reset() {
       set(persist({}));
