@@ -142,6 +142,8 @@
   let morphState: MorphState = 'none';
   let morphElapsed = 0;
   const MORPH_DURATION = 1.5;
+  const MORPH_HANDOFF_START = 0.62; // when the particle->model cross-fade begins (0..1 of the morph)
+  const MORPH_ORBIT_AT = 0.16;      // when to hand the camera to OrbitControls during the morph (0..1)
   let morphDoneCallback: (() => void) | null = null;
   let resultModelMaterials: THREE.MeshPhysicalMaterial[] = [];
 
@@ -301,7 +303,7 @@
       controls.minDistance = 1.5;
       controls.maxDistance = 8;
       controls.enablePan = false;
-      controls.autoRotate = true;
+      controls.autoRotate = false;
       controls.autoRotateSpeed = 1.5;
       controls.enabled = false;
       controls.target.set(0, 0.3, 0);
@@ -935,7 +937,7 @@
     const dt = clock.getDelta();
     const elapsed = clock.elapsedTime;
 
-    if (spinner && !orbitEnabled) spinner.rotation.y += IDLE_RAD_S * dt;
+    if (spinner && !orbitEnabled && !(controls && controls.enabled)) spinner.rotation.y += IDLE_RAD_S * dt;if (spinner && !orbitEnabled) spinner.rotation.y += IDLE_RAD_S * dt;
     if (controls?.enabled) controls.update();
 
     if (transitionState === 'in' && particleMesh && particleMat && iMatBuf) {
@@ -1036,16 +1038,27 @@
       }
       particleMesh.instanceMatrix.needsUpdate = true;
 
-      if (t >= 0.8) {
-        const fadeT = (t - 0.8) / 0.2;
+      // Smooth handoff: over the last part of the morph, CROSS-fade the particle
+      // cloud OUT while the solid model fades IN (instead of popping the cloud off
+      // at the very end). Both eased with smoothstep so there's no hard cut.
+      if (t >= MORPH_HANDOFF_START) {
+        let k = (t - MORPH_HANDOFF_START) / (1 - MORPH_HANDOFF_START);
+        k = k * k * (3 - 2 * k); // smoothstep
         resultModelMaterials.forEach((m) => {
-          m.opacity = fadeT;
+          m.opacity = k;
         });
+        particleMat.uniforms.uBaseOpacity.value = 0.85 * (1 - k);
       }
+
+      // Hand the camera to OrbitControls EARLY in the morph, while the cloud is
+      // still formless, so its one-time reframe is masked by the transition
+      // (no snap when the solid model is finally revealed).
+      if (t >= MORPH_ORBIT_AT && controls && !controls.enabled) controls.enabled = true;
 
       if (t >= 1) {
         morphState = 'none';
         particleMesh.visible = false;
+        particleMat.uniforms.uBaseOpacity.value = 0.85; // restore for the next appearance
         resultModelMaterials.forEach((m) => {
           m.opacity = 1;
           m.transparent = false;
