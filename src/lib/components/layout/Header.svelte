@@ -50,7 +50,10 @@
     ...sections.map((section) => ({
       href: `/sections/${section.id}`,
       label: section.title
-    }))
+    })),
+    // NOTE: /about doesn't exist yet — link added so the menu is complete.
+    // It will 404 until the About page is built (roadmap).
+    { href: '/about', label: 'About us' }
   ];
 
   function updateScrollState() {
@@ -407,6 +410,11 @@
      ============================================================ */
 
   .menu-overlay {
+    /* Frosted glass over the frozen page (same spirit as the results blur).
+       Two knobs to taste: */
+    --menu-blur: 18px;                       /* blur strength of the page behind */
+    --menu-veil: rgba(249, 249, 250, 0.55);  /* light tint over the blurred page */
+
     position: fixed;
     inset: 0;
     z-index: 99;
@@ -415,9 +423,9 @@
     align-items: center;
     justify-content: center;
 
-    background: var(--color-background-card);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: var(--menu-veil);
+    backdrop-filter: blur(var(--menu-blur));
+    -webkit-backdrop-filter: blur(var(--menu-blur));
 
     opacity: 0;
     visibility: hidden;
