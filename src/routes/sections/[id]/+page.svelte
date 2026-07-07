@@ -56,6 +56,19 @@
   // (compact text + comments visible, object shrunk between them). Desktop ignores it.
   let mobileCardsVisible = $state(false);
   let textFading = false;
+  let cardsScrollRef = $state<HTMLElement | null>(null);
+
+  function cardsScrollAtBottom(): boolean {
+    const el = cardsScrollRef;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 8;
+  }
+
+  function cardsScrollAtTop(): boolean {
+    const el = cardsScrollRef;
+    if (!el) return true;
+    return el.scrollTop < 8;
+  }
 
   // Toggle mobile topics A/B with a CROSS-FADE (smart-animate feel): fade the
   // text out, swap the size class while it's invisible, fade back in. No
@@ -69,6 +82,7 @@
       ease: 'power2.in',
       onComplete: () => {
         mobileCardsVisible = next;
+        if (!next && cardsScrollRef) cardsScrollRef.scrollTop = 0;
         requestAnimationFrame(() => {
           gsap.to('.stage__text', {
             opacity: 1,
@@ -81,12 +95,46 @@
     });
   }
 
+  // Mobile topics scroll nav (prototype model): first swipe opens comments (A→B),
+  // then scrolls comments; at the edge, advances/hides topic or toggles back to A.
+  function handleTopicsForwardNavigation() {
+    if (wheelLock || isTransitioning || textFading) return;
+    if ($isMobile && !mobileCardsVisible) {
+      setMobileCards(true);
+      return;
+    }
+    wheelLock = true;
+    goNext();
+    setTimeout(() => { wheelLock = false; }, 1000);
+  }
+
+  function handleTopicsBackwardNavigation() {
+    if (wheelLock || isTransitioning || textFading) return;
+    if ($isMobile && mobileCardsVisible) {
+      if (!cardsScrollAtTop()) return;
+      setMobileCards(false);
+      return;
+    }
+    if (currentTopic === 0) {
+      if (!$isMobile) {
+        wheelLock = true;
+        exitTopicsMode();
+        setTimeout(() => { wheelLock = false; }, 1000);
+      }
+      return;
+    }
+    wheelLock = true;
+    goPrev();
+    setTimeout(() => { wheelLock = false; }, 1000);
+  }
+
   let currentTopic = $state(0);
   let topicLikes = $state<Record<string, boolean>[]>(
     untrack(() => section.topics.map(() => ({})))
   );
   let currentResult = $state<OpinionState | null>(null);
   let isTransitioning = $state(false);
+  let wheelLock = false;
   // Set while goToSectionStart() rewinds to the intro, so the scroll-driven
   // auto-enter can't bounce us back into topics before we reach the top.
   let returningToStart = false;
@@ -597,14 +645,11 @@ function exitTopicsMode() {
       }
     });
 
-    let wheelLock = false;
-
-    // --- touch input (mobile): mirrors onWheel branch-by-branch so the sections
-    //     behave the same under a finger. One discrete action per swipe. ---
-    const TOUCH_TOPIC_THRESHOLD = 40; // px of swipe to advance one topic
+    // --- touch input (mobile): swipe nav on touchend (prototype model); tap stays on onclick. ---
+    const MOBILE_SWIPE_THRESHOLD = 48; // px vertical swipe to trigger one nav action
+    let touchStartX = 0;
+    let touchStartY = 0;
     let touchLastY = 0;
-    let touchAccum = 0; // swipe distance accumulated within the current gesture
-    let touchSwiped = false; // whether this gesture already fired a discrete action
 
     // --- intro snap: settle the frost/phrase scroll onto rest beats ---
     const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
@@ -682,7 +727,15 @@ function exitTopicsMode() {
         }
         if (Math.abs(e.deltaY) < 10) return;
 
-        // at the first topic, scrolling up leaves topics mode
+        e.preventDefault();
+
+        if ($isMobile) {
+          if (e.deltaY > 0) handleTopicsForwardNavigation();
+          else handleTopicsBackwardNavigation();
+          return;
+        }
+
+        // Desktop: at the first topic, scrolling up leaves topics mode
         if (!goingDown && currentTopic === 0) {
           wheelLock = true;
           exitTopicsMode();
@@ -692,7 +745,6 @@ function exitTopicsMode() {
           return;
         }
 
-        e.preventDefault();
         wheelLock = true;
         if (goingDown) goNext();
         else goPrev();
@@ -718,9 +770,9 @@ function exitTopicsMode() {
 
     function onTouchStart(e: TouchEvent) {
       if (e.touches.length !== 1) return;
-      touchLastY = e.touches[0].clientY;
-      touchAccum = 0;
-      touchSwiped = false;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchLastY = touchStartY;
     }
 
     function onTouchMove(e: TouchEvent) {
@@ -738,10 +790,8 @@ function exitTopicsMode() {
       }
 
       if (phase === 'topics') {
-        // In mode B (mobile), let the comments list scroll natively instead of
-        // hijacking the gesture for topic navigation.
+        // Mode B: let the comments list scroll natively; nav fires on touchend at the edge.
         if (mobileCardsVisible) {
-          // Mode B: let the comments scroll natively; only advance once at the edge.
           const el = e.target as Element | null;
           const sc = el && (el.closest('.stage__right-scroll') as HTMLElement | null);
           if (sc) {
@@ -751,24 +801,6 @@ function exitTopicsMode() {
           }
         }
         e.preventDefault(); // we own the gesture: no native scroll in topics
-        if (wheelLock || isTransitioning || touchSwiped) return;
-        touchAccum += dy;
-        if (Math.abs(touchAccum) < TOUCH_TOPIC_THRESHOLD) return;
-
-        const goingDown = touchAccum > 0;
-        touchSwiped = true; // one discrete action per swipe (like wheelLock for the wheel)
-
-        // at the first topic, swiping down (content up) leaves topics mode
-        if (!goingDown && currentTopic === 0) {
-          wheelLock = true;
-          exitTopicsMode();
-          setTimeout(() => (wheelLock = false), 1000);
-          return;
-        }
-        wheelLock = true;
-        if (goingDown) goNext();
-        else goPrev();
-        setTimeout(() => (wheelLock = false), 1000);
         return;
       }
 
@@ -777,12 +809,34 @@ function exitTopicsMode() {
       }
     }
 
-    function onTouchEnd() {
-      touchAccum = 0;
-      touchSwiped = false;
+    function onTouchEnd(e: TouchEvent) {
       if (phase === 'intro') {
         if (introSnapTimer) clearTimeout(introSnapTimer);
         introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        return;
+      }
+
+      if (phase !== 'topics' || !$isMobile) return;
+      if (wheelLock || isTransitioning || textFading) return;
+
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touchStartY - touch.clientY;
+
+      if (Math.abs(dy) <= Math.abs(dx) || Math.abs(dy) <= MOBILE_SWIPE_THRESHOLD) return;
+
+      if (dy > 0) {
+        if (mobileCardsVisible && cardsScrollRef?.contains(e.target as Node) && !cardsScrollAtBottom()) {
+          return;
+        }
+        handleTopicsForwardNavigation();
+      } else if (dy < 0) {
+        if (mobileCardsVisible) {
+          if (cardsScrollRef?.contains(e.target as Node) && !cardsScrollAtTop()) return;
+          handleTopicsBackwardNavigation();
+        } else if (currentTopic > 0) {
+          handleTopicsBackwardNavigation();
+        }
       }
     }
 
@@ -857,7 +911,7 @@ function exitTopicsMode() {
 
       <div class="stage__right" class:no-pointer={phase !== 'topics'}>
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
-        <div class="stage__right-scroll" data-lenis-prevent>
+        <div class="stage__right-scroll" data-lenis-prevent bind:this={cardsScrollRef}>
           <CardStack
             bind:api={cardStack}
             comments={shuffledComments[currentTopic]}
