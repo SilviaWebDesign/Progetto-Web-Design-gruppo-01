@@ -732,7 +732,7 @@ function exitTopicsMode() {
           // mobileCardsVisible is only ever set on mobile, so no need to re-check
           // $isMobile here (that store read is unreliable inside this closure).
           const el = e.target as Element | null;
-          if (el && el.closest('.card-stack')) return; // comments own this touch
+          if (el && el.closest('.stage__right')) return; // comments own this touch
         }
         e.preventDefault(); // we own the gesture: no native scroll in topics
         if (wheelLock || isTransitioning || touchSwiped) return;
@@ -1114,18 +1114,19 @@ function exitTopicsMode() {
     }
 
     .stage.m-cards-visible .stage__right {
-      display: flex;
+      display: block;
       margin-top: auto;
-    }
-
-    /* comments: scrollable list showing ~1.5 cards (tune --m-comments-h).
-       :global needed because .card-stack lives inside the CardStack component. */
-    .stage.m-cards-visible :global(.card-stack) {
+      /* the scroll VIEWPORT: fixed height, the CardStack inside overflows &
+         scrolls (like the prototype). Putting overflow on the flex .card-stack
+         made the cards squish instead of overflowing -> no scroll. */
+      height: var(--m-comments-h, 26vh);
       overflow-y: auto;
-      max-height: var(--m-comments-h, 26vh);
-      overscroll-behavior: contain; /* don't chain the scroll to the page */
+      overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
     }
+
+   /* scroll lives on .stage__right (above); .card-stack keeps its natural height
+       so its cards overflow the viewport instead of squishing. */
   }
 
    .continue {
