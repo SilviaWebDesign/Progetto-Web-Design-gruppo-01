@@ -26,7 +26,10 @@ p, figure, blockquote, dl, dd {
 
 /* Make body fill the viewport vertically by default. */
 html, body {
-  min-height: 100vh;
+  min-height: 100dvh;
+  /* Stop pull-to-refresh and overscroll chaining on mobile (no search bar
+     re-appearing, no rubber-band bounce). */
+  overscroll-behavior: none;
 }
 
 /* Improve text rendering on retina/HiDPI displays. */
