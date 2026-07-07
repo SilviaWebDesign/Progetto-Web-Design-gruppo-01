@@ -1140,15 +1140,36 @@ function exitTopicsMode() {
     /* dedicated scroll VIEWPORT (prototype approach): a plain block with a fixed
        height + overflow, wrapping ONLY the CardStack, so it's not resized by the
        .stage layout and the cards overflow & scroll natively. */
+    /* dedicated scroll VIEWPORT: fixed height + overflow so the cards scroll
+       natively (data-lenis-prevent on the element keeps Lenis off these events). */
     .stage.m-cards-visible .stage__right-scroll {
-      height: var(--m-comments-h, 40vh);
+      /* --m-comments-h = height of the comment viewport = how many cards you
+         see at once. ~26vh ≈ 1.5 cards, ~40vh ≈ 2.5 cards (Figma). Tune freely. */
+      --m-comments-h: 26vh;
+      --m-comments-inset: 8px;  /* side room so a card's border/shadow isn't clipped */
+      --m-comments-fade: 48px;  /* height of the soft fade at the bottom edge */
+
+      height: var(--m-comments-h);
+      padding: 6px var(--m-comments-inset);
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
+
+      /* soft bottom fade, hinting there's more to scroll (matches the Figma). */
+      -webkit-mask-image: linear-gradient(
+        to bottom, #000 calc(100% - var(--m-comments-fade)), transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom, #000 calc(100% - var(--m-comments-fade)), transparent 100%
+      );
     }
 
-   /* scroll lives on .stage__right (above); .card-stack keeps its natural height
-       so its cards overflow the viewport instead of squishing. */
+    /* Cards grow with their text on the narrow mobile column, so long comments
+       no longer overflow the fixed desktop height (96px). */
+    .stage.m-cards-visible :global(.comment-card) {
+      height: auto;
+      min-height: var(--m-card-min-h, 88px); /* keep short cards from collapsing */
+    }
   }
 
    .continue {
