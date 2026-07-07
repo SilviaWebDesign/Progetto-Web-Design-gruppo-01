@@ -92,7 +92,7 @@
   // and is pushed by a localized 3D sphere around the cursor. Runs ONLY in the
   // idle 'done' state; the transition/morph loops still own iMatBuf otherwise.
   const particleVel = new Float32Array(COUNT * 3);
-  const PART_SPRING = 0.04;         // pull back toward home (higher = snappier return)
+  const PART_RETURN = 0.10;         // direct ease back home (no spring => no bounce)
   const PART_DAMPING = 0.86;        // velocity kept per frame (higher = longer wake)
   const CURSOR_RADIUS_FRAC = 0.056; // ray reach (perpendicular), fraction of model extent
   const CURSOR_PUSH_FRAC = 0.028;   // per-frame impulse at center, fraction of extent
@@ -820,10 +820,7 @@
       let cx = particleCurrent[ix], cy = particleCurrent[ix + 1], cz = particleCurrent[ix + 2];
       let vx = particleVel[ix], vy = particleVel[ix + 1], vz = particleVel[ix + 2];
 
-      // spring toward home
-      vx += (hx - cx) * PART_SPRING;
-      vy += (hy - cy) * PART_SPRING;
-      vz += (hz - cz) * PART_SPRING;
+      // (return handled after integration, as a direct ease — no spring/bounce)
 
       // repulsion from the cursor RAY: push away by perpendicular distance to the
       // line, so the "needle" pierces the whole model in depth (front & back).
@@ -846,9 +843,14 @@
         }
       }
 
-      // damp + integrate
+      // damp + integrate the push velocity (this carries the outward "wake")
       vx *= PART_DAMPING; vy *= PART_DAMPING; vz *= PART_DAMPING;
       cx += vx; cy += vy; cz += vz;
+      // ease straight back home: no spring => never overshoots/bounces
+      // (the cursor passes THROUGH, like sliding back through a curtain)
+      cx += (hx - cx) * PART_RETURN;
+      cy += (hy - cy) * PART_RETURN;
+      cz += (hz - cz) * PART_RETURN;
 
       // clamp distance from home so nothing ever flies off
       const ox = cx - hx, oy = cy - hy, oz = cz - hz;
