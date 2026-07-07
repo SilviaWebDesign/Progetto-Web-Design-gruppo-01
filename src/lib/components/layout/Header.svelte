@@ -338,6 +338,13 @@
     outline-offset: 4px;
   }
 
+  /* Mobile: the centered section name doesn't fit next to the wordmark, hide it. */
+  @media (max-width: 768px) {
+    .header__section {
+      display: none;
+    }
+  }
+
   .header__logo:hover {
     opacity: 0.85;
   }
