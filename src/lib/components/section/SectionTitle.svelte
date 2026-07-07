@@ -20,6 +20,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { isMobile } from '$lib/stores/viewport';
   import type { SectionId } from '$lib/types';
 
   interface Props {
@@ -38,7 +39,9 @@
     sustainability: 'center'
   };
 
-  let mode = $derived(MODE[id]);
+  // On mobile the 'center' formula leaves side padding; the SVG mode fits the word
+  // to the full device width (like infrastructure), so use it there too.
+  let mode = $derived($isMobile && MODE[id] === 'center' ? 'svg' : MODE[id]);let mode = $derived(MODE[id]);
   let upper = $derived(title.toUpperCase());
   let glyphs = $derived(upper.split(''));
 
@@ -151,16 +154,5 @@
     font-stretch: condensed;
     line-height: var(--line-height-none);
     letter-spacing: clamp(6px, 1.2vw, 18.2px);
-  }
-
-  /* Mobile: let the word fill the full device width edge-to-edge like the other
-     titles — drop the 18vw floor, the max cap and the big letter-spacing that were
-     clipping it. The 0.44 factor sets the fill; nudge it down to fill more, up if
-     it clips. */
-  @media (max-width: 768px) {
-    .section-title--center {
-      font-size: calc(100vw / (var(--title-chars, 12) * 0.44));
-      letter-spacing: 0;
-    }
   }
 </style>
