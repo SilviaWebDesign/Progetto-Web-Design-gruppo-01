@@ -750,4 +750,14 @@
     touch-action: none;
     filter: saturate(0);
   }
+
+  /* Mobile: no defrost — keep the frost static and let the finger scroll the page
+     instead of being captured for the cursor reveal (S2). */
+  @media (max-width: 768px) {
+    canvas {
+      pointer-events: none;
+      touch-action: auto;
+      cursor: default;
+    }
+  }
 </style>
