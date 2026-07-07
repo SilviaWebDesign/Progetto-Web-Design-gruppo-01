@@ -936,6 +936,25 @@ function exitTopicsMode() {
     pointer-events: none;
   }
 
+  /* ── Mobile (≤768px) intro: cover title centered, phrase large + top-anchored,
+     calibrated to the 390px Figma frame (title 68 / phrase 36). ── */
+  @media (max-width: 768px) {
+    .hero-title {
+      justify-content: center; /* cover title centered vertically like the Figma */
+    }
+
+    .phrase-anchor {
+      top: 104px; /* sits below the header */
+      bottom: auto;
+    }
+    .phrase {
+      height: auto;
+      align-items: flex-start;
+      white-space: normal; /* wrap naturally at phone width (ignore desktop breaks) */
+      font-size: clamp(1.9rem, 9.23vw, 2.5rem); /* 36px @390 */
+    }
+  }
+
   .stage {
     position: absolute;
     inset: 0;
