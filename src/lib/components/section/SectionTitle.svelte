@@ -153,13 +153,14 @@
     letter-spacing: clamp(6px, 1.2vw, 18.2px);
   }
 
-  /* Mobile: fit long words like "SOSTENIBILITÀ" to the device width — drop the
-     18vw floor and shrink the large letter-spacing that was eating the width and
-     clipping the word. Tune the 0.5 factor if it's a touch too small/large. */
+  /* Mobile: let the word fill the full device width edge-to-edge like the other
+     titles — drop the 18vw floor, the max cap and the big letter-spacing that were
+     clipping it. The 0.44 factor sets the fill; nudge it down to fill more, up if
+     it clips. */
   @media (max-width: 768px) {
     .section-title--center {
-      font-size: min(4.25rem, calc(100vw / (var(--title-chars, 12) * 0.5)));
-      letter-spacing: -0.01em;
+      font-size: calc(100vw / (var(--title-chars, 12) * 0.44));
+      letter-spacing: 0;
     }
   }
 </style>

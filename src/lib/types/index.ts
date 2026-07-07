@@ -97,6 +97,9 @@ export interface Section {
   id: SectionId;
   title: string;
   description: string;
+  /** Optional intro phrase with mobile-specific line breaks (Figma). Falls back
+   *  to `description` when absent. */
+  descriptionMobile?: string;
   object3D: '3d-tree' | '3d-skater' | '3d-crane';
   glbPath: string;  // path to the .glb file in static/ (e.g. '/models/tree.glb')
   frostImage: string;

@@ -29,6 +29,7 @@
 
   import { headerState, resetHeaderState } from '$lib/stores/header';
   import { lenisStore } from '$lib/stores/scroll';
+  import { isMobile } from '$lib/stores/viewport';
   import { progress, allSectionsCompleted, SECTION_ORDER } from '$lib/stores/progress';
   import { computeOpinionState } from '$lib/utils/result';
   import { FEEDBACK_HEADING } from '$lib/data/feedback';
@@ -780,7 +781,7 @@ function exitTopicsMode() {
     </div>
 
     <div class="phrase-anchor" class:is-hidden={!inIntro}>
-      <p class="phrase" bind:this={phraseEl}><span class="phrase__text">{section.description}</span></p>
+      <p class="phrase" bind:this={phraseEl}><span class="phrase__text">{$isMobile && section.descriptionMobile ? section.descriptionMobile : section.description}</span></p>
     </div>
 
     <!-- ── Topics stage ── -->
@@ -950,7 +951,6 @@ function exitTopicsMode() {
     .phrase {
       height: auto;
       align-items: flex-start;
-      white-space: normal; /* wrap naturally at phone width (ignore desktop breaks) */
       font-size: clamp(1.7rem, 8.2vw, 2.2rem); /* 32px @390 */
     }
   }

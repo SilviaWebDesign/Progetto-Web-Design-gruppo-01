@@ -12,6 +12,8 @@ export const infrastructureSection: Section = {
   title: 'Infrastrutture',
  description:
     'Le Olimpiadi prendono forma attraverso\ncantieri, impianti e collegamenti\ntra territori. Queste opere possono\nessere lette come investimenti utili\no come interventi costosi, il cui valore\ndipende da cosa resterà dopo l’evento.',
+  descriptionMobile:
+    'Le Olimpiadi\nprendono forma\nattraverso\ncantieri, impianti\ne collegamenti\ntra territori. Queste\nopere possono\nessere lette come\ninvestimenti utili\no come interventi\ncostosi, il cui valore\ndipende da cosa\nresterà dopo\nl’evento.',
   object3D: '3d-crane',
   glbPath: '/models/infrastructure-base.glb',
   frostImage: '/images/frost-infrastructure.png',
