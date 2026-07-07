@@ -87,7 +87,7 @@
 
   <p class="results__quote">
     La realtà non è mai unica e uguale per tutti.<br />
-    Lo stesso evento può generare visioni differenti e soggettive, in base alle opinioni di ognuno
+    Lo stesso evento può generare visioni differenti e soggettive, in base alle opinioni di ognuno.
   </p>
 
  <div class="results__ctas">

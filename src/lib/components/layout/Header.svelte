@@ -53,7 +53,7 @@
     })),
     // NOTE: /about doesn't exist yet — link added so the menu is complete.
     // It will 404 until the About page is built (roadmap).
-    { href: '/about', label: 'About us' }
+    { href: '/about', label: 'About' }
   ];
 
   function updateScrollState() {

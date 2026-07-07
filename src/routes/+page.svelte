@@ -319,7 +319,7 @@
     </div>
     {#if showFinalCta}
       <button class="home__final-cta" onclick={goToCards} aria-label="Inizia il percorso">
-        <span>Scopri le sezioni</span>
+        <span>Inizia il percorso</span>
         <svg class="home__hint-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
           <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
