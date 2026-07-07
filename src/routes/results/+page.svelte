@@ -56,7 +56,8 @@
   function maybeReveal() {
     if (assetsReady) return;
     const expected = expectedModels();
-    if (expected === 0 || (readyCount >= expected && minElapsed)) assetsReady = true;
+    const barDone = loadProgress >= 1; // let the bar visibly reach 100%, like the home
+    if (expected === 0 || (readyCount >= expected && minElapsed && barDone)) assetsReady = true;
   }
   function onModelReady() {
     readyCount += 1;
@@ -72,7 +73,10 @@
       ...models.map((m) => m.src).filter((s): s is string => !!s),
       '/models/snow-mountain.glb'
     ];
-    void preloadAssets(urls, (p) => (loadProgress = p));
+    void preloadAssets(urls, (p) => {
+      loadProgress = p;
+      maybeReveal();
+    });
 
     const minT = setTimeout(() => {
       minElapsed = true;
