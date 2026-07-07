@@ -15,6 +15,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
   import { sections } from '$lib/data/sections';
   import { headerState } from '$lib/stores/header';
 
@@ -68,6 +69,17 @@
     menuOpen = false;
   }
 
+  /* Logo / "Home" link: if we're already on "/", the URL doesn't change so
+     SvelteKit's router won't navigate (no-op). In that case, skip the
+     navigation and ask the home page to reset its internal scroll engine
+     back to the start instead. */
+  function handleHomeClick(event: MouseEvent) {
+    if (page.url.pathname === '/') {
+      event.preventDefault();
+      $headerState.onLogoClick?.();
+    }
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape' && menuOpen) {
       closeMenu();
@@ -115,7 +127,7 @@
   class:header--menu-open={menuOpen}
 >
   <div class="header__inner">
-  <a class="header__logo" href="/">Quante facce ha una medaglia?</a>
+  <a class="header__logo" href="/" onclick={handleHomeClick}>Quante facce ha una medaglia?</a>
 
   {#if sectionTitle}
     <button
@@ -169,7 +181,14 @@
     <ul class="menu-overlay__list">
       {#each navLinks as link (link.href)}
         <li>
-          <a class="menu-overlay__link" href={link.href} onclick={closeMenu}>
+          <a
+            class="menu-overlay__link"
+            href={link.href}
+            onclick={(e) => {
+              if (link.href === '/') handleHomeClick(e);
+              closeMenu();
+            }}
+          >
             {link.label}
           </a>
         </li>

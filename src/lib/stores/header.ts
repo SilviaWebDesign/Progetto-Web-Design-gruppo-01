@@ -17,13 +17,16 @@ interface HeaderState {
   forceVisible?: boolean;
   /** Called when the centered section name is clicked (jump to section start). */
   onSectionTitleClick?: () => void;
+  /** Called when the logo/Home link is clicked while already on "/" (reset to top). */
+  onLogoClick?: () => void;
 }
 
 export const headerState = writable<HeaderState>({
   sectionTitle: '',
   showSection: false,
   forceVisible: false,
-  onSectionTitleClick: undefined
+  onSectionTitleClick: undefined,
+  onLogoClick: undefined
 });
 
 /** Reset to defaults (e.g. when leaving a section page). */
@@ -32,6 +35,7 @@ export function resetHeaderState() {
     sectionTitle: '',
     showSection: false,
     forceVisible: false,
-    onSectionTitleClick: undefined
+    onSectionTitleClick: undefined,
+    onLogoClick: undefined
   });
 }

@@ -107,6 +107,18 @@
     headerState.update((s) => ({ ...s, forceVisible: scrollProgress > 0.06 }));
   });
 
+  $effect(() => {
+    // clicking the logo/Home link while already on "/" can't trigger a navigation
+    // (same URL), so the Header calls this to reset the narrative to the start
+    headerState.update((s) => ({
+      ...s,
+      onLogoClick: () => {
+        gestureAnchor = 0;
+        target = 0;
+      }
+    }));
+  });
+
   // landing on "/#sections" jumps straight to the cards
   $effect(() => {
     if (page.url.hash === '#sections') {
@@ -264,7 +276,7 @@
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
-      headerState.update((s) => ({ ...s, forceVisible: false }));
+      headerState.update((s) => ({ ...s, forceVisible: false, onLogoClick: undefined }));
     };
   });
 </script>
