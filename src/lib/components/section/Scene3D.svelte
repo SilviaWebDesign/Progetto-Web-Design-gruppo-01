@@ -133,8 +133,7 @@
 
 
   const _hoverNDC = new THREE.Vector2();
-  let pointerInside = false;
-  const HOVER_STRENGTH_RATE = 10; 
+  let pointerInside = false; 
 
   const resultModels = new Map<string, THREE.Group>();
 
@@ -553,64 +552,16 @@
     particleMat = new THREE.ShaderMaterial({
       uniforms: {
         uPulse: { value: 0.0 },
-        uBaseOpacity: { value: 0.0 },
-        uPointerNDC: { value: new THREE.Vector2() },
-        uHoverRadiusNDC: { value: 0.18 },
-        uHoverPush: { value: 0.2 },
-        uHoverStrength: { value: 0.0 },
-        uHoverJitter: { value: 1.0 },
-        uAspect: { value: camera ? camera.aspect : 1 }
+        uBaseOpacity: { value: 0.0 }
       },
       vertexShader: `
         attribute vec3 aDirection;
         uniform float uPulse;
-        uniform vec2 uPointerNDC;
-        uniform float uHoverRadiusNDC;
-        uniform float uHoverPush;
-        uniform float uHoverStrength;
-        uniform float uHoverJitter;
-        uniform float uAspect;
-
-        float hash(vec3 p) {
-          return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-        }
-
         void main() {
+          // Idle "breath": particles expand slightly along their scatter dir.
+          // Cursor displacement is done on the CPU (see updateParticlePhysics).
           vec3 local = position + aDirection * uPulse;
-          vec3 instPos = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-
-          // particle vertex and center in VIEW space (camera-aligned)
-          vec4 vertView = modelViewMatrix * instanceMatrix * vec4(local, 1.0);
-          vec4 centerView = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-
-          // project center to screen (NDC) -> distance to cursor ignores depth
-          vec4 centerClip = projectionMatrix * centerView;
-          vec2 ndc = centerClip.xy / max(centerClip.w, 0.0001);
-
-          // stable per-particle randoms
-          float r1 = hash(instPos + 1.3);
-          float r2 = hash(instPos + 5.7);
-          float r3 = hash(instPos + 9.1);
-
-          // domain-warp the sample point: affected zone is blobby, not a circle
-          vec2 warp = (vec2(r1, r2) - 0.5) * uHoverJitter * 0.14;
-          vec2 d = (ndc + warp) - uPointerNDC;
-          d.x *= uAspect;
-          float dist = length(d);
-
-          float infl = smoothstep(uHoverRadiusNDC, uHoverRadiusNDC * 0.2, dist) * uHoverStrength;
-
-          // direction: per-particle turbulent angle blended with radial.
-          // mostly turbulent -> particles scatter instead of clearing a clean sphere
-          float a = r3 * 6.2831853;
-          vec2 turb = vec2(cos(a), sin(a));
-          vec2 radial = dist > 0.0001 ? normalize(d) : turb;
-          vec2 dir = normalize(mix(radial, turb, uHoverJitter * 0.8) + 1e-4);
-
-          float pushAmt = uHoverPush * (0.5 + r1);
-          vertView.xy += dir * infl * pushAmt;
-
-          gl_Position = projectionMatrix * vertView;
+          gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(local, 1.0);
         }
       `,
       fragmentShader: `
@@ -957,15 +908,15 @@
   }
 
   function updateHoverPointer(clientX: number, clientY: number) {
-    if (!renderer || !particleMat) return;
+    if (!renderer) return;
     const rect = renderer.domElement.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
 
+    // Keep the raw pointer NDC fresh; the physics loop reads it each frame.
     _hoverNDC.set(
       ((clientX - rect.left) / rect.width) * 2 - 1,
       -((clientY - rect.top) / rect.height) * 2 + 1
     );
-    particleMat.uniforms.uPointerNDC.value.lerp(_hoverNDC, 0.5);
   }
 
   function onPointerMove(event: PointerEvent) {
@@ -986,10 +937,6 @@
 
     if (spinner && !orbitEnabled) spinner.rotation.y += IDLE_RAD_S * dt;
     if (controls?.enabled) controls.update();
-
-    // Shader hover retired: the CPU cross-through physics (updateParticlePhysics)
-    // now owns cursor displacement. Keep the old uniform pinned at 0.
-    if (particleMat) particleMat.uniforms.uHoverStrength.value = 0;
 
     if (transitionState === 'in' && particleMesh && particleMat && iMatBuf) {
       transitionProgress = Math.min(1, transitionProgress + dt / TRANSITION_DURATION);
@@ -1128,7 +1075,6 @@
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    if (particleMat) particleMat.uniforms.uAspect.value = camera.aspect;
     applyViewportFit();
   }
 </script>
