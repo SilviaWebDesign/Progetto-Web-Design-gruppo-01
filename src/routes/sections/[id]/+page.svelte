@@ -485,8 +485,8 @@ function exitTopicsMode() {
 
       heroTl.fromTo(
         titleWrap,
-        { scaleY: 1, yPercent: 0, opacity: 1 },
-        { scaleY: 2.2, yPercent: -120, opacity: 0, ease: 'power3.inOut' },
+        { yPercent: 0, opacity: 1 },
+        { yPercent: -100, opacity: 0, ease: 'power3.inOut' },
         0
       );
       heroTl.fromTo(frostLayer, { opacity: 1 }, { opacity: 0, ease: 'power2.inOut' }, 0);
