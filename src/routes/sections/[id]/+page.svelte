@@ -743,7 +743,7 @@ function exitTopicsMode() {
         if (mobileCardsVisible) {
           // Mode B: let the comments scroll natively; only advance once at the edge.
           const el = e.target as Element | null;
-          const sc = el && (el.closest('.stage__right') as HTMLElement | null);
+          const sc = el && (el.closest('.stage__right-scroll') as HTMLElement | null);
           if (sc) {
             const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 8;
             const atTop = sc.scrollTop < 8;
