@@ -661,6 +661,18 @@ function exitTopicsMode() {
       }
 
       if (phase === 'topics') {
+        // Mode B (mobile): let the comments scroll natively; only advance the topic
+        // once the comments hit their edge (matches the prototype).
+        if (mobileCardsVisible) {
+          const el = e.target as Element | null;
+          const sc = el && (el.closest('.stage__right') as HTMLElement | null);
+          if (sc) {
+            const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 8;
+            const atTop = sc.scrollTop < 8;
+            if ((e.deltaY > 0 && !atBottom) || (e.deltaY < 0 && !atTop)) return;
+          }
+        }
+
         const goingDown = e.deltaY > 0;
 
         // guards first, so leftover scroll momentum can't fire another action
@@ -729,10 +741,14 @@ function exitTopicsMode() {
         // In mode B (mobile), let the comments list scroll natively instead of
         // hijacking the gesture for topic navigation.
         if (mobileCardsVisible) {
-          // mobileCardsVisible is only ever set on mobile, so no need to re-check
-          // $isMobile here (that store read is unreliable inside this closure).
+          // Mode B: let the comments scroll natively; only advance once at the edge.
           const el = e.target as Element | null;
-          if (el && el.closest('.stage__right')) return; // comments own this touch
+          const sc = el && (el.closest('.stage__right') as HTMLElement | null);
+          if (sc) {
+            const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 8;
+            const atTop = sc.scrollTop < 8;
+            if ((dy > 0 && !atBottom) || (dy < 0 && !atTop)) return; // comments own this touch
+          }
         }
         e.preventDefault(); // we own the gesture: no native scroll in topics
         if (wheelLock || isTransitioning || touchSwiped) return;
