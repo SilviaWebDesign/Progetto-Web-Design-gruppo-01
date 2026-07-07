@@ -58,6 +58,9 @@
   );
   let currentResult = $state<OpinionState | null>(null);
   let isTransitioning = $state(false);
+  // Set while goToSectionStart() rewinds to the intro, so the scroll-driven
+  // auto-enter can't bounce us back into topics before we reach the top.
+  let returningToStart = false;
 
   type Phase = 'intro' | 'topics' | 'feedback';
   let phase = $state<Phase>('intro');
@@ -292,20 +295,58 @@ function exitTopicsMode() {
     isTransitioning = false;
   }
 
-async function goToSectionStart() {
+  async function goToSectionStart() {
     if (isTransitioning) return;
-    if (phase === 'feedback') {
-      await exitFeedbackPhase();
-    }
-    if (phase === 'topics') {
+
+    // From feedback OR topics, the header title rewinds to the intro at the top.
+    // We deliberately DON'T call exitFeedbackPhase() here: it rebuilds the whole
+    // topics UI (card entrance, stage fades, .continue) only for us to hide it
+    // again — which left a ghost CTA and, with the scroll parked at the bottom,
+    // let ScrollTrigger re-enter topics (the jumps / lock). Tear down to intro.
+    if (phase === 'feedback' || phase === 'topics') {
+      const fromFeedback = phase === 'feedback';
+      isTransitioning = true;
+      returningToStart = true;
+
+      if (fromFeedback) {
+        gsap.to('.layer--bg', { filter: 'none', duration: 0.3, ease: 'power2.inOut' });
+        scene3d?.returnToParticles();
+      }
+
+      // Rewind to the very start of the section: first topic, no result. Likes
+      // are kept on purpose (they reappear once topics are reached again, #8).
+      currentTopic = 0;
+      currentResult = null;
       phase = 'intro';
+      scene3d?.setScale(1); // reset from TOPICS_SCALE so the intro model isn't stuck small
+      // Clear leftover GSAP inline styles from earlier topic crossfades so the
+      // topic texts re-enter clean when the user scrolls back down.
+      gsap.set(['.stage__text', '.stage__heading'], { clearProps: 'opacity,transform' });
+      await tick();
+
+      // Drop GSAP inline styles so the CSS visibility classes win again.
+      gsap.set('.continue', { clearProps: 'opacity' });
+
+      const lenis = get(lenisStore);
+      lenis?.start();
+      lenis?.scrollTo(0, { immediate: true, force: true });
+      ScrollTrigger.update();
+
       scene3d?.unsettle(() => {
-        const lenis = get(lenisStore);
-        lenis?.start();
         lenis?.scrollTo(0, { immediate: true, force: true });
+        ScrollTrigger.update();
+        // release the suppression once we've settled at the very top
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            ScrollTrigger.update();
+            returningToStart = false;
+            isTransitioning = false;
+          })
+        );
       });
       return;
     }
+
     get(lenisStore)?.scrollTo(0, { immediate: true, force: true });
   }
 
@@ -426,6 +467,10 @@ async function goToSectionStart() {
           end: 'bottom bottom',
           scrub: 1.2,
           onUpdate: (self) => {
+            // Ignore the auto-enter while rewinding to the intro: the scroll can
+            // still be parked near the bottom (progress ~1) and would bounce us
+            // straight back into topics (jumps / lock / ghost CTA).
+            if (returningToStart) return;
             if (self.progress >= 0.999) enterTopicsMode();
           },
           onLeaveBack: () => exitTopicsMode()

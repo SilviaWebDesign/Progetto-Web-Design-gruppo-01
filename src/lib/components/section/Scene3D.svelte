@@ -235,6 +235,19 @@
       morphToResult,
       returnToParticles: () => {
         if (controls) controls.enabled = false;
+        // Restore the base particle cloud: after a morph, iMatBuf still holds the
+        // RESULT shape, so re-show without this leaves a stale blob (bug #14).
+        // Mirror snapToParticles: rewrite instance translations to particleTargets.
+        if (particleMesh && iMatBuf) {
+          for (let i = 0; i < COUNT; i++) {
+            const b = i * 16 + 12;
+            iMatBuf[b] = particleTargets[i * 3];
+            iMatBuf[b + 1] = particleTargets[i * 3 + 1];
+            iMatBuf[b + 2] = particleTargets[i * 3 + 2];
+          }
+          particleCurrent.set(particleTargets);
+          particleMesh.instanceMatrix.needsUpdate = true;
+        }
         if (particleMesh) particleMesh.visible = true;
         if (particleMat) {
           particleMat.uniforms.uBaseOpacity.value = 0.85;
