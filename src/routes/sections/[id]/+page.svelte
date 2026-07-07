@@ -857,7 +857,7 @@ function exitTopicsMode() {
 
       <div class="stage__right" class:no-pointer={phase !== 'topics'}>
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
-        <div class="stage__right-scroll">
+        <div class="stage__right-scroll" data-lenis-prevent>
           <CardStack
             bind:api={cardStack}
             comments={shuffledComments[currentTopic]}
