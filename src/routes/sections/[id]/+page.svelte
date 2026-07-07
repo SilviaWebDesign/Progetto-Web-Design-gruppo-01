@@ -1172,12 +1172,14 @@ function exitTopicsMode() {
     .stage__text :global(.text-block__sources) {
       font-size: 14px;
     }
-    /* Mode B (compact) */
+    /* Mode B (compact) — tighter vertical rhythm (prototype: frees room for comments) */
     .stage.m-cards-visible .stage__text :global(.text-block__title) {
       font-size: 24px;
+      margin-bottom: var(--m-compact-title-mb, 6px);
     }
     .stage.m-cards-visible .stage__text :global(.text-block__body) {
       font-size: 15px;
+      margin-bottom: var(--m-compact-body-mb, 8px);
     }
 
     /* Mode B (compact): hide the topic counter to free vertical space. */
@@ -1226,11 +1228,14 @@ function exitTopicsMode() {
       );
     }
 
-    /* Cards grow with their text on the narrow mobile column, so long comments
-       no longer overflow the fixed desktop height (96px). */
+    /* Fixed card height on mobile B (prototype: 96px). height:auto made long
+       comments stretch each card and only ~1 fit in the viewport. */
     .stage.m-cards-visible :global(.comment-card) {
-      height: auto;
-      min-height: var(--m-card-min-h, 88px); /* keep short cards from collapsing */
+      height: var(--m-card-h, 96px);
+      min-height: var(--m-card-h, 96px);
+    }
+    .stage.m-cards-visible :global(.card-stack) {
+      gap: var(--m-card-gap, 10px); /* prototype gap; desktop uses 19px */
     }
   }
 
