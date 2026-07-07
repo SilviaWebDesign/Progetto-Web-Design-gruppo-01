@@ -951,7 +951,7 @@ function exitTopicsMode() {
       height: auto;
       align-items: flex-start;
       white-space: normal; /* wrap naturally at phone width (ignore desktop breaks) */
-      font-size: clamp(1.9rem, 9.23vw, 2.5rem); /* 36px @390 */
+      font-size: clamp(1.7rem, 8.2vw, 2.2rem); /* 32px @390 */
     }
   }
 
