@@ -96,6 +96,7 @@
 
   const TOPICS_SCALE = 0.48;
   const INTRO_MODEL_SCALE = 0.85; // model size when it first appears (before shrinking to TOPICS_SCALE)
+  const INTRO_MODEL_Y_OFFSET = -0.10; // model starts slightly lower, rises into place as it fades in
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
@@ -463,7 +464,7 @@ function exitTopicsMode() {
       heroTl.fromTo(phraseEl, { opacity: 0, y: 40 }, { opacity: 1, y: 0, ease: 'power2.out' }, 0.35);
       heroTl.to(phraseEl, { opacity: 0, y: -40, ease: 'power2.in' }, 0.7);
 
-      const proxy = { rot: 0, scale: INTRO_MODEL_SCALE, appear: 0 };
+      const proxy = { rot: 0, scale: INTRO_MODEL_SCALE, appear: 0, posY: INTRO_MODEL_Y_OFFSET };
 
       const threeTl = gsap.timeline({
         scrollTrigger: {
@@ -486,6 +487,12 @@ function exitTopicsMode() {
         proxy,
         { appear: 0 },
         { appear: 1, duration: 0.12, onUpdate: () => scene3d?.setOpacity(proxy.appear) },
+        0
+      );
+      threeTl.fromTo(
+        proxy,
+        { posY: INTRO_MODEL_Y_OFFSET },
+        { posY: 0, duration: 0.12, ease: 'power2.out', onUpdate: () => scene3d?.setPositionY(proxy.posY) },
         0
       );
       threeTl.to(

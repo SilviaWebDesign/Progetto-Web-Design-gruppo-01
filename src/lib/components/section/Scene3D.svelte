@@ -27,6 +27,7 @@
   export interface Scene3DApi {
     setRotationY: (rad: number) => void;
     setScale: (factor: number) => void;
+    setPositionY: (val: number) => void;
     resetOrientation: () => void;
     setOpacity: (val: number) => void;
     settle: () => void;
@@ -158,10 +159,16 @@
       setScale: (f) => {
         if (modelGroup) modelGroup.scale.setScalar(baseScale * f);
       },
+      setPositionY: (val) => {
+        if (spinner) spinner.position.y = val;
+      },
       resetOrientation: () => {
         // Undo rotation from the feedback OrbitControls + idle spin, so the model
         // reappears at its default facing when we rewind to the intro (S5).
-        if (spinner) spinner.rotation.y = 0;
+        if (spinner) {
+          spinner.rotation.y = 0;
+          spinner.position.y = 0;
+        }
         if (camera) camera.position.set(0, 0, 6);
         if (controls) {
           controls.target.set(0, 0.3, 0);
@@ -315,7 +322,7 @@
       controls.minDistance = 1.5;
       controls.maxDistance = 8;
       controls.enablePan = false;
-      controls.autoRotate = false;
+      controls.autoRotate = true;
       controls.autoRotateSpeed = 1.5;
       controls.enabled = false;
       controls.target.set(0, 0.3, 0);
@@ -951,7 +958,7 @@
     const dt = clock.getDelta();
     const elapsed = clock.elapsedTime;
 
-    if (spinner && !orbitEnabled && !(controls && controls.enabled)) spinner.rotation.y += IDLE_RAD_S * dt;if (spinner && !orbitEnabled) spinner.rotation.y += IDLE_RAD_S * dt;
+    if (spinner && !orbitEnabled) spinner.rotation.y += IDLE_RAD_S * dt;
     if (controls?.enabled) controls.update();
 
     if (transitionState === 'in' && particleMesh && particleMat && iMatBuf) {
