@@ -55,7 +55,7 @@
   const SMOOTH = 0.09; // how fast scrollProgress chases the target
   const SNAP_IDLE_MS = 140; // pause after which it magnetically settles on a text
   const GESTURE_GAP_MS = 220; // pause that counts as "lifting the finger" (new gesture)
-  const TOUCH_SENS = 0.0006; // finger-drag speed (progress per px); mobile counterpart of WHEEL_SENS
+  const TOUCH_SENS = 0.0014; // finger-drag speed (progress per px); mobile counterpart of WHEEL_SENS
 
   const WHITE_ZONE_AT = 0.66; // just inside the white zone, BEFORE the text-3 anchor (0.69)
   const TEXT3_FADE_MS = 900; // soft, time-based fade for the final text
