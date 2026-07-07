@@ -55,6 +55,7 @@
   const SMOOTH = 0.09; // how fast scrollProgress chases the target
   const SNAP_IDLE_MS = 140; // pause after which it magnetically settles on a text
   const GESTURE_GAP_MS = 220; // pause that counts as "lifting the finger" (new gesture)
+  const TOUCH_SENS = 0.0006; // finger-drag speed (progress per px); mobile counterpart of WHEEL_SENS
 
   const WHITE_ZONE_AT = 0.66; // just inside the white zone, BEFORE the text-3 anchor (0.69)
   const TEXT3_FADE_MS = 900; // soft, time-based fade for the final text
@@ -147,6 +148,38 @@
     target = ANCHORS[LAST];
   }
 
+  // --- touch input: feeds the SAME engine as the wheel, so the mobile scroll
+  //     feels identical to desktop — the finger just replaces the wheel. ---
+  let lastTouchY = 0;
+  let touchActive = false;
+
+  function onTouchStart(e: TouchEvent) {
+    if (!revealed || e.touches.length !== 1) return;
+    touchActive = true;
+    lastTouchY = e.touches[0].clientY;
+    // a fresh finger press = a new gesture (mirrors the wheel gesture-gap reset)
+    gestureAnchor = nearestAnchorIndex(scrollProgress);
+  }
+
+  function onTouchMove(e: TouchEvent) {
+    if (!revealed || !touchActive || e.touches.length !== 1) return;
+    e.preventDefault(); // we drive the engine ourselves: no native scroll / rubber-band
+    const y = e.touches[0].clientY;
+    const d = clamp(lastTouchY - y, -60, 60); // finger up = scroll down (matches wheel sign)
+    lastTouchY = y;
+
+    // same resistance as the wheel: one gesture moves at most one anchor step
+    const lo = ANCHORS[Math.max(0, gestureAnchor - 1)];
+    const hi = ANCHORS[Math.min(LAST, gestureAnchor + 1)];
+    target = clamp(target + d * TOUCH_SENS, lo, hi);
+    scheduleSnap();
+  }
+
+  function onTouchEnd() {
+    touchActive = false;
+    scheduleSnap(); // settle magnetically on release, like the wheel pause
+  }
+
   let lastFrame = 0;
 
   function frame() {
@@ -171,6 +204,9 @@
     frame();
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKey);
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
 
     // preload heavy 3D assets once per session (guarantees they're cached
     // before the home is revealed, even on slow connections)
@@ -203,6 +239,9 @@
       if (snapTimer) clearTimeout(snapTimer);
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
       headerState.update((s) => ({ ...s, forceVisible: false }));
     };
   });
@@ -285,6 +324,7 @@
     width: 100%;
     height: 100vh;
     overflow: hidden;
+    touch-action: none; /* the finger drives our scroll engine, not native scroll */
   }
 
   .home__bg {
