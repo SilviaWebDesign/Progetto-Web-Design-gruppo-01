@@ -1126,6 +1126,11 @@ function exitTopicsMode() {
       font-size: 15px;
     }
 
+    /* Mode B (compact): hide the topic counter to free vertical space. */
+    .stage.m-cards-visible .stage__text :global(.text-block__counter) {
+      display: none;
+    }
+
     .stage__right {
       width: auto;
       display: none;
@@ -1134,6 +1139,9 @@ function exitTopicsMode() {
     .stage.m-cards-visible .stage__right {
       display: block;
       margin-top: auto;
+      /* --m-comments-lift raises the whole comment block off the bottom edge.
+         margin-top:auto pins it low; this margin lifts it back up. Tune freely. */
+      margin-bottom: var(--m-comments-lift, 6vh);
       min-height: 0; /* let the inner scroll wrapper size correctly in flex/grid */
     }
 
