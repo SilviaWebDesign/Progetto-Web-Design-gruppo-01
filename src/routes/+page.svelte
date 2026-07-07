@@ -8,6 +8,7 @@
   import Preloader from '$lib/components/layout/Preloader.svelte';
   import { sections } from '$lib/data/sections';
   import { preloadAssets } from '$lib/utils/preloadAssets';
+  import { isMobile } from '$lib/stores/viewport';
 
   const PRELOAD_URLS = ['/models/snow-mountain.glb', ...sections.map((s) => s.glbPath)];
   const PRELOAD_FLAG = 'home-assets-ready';
@@ -44,6 +45,27 @@
   const TEXT3_LINES = [
     'Le tue scelte plasmeranno la realtà',
     'di Milano-Cortina 2026.'
+  ];
+
+  // Mobile line breaks (calibrated to the 390px Figma frame): the desktop breaks
+  // are too wide for a phone, so we swap to shorter lines when `$isMobile`.
+  const TEXT1_LINES_M = [
+    'La realtà non è unica',
+    'e oggettiva, dipende',
+    'dai fatti che osservi e dal',
+    'punto di vista che scegli.'
+  ];
+  const TEXT2_LINES_M = [
+    'Attraversa il percorso,',
+    'tra sostenibilità, sport',
+    'e infrastrutture, e prendi',
+    'posizione davanti',
+    'alle informazioni.'
+  ];
+  const TEXT3_LINES_M = [
+    'Le tue scelte',
+    'plasmeranno la realtà di',
+    'Milano-Cortina 2026.'
   ];
 
   // mountain scrollProgress at each stage (hero, text1, text2, text3, cards)
@@ -281,19 +303,19 @@
 
   <section class="home__stage home__text" style="opacity: {text1Opacity}" aria-hidden={text1Opacity < 0.05}>
     <div class="home__lines">
-      {#each TEXT1_LINES as line}<p class="home__line">{line}</p>{/each}
+      {#each ($isMobile ? TEXT1_LINES_M : TEXT1_LINES) as line}<p class="home__line">{line}</p>{/each}
     </div>
   </section>
 
   <section class="home__stage home__text" style="opacity: {text2Opacity}" aria-hidden={text2Opacity < 0.05}>
     <div class="home__lines">
-      {#each TEXT2_LINES as line}<p class="home__line">{line}</p>{/each}
+      {#each ($isMobile ? TEXT2_LINES_M : TEXT2_LINES) as line}<p class="home__line">{line}</p>{/each}
     </div>
   </section>
 
   <section class="home__stage home__text home__text--center" class:is-active={showFinalCta} style="opacity: {text3Opacity}" aria-hidden={text3Opacity < 0.05}>
     <div class="home__lines">
-      {#each TEXT3_LINES as line}<p class="home__line">{line}</p>{/each}
+      {#each ($isMobile ? TEXT3_LINES_M : TEXT3_LINES) as line}<p class="home__line">{line}</p>{/each}
     </div>
     {#if showFinalCta}
       <button class="home__final-cta" onclick={goToCards} aria-label="Inizia il percorso">
@@ -528,5 +550,39 @@
   }
   .home__final-cta:hover {
     transform: translateX(-50%) scale(1.08); /* keep centering while growing */
+  }
+
+  /* ── Mobile (≤768px): reflow typography, calibrated to the 390px Figma frame.
+     Desktop composition is untouched. Tune the clamp values to taste. ── */
+  @media (max-width: 768px) {
+    .home__stage {
+      padding: 88px var(--page-gutter) 40px;
+    }
+
+    .home__brand {
+      top: 12vh;
+      font-size: clamp(0.8rem, 3.6vw, 1rem); /* ~14px @390 */
+    }
+
+    .home__title {
+      /* keep it on two lines: bounded so it fits "QUANTE FACCE HA" on one row */
+      font-size: clamp(2rem, 9.9vw, 2.5rem); /* ~38.6px @390 */
+    }
+
+    /* narrative blocks: readable size + vertically centered like the Figma */
+    .home__text {
+      justify-content: center;
+    }
+    .home__text .home__lines {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    .home__line {
+      font-size: clamp(1.15rem, 5.4vw, 1.5rem); /* ~21px @390 */
+    }
+
+    .home__hint-text {
+      font-size: clamp(0.7rem, 3vw, 0.85rem);
+    }
   }
 </style>
