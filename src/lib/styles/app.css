@@ -25,3 +25,15 @@
 /* --- Global (base styles for the document) --- */
 @import './global/reset.css';
 @import './global/base.css';
+
+/* --- Menu page blur ---
+   When the menu is open, blur the whole page behind it. Done with a filter on
+   the app shell (not backdrop-filter on the overlay) because Chrome fails to
+   blur the WebGL canvas backdrop. Knob: --menu-page-blur. */
+.app-shell {
+  --menu-page-blur: 18px;
+  transition: filter 0.3s ease;
+}
+body.menu-open .app-shell {
+  filter: blur(var(--menu-page-blur));
+}

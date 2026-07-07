@@ -26,4 +26,4 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children()}
+<div class="app-shell">{@render children()}</div>

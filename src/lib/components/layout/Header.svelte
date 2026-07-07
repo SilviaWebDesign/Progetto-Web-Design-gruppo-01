@@ -84,9 +84,12 @@
     event.stopImmediatePropagation();
   }
 
-  /* Lock body scroll while the menu drawer is open. */
+  /* Lock body scroll while the menu drawer is open, and flag the body so the
+     page content behind can be blurred via a CSS filter (reliable on Chrome,
+     where backdrop-filter fails to sample the WebGL canvas). */
   $effect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
+    document.body.classList.toggle('menu-open', menuOpen);
   });
 
   onMount(() => {
@@ -410,9 +413,8 @@
      ============================================================ */
 
   .menu-overlay {
-    /* Frosted glass over the frozen page (same spirit as the results blur).
-       Two knobs to taste: */
-    --menu-blur: 18px;                       /* blur strength of the page behind */
+    /* Light tint on top of the page, which is blurred by a CSS filter on
+       .app-shell (see app.css) — reliable on Chrome, unlike backdrop-filter. */
     --menu-veil: rgba(249, 249, 250, 0.55);  /* light tint over the blurred page */
 
     position: fixed;
@@ -424,8 +426,6 @@
     justify-content: center;
 
     background: var(--menu-veil);
-    backdrop-filter: blur(var(--menu-blur));
-    -webkit-backdrop-filter: blur(var(--menu-blur));
 
     opacity: 0;
     visibility: hidden;
