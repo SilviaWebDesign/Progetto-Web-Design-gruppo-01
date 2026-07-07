@@ -665,7 +665,7 @@ function exitTopicsMode() {
         // once the comments hit their edge (matches the prototype).
         if (mobileCardsVisible) {
           const el = e.target as Element | null;
-          const sc = el && (el.closest('.stage__right') as HTMLElement | null);
+          const sc = el && (el.closest('.stage__right-scroll') as HTMLElement | null);
           if (sc) {
             const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 8;
             const atTop = sc.scrollTop < 8;
@@ -857,15 +857,17 @@ function exitTopicsMode() {
 
       <div class="stage__right" class:no-pointer={phase !== 'topics'}>
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
-        <CardStack
-          bind:api={cardStack}
-          comments={shuffledComments[currentTopic]}
-          sectionId={section.id}
-          likes={topicLikes[currentTopic]}
-          onToggleLike={toggleLike}
-          topicId={topic.id}
-          active={phase === 'topics'}
-        />
+        <div class="stage__right-scroll">
+          <CardStack
+            bind:api={cardStack}
+            comments={shuffledComments[currentTopic]}
+            sectionId={section.id}
+            likes={topicLikes[currentTopic]}
+            onToggleLike={toggleLike}
+            topicId={topic.id}
+            active={phase === 'topics'}
+          />
+        </div>
       </div>
     </div>
 
@@ -1132,10 +1134,14 @@ function exitTopicsMode() {
     .stage.m-cards-visible .stage__right {
       display: block;
       margin-top: auto;
-      /* the scroll VIEWPORT: fixed height, the CardStack inside overflows &
-         scrolls (like the prototype). Putting overflow on the flex .card-stack
-         made the cards squish instead of overflowing -> no scroll. */
-      height: var(--m-comments-h, 26vh);
+      min-height: 0; /* let the inner scroll wrapper size correctly in flex/grid */
+    }
+
+    /* dedicated scroll VIEWPORT (prototype approach): a plain block with a fixed
+       height + overflow, wrapping ONLY the CardStack, so it's not resized by the
+       .stage layout and the cards overflow & scroll natively. */
+    .stage.m-cards-visible .stage__right-scroll {
+      height: var(--m-comments-h, 40vh);
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
