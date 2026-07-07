@@ -553,6 +553,13 @@ function exitTopicsMode() {
 
     let wheelLock = false;
 
+    // --- touch input (mobile): mirrors onWheel branch-by-branch so the sections
+    //     behave the same under a finger. One discrete action per swipe. ---
+    const TOUCH_TOPIC_THRESHOLD = 40; // px of swipe to advance one topic
+    let touchLastY = 0;
+    let touchAccum = 0; // swipe distance accumulated within the current gesture
+    let touchSwiped = false; // whether this gesture already fired a discrete action
+
     // --- intro snap: settle the frost/phrase scroll onto rest beats ---
     const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
     const PHRASE_BEAT = 0.75; // viewport-height fraction where the phrase rests
@@ -643,15 +650,79 @@ function exitTopicsMode() {
       }
     }
 
+    function onTouchStart(e: TouchEvent) {
+      if (e.touches.length !== 1) return;
+      touchLastY = e.touches[0].clientY;
+      touchAccum = 0;
+      touchSwiped = false;
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      if (e.touches.length !== 1) return;
+      const y = e.touches[0].clientY;
+      const dy = touchLastY - y; // finger up = positive = "scroll down" (matches wheel sign)
+      touchLastY = y;
+
+      if (phase === 'intro') {
+        // let native/Lenis scroll drive the reveal; we only track direction for the snap
+        if (dy !== 0) introDir = dy > 0 ? 1 : -1;
+        if (introSnapTimer) clearTimeout(introSnapTimer);
+        introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        return; // no preventDefault -> native scroll moves the intro
+      }
+
+      if (phase === 'topics') {
+        e.preventDefault(); // we own the gesture: no native scroll in topics
+        if (wheelLock || isTransitioning || touchSwiped) return;
+        touchAccum += dy;
+        if (Math.abs(touchAccum) < TOUCH_TOPIC_THRESHOLD) return;
+
+        const goingDown = touchAccum > 0;
+        touchSwiped = true; // one discrete action per swipe (like wheelLock for the wheel)
+
+        // at the first topic, swiping down (content up) leaves topics mode
+        if (!goingDown && currentTopic === 0) {
+          wheelLock = true;
+          exitTopicsMode();
+          setTimeout(() => (wheelLock = false), 1000);
+          return;
+        }
+        wheelLock = true;
+        if (goingDown) goNext();
+        else goPrev();
+        setTimeout(() => (wheelLock = false), 1000);
+        return;
+      }
+
+      if (phase === 'feedback') {
+        e.preventDefault(); // one-way: no scrolling back on touch either
+      }
+    }
+
+    function onTouchEnd() {
+      touchAccum = 0;
+      touchSwiped = false;
+      if (phase === 'intro') {
+        if (introSnapTimer) clearTimeout(introSnapTimer);
+        introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+      }
+    }
+
     const onFeedbackResize = () => {
       if (phase === 'feedback') fitFeedbackBody();
     };
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('resize', onFeedbackResize);
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('resize', onFeedbackResize);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
       if (introSnapTimer) clearTimeout(introSnapTimer);
       ctx.revert();
       resetHeaderState();
