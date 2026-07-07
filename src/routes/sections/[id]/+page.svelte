@@ -728,7 +728,9 @@ function exitTopicsMode() {
       if (phase === 'topics') {
         // In mode B (mobile), let the comments list scroll natively instead of
         // hijacking the gesture for topic navigation.
-        if ($isMobile && mobileCardsVisible) {
+        if (mobileCardsVisible) {
+          // mobileCardsVisible is only ever set on mobile, so no need to re-check
+          // $isMobile here (that store read is unreliable inside this closure).
           const el = e.target as Element | null;
           if (el && el.closest('.card-stack')) return; // comments own this touch
         }
