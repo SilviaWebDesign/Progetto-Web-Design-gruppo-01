@@ -27,6 +27,7 @@
   export interface Scene3DApi {
     setRotationY: (rad: number) => void;
     setScale: (factor: number) => void;
+    resetOrientation: () => void;
     setOpacity: (val: number) => void;
     settle: () => void;
     unsettle: (onDone?: () => void) => void;
@@ -156,6 +157,17 @@
       },
       setScale: (f) => {
         if (modelGroup) modelGroup.scale.setScalar(baseScale * f);
+      },
+      resetOrientation: () => {
+        // Undo rotation from the feedback OrbitControls + idle spin, so the model
+        // reappears at its default facing when we rewind to the intro (S5).
+        if (spinner) spinner.rotation.y = 0;
+        if (camera) camera.position.set(0, 0, 6);
+        if (controls) {
+          controls.target.set(0, 0.3, 0);
+          controls.update();
+          controls.enabled = false;
+        }
       },
       setOpacity: (val) => {
         materials.forEach((m) => {

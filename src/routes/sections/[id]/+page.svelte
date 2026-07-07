@@ -323,6 +323,7 @@ function exitTopicsMode() {
       progress.clearSection(section.id);
       phase = 'intro';
       scene3d?.setScale(INTRO_MODEL_SCALE); // reset from TOPICS_SCALE so the intro model isn't stuck small
+      scene3d?.resetOrientation(); // reset any rotation done in the feedback (S5)
       // Clear leftover GSAP inline styles from earlier topic crossfades so the
       // topic texts re-enter clean when the user scrolls back down.
       gsap.set(['.stage__text', '.stage__heading'], { clearProps: 'opacity,transform' });

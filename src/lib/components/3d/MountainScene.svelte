@@ -21,7 +21,7 @@
 
   // --- scroll phase thresholds (must match the home anchors scale) ---
   const ORBIT_END = 0.45;
-  const SNOW_DIVE_START = 0.46;
+  const SNOW_DIVE_START = 0.38;
   const CARDS_START = 0.9;
   const CARDS_END = 0.95;
 
