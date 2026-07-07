@@ -87,6 +87,33 @@
   const particleTargets = new Float32Array(COUNT * 3);
   const particleCurrent = new Float32Array(COUNT * 3);
 
+  // --- Cursor "cross-through" physics (Windle-style) -----------------------
+  // Each particle keeps a velocity, springs back to its home (particleTargets),
+  // and is pushed by a localized 3D sphere around the cursor. Runs ONLY in the
+  // idle 'done' state; the transition/morph loops still own iMatBuf otherwise.
+  const particleVel = new Float32Array(COUNT * 3);
+  const PART_SPRING = 0.04;         // pull back toward home (higher = snappier return)
+  const PART_DAMPING = 0.86;        // velocity kept per frame (higher = longer wake)
+  const CURSOR_RADIUS_FRAC = 0.056; // ray reach (perpendicular), fraction of model extent
+  const CURSOR_PUSH_FRAC = 0.045;   // per-frame impulse at center, fraction of extent
+  const PART_MAX_OFFSET_FRAC = 0.6; // clamp so particles never fly too far from home
+  const PART_SLEEP_V2 = 1e-8;       // below this max speed^2 (and no hover) -> sleep
+  const CURSOR_SPEED_BOOST = 40;    // faster cursor -> stronger plow (0 = speed-independent)
+  const CURSOR_BOOST_MAX = 3;       // cap the extra push so a fast flick can't explode it
+  let cursorRadius = 0;             // resolved in buildParticles (needs the cloud extent)
+  let cursorPush = 0;
+  let partMaxOffset = 0;
+  let physicsAsleep = true;
+  const raycaster = new THREE.Raycaster();
+  // Cursor as a RAY in the group's local space, so the push pierces the model
+  // through its full depth (front & back both react along the line).
+  const _rayOriginLocal = new THREE.Vector3();
+  const _rayDirLocal = new THREE.Vector3();
+  const _invMat = new THREE.Matrix4();
+  const _prevNDC = new THREE.Vector2();
+  let hoverWasActive = false;
+  let cursorSpeed = 0;
+
   type TState = 'none' | 'in' | 'out' | 'done';
   let transitionState: TState = 'none';
   let transitionProgress = 0;
@@ -181,6 +208,8 @@
           iMatBuf[b + 2] = particleTargets[i * 3 + 2];
         }
         particleCurrent.set(particleTargets);
+        particleVel.fill(0);
+        physicsAsleep = true;
         particleMesh.instanceMatrix.needsUpdate = true;
         particleMesh.visible = true;
 
@@ -246,6 +275,8 @@
             iMatBuf[b + 2] = particleTargets[i * 3 + 2];
           }
           particleCurrent.set(particleTargets);
+          particleVel.fill(0);
+          physicsAsleep = true;
           particleMesh.instanceMatrix.needsUpdate = true;
         }
         if (particleMesh) particleMesh.visible = true;
@@ -486,6 +517,25 @@
       particleTargets[i * 3 + 2] = p.z;
     }
     merged.dispose();
+
+    // Resolve the cursor-physics scales from the sampled cloud's local extent,
+    // so reach/impulse feel the same across models of different sizes.
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (let i = 0; i < COUNT; i++) {
+      const x = particleTargets[i * 3];
+      const y = particleTargets[i * 3 + 1];
+      const z = particleTargets[i * 3 + 2];
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    const localExtent = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 1;
+    cursorRadius = localExtent * CURSOR_RADIUS_FRAC;
+    cursorPush = localExtent * CURSOR_PUSH_FRAC;
+    partMaxOffset = localExtent * PART_MAX_OFFSET_FRAC;
+    particleVel.fill(0);
+    physicsAsleep = true;
 
     const REF_BS = 0.6405;
     const particleRadius = (0.012 * REF_BS) / baseScale;
@@ -772,6 +822,119 @@
     manualPulseElapsed = 0;
   }
 
+  function updateParticlePhysics() {
+    if (!particleMesh || !iMatBuf || !camera || !modelGroup) return;
+
+    const hovering = pointerInside && particlesHoverActive();
+    if (physicsAsleep && !hovering) return; // at rest and untouched -> nothing to do
+    physicsAsleep = false;
+
+    // Resolve the cursor to a point in the group's LOCAL space (once per frame),
+    // so the sphere tracks correctly even while the cloud idle-rotates.
+    let hasCursor = false;
+    if (hovering) {
+      // Cursor speed from SCREEN (NDC) movement -> immune to the cloud idle spin.
+      if (!hoverWasActive) _prevNDC.copy(_hoverNDC);
+      const sdx = (_hoverNDC.x - _prevNDC.x) * camera.aspect;
+      const sdy = _hoverNDC.y - _prevNDC.y;
+      cursorSpeed = Math.hypot(sdx, sdy);
+      _prevNDC.copy(_hoverNDC);
+
+      // Transform the world cursor RAY into group-local space (origin + dir), so
+      // we can push by perpendicular distance to the line (full-depth pierce).
+      raycaster.setFromCamera(_hoverNDC, camera);
+      _invMat.copy(modelGroup.matrixWorld).invert();
+      _rayOriginLocal.copy(raycaster.ray.origin).applyMatrix4(_invMat);
+      _rayDirLocal.copy(raycaster.ray.direction).transformDirection(_invMat).normalize();
+      hasCursor = true;
+    } else {
+      cursorSpeed = 0;
+    }
+    hoverWasActive = hovering;
+
+    // Extra plow when the cursor moves fast (capped so a flick can't explode).
+    const boost = 1 + Math.min(cursorSpeed * CURSOR_SPEED_BOOST, CURSOR_BOOST_MAX);
+
+    const r = cursorRadius;
+    const r2 = r * r;
+    const maxOff = partMaxOffset;
+    const maxOff2 = maxOff * maxOff;
+    let maxV2 = 0;
+
+    for (let i = 0; i < COUNT; i++) {
+      const ix = i * 3;
+      const hx = particleTargets[ix], hy = particleTargets[ix + 1], hz = particleTargets[ix + 2];
+      let cx = particleCurrent[ix], cy = particleCurrent[ix + 1], cz = particleCurrent[ix + 2];
+      let vx = particleVel[ix], vy = particleVel[ix + 1], vz = particleVel[ix + 2];
+
+      // spring toward home
+      vx += (hx - cx) * PART_SPRING;
+      vy += (hy - cy) * PART_SPRING;
+      vz += (hz - cz) * PART_SPRING;
+
+      // repulsion from the cursor RAY: push away by perpendicular distance to the
+      // line, so the "needle" pierces the whole model in depth (front & back).
+      if (hasCursor) {
+        const wx = cx - _rayOriginLocal.x;
+        const wy = cy - _rayOriginLocal.y;
+        const wz = cz - _rayOriginLocal.z;
+        const t = wx * _rayDirLocal.x + wy * _rayDirLocal.y + wz * _rayDirLocal.z;
+        const dx = wx - _rayDirLocal.x * t; // perpendicular component
+        const dy = wy - _rayDirLocal.y * t;
+        const dz = wz - _rayDirLocal.z * t;
+        const d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 < r2 && d2 > 1e-9) {
+          const d = Math.sqrt(d2);
+          const f = (1 - d / r) * cursorPush * boost; // linear falloff toward the edge
+          const inv = 1 / d;
+          vx += dx * inv * f;
+          vy += dy * inv * f;
+          vz += dz * inv * f;
+        }
+      }
+
+      // damp + integrate
+      vx *= PART_DAMPING; vy *= PART_DAMPING; vz *= PART_DAMPING;
+      cx += vx; cy += vy; cz += vz;
+
+      // clamp distance from home so nothing ever flies off
+      const ox = cx - hx, oy = cy - hy, oz = cz - hz;
+      const o2 = ox * ox + oy * oy + oz * oz;
+      if (o2 > maxOff2) {
+        const sc = maxOff / Math.sqrt(o2);
+        cx = hx + ox * sc; cy = hy + oy * sc; cz = hz + oz * sc;
+      }
+
+      particleCurrent[ix] = cx; particleCurrent[ix + 1] = cy; particleCurrent[ix + 2] = cz;
+      particleVel[ix] = vx; particleVel[ix + 1] = vy; particleVel[ix + 2] = vz;
+
+      const v2 = vx * vx + vy * vy + vz * vz;
+      if (v2 > maxV2) maxV2 = v2;
+
+      const b = i * 16 + 12;
+      iMatBuf[b] = cx; iMatBuf[b + 1] = cy; iMatBuf[b + 2] = cz;
+    }
+
+    particleMesh.instanceMatrix.needsUpdate = true;
+
+    // Once settled and not hovering, snap exactly home and sleep to spare cycles.
+    if (!hovering && maxV2 < PART_SLEEP_V2) {
+      for (let i = 0; i < COUNT; i++) {
+        const ix = i * 3;
+        particleCurrent[ix] = particleTargets[ix];
+        particleCurrent[ix + 1] = particleTargets[ix + 1];
+        particleCurrent[ix + 2] = particleTargets[ix + 2];
+        particleVel[ix] = 0; particleVel[ix + 1] = 0; particleVel[ix + 2] = 0;
+        const b = i * 16 + 12;
+        iMatBuf[b] = particleTargets[ix];
+        iMatBuf[b + 1] = particleTargets[ix + 1];
+        iMatBuf[b + 2] = particleTargets[ix + 2];
+      }
+      particleMesh.instanceMatrix.needsUpdate = true;
+      physicsAsleep = true;
+    }
+  }
+
   function startLoop() {
     if (rafId !== null) return;
     rafId = requestAnimationFrame(tick);
@@ -824,11 +987,9 @@
     if (spinner && !orbitEnabled) spinner.rotation.y += IDLE_RAD_S * dt;
     if (controls?.enabled) controls.update();
 
-    if (particleMat) {
-      const hoverTarget = pointerInside && particlesHoverActive() ? 1 : 0;
-      const u = particleMat.uniforms.uHoverStrength;
-      u.value += (hoverTarget - u.value) * Math.min(1, dt * HOVER_STRENGTH_RATE);
-    }
+    // Shader hover retired: the CPU cross-through physics (updateParticlePhysics)
+    // now owns cursor displacement. Keep the old uniform pinned at 0.
+    if (particleMat) particleMat.uniforms.uHoverStrength.value = 0;
 
     if (transitionState === 'in' && particleMesh && particleMat && iMatBuf) {
       transitionProgress = Math.min(1, transitionProgress + dt / TRANSITION_DURATION);
@@ -860,6 +1021,9 @@
           iMatBuf[b + 1] = particleTargets[i * 3 + 1];
           iMatBuf[b + 2] = particleTargets[i * 3 + 2];
         }
+        particleCurrent.set(particleTargets);
+        particleVel.fill(0);
+        physicsAsleep = true;
         particleMesh.instanceMatrix.needsUpdate = true;
         particleMat.uniforms.uBaseOpacity.value = 0.85;
         materials.forEach((m) => {
@@ -904,6 +1068,8 @@
         particleMat.uniforms.uPulse.value =
           Math.abs(Math.sin(elapsed * IDLE_PULSE_SPEED)) * IDLE_PULSE_AMPLITUDE;
       }
+      // Cross-through cursor physics (idle only, model in particles, no orbit).
+      if (particleMesh?.visible && !orbitEnabled) updateParticlePhysics();
     }
 
     if (morphState === 'morphing' && particleMesh && particleMat && iMatBuf) {
