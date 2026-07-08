@@ -83,7 +83,16 @@
     syncCommentsScrollMask();
   }
 
-  // Toggle mobile topics A/B: cross-fade text (desktop topic style) + animated scale/pulse on the model.
+  function finalizeMobileModeFit() {
+    updateTopicsModelFit();
+    scene3d?.setMobileFitLerp(0.12);
+    requestAnimationFrame(() => {
+      scene3d?.snapMobileFit();
+      scene3d?.lockMobileFit();
+    });
+  }
+
+  // Toggle mobile topics A/B: topic-style crossfade + instant layout/scale while hidden.
   async function setMobileCards(next: boolean) {
     if (next === mobileCardsVisible || textFading || cardsScrollAnimating) return;
     textFading = true;
@@ -92,44 +101,76 @@
     scene3d?.setMobileFitLerp(MOBILE_FIT_LERP_ANIMATING);
 
     const textTargets = '.stage__text';
-    const outY = next ? -32 : 32;
-
-    await gsap.to(textTargets, {
-      opacity: 0,
-      y: outY,
-      duration: 0.34,
-      ease: 'power2.in'
-    });
+    const cardTargets = '.card-stack__item';
+    const fadeOutDuration = 0.4;
+    const fadeInDuration = 0.5;
+    const outY = next ? -40 : 40;
+    const inY = next ? 40 : -40;
 
     if (next) {
+      await gsap.to(textTargets, {
+        opacity: 0,
+        y: outY,
+        duration: fadeOutDuration,
+        ease: 'power2.in'
+      });
       mobileCardsVisible = true;
     } else {
-      await cardStack?.animateOut();
+      // B→A: same crossfade as topic change (no card slide-out).
+      await gsap.to([textTargets, cardTargets], {
+        opacity: 0,
+        y: outY,
+        duration: fadeOutDuration,
+        ease: 'power2.in'
+      });
       mobileCardsVisible = false;
       if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
+      cardStack?.resetHidden();
     }
     await tick();
 
-    // Compact/expanded layout applied, y reset — model fit measures the real text box.
     gsap.set(textTargets, { y: 0, opacity: 0 });
+    topicsScaleTween.value = topicsScaleTarget(mobileCardsVisible);
+    scene3d?.setScale(topicsScaleTween.value);
+    updateTopicsModelFit({ soft: true });
     await tick();
 
     if (next) {
+      gsap.set('.stage__right', { opacity: 0 });
+      gsap.set(cardTargets, { opacity: 0, y: 0 });
       await Promise.all([
-        applyTopicsScale(true, true),
-        gsap.to(textTargets, { opacity: 1, duration: 0.46, ease: 'power2.out' }),
-        (async () => {
-          await cardStack?.animateIn();
-          syncCommentsScrollMask();
-        })()
+        gsap.to(textTargets, {
+          opacity: 1,
+          y: 0,
+          duration: fadeInDuration,
+          ease: 'power2.out',
+          onUpdate: () => updateTopicsModelFit({ soft: true })
+        }),
+        gsap.to('.stage__right', {
+          opacity: 1,
+          duration: fadeInDuration * 0.85,
+          ease: 'power2.out'
+        }),
+        gsap.to(cardTargets, {
+          opacity: 1,
+          y: 0,
+          duration: fadeInDuration,
+          ease: 'power2.out',
+          onComplete: syncCommentsScrollMask
+        })
       ]);
     } else {
-      await Promise.all([
-        applyTopicsScale(true, false),
-        gsap.to(textTargets, { opacity: 1, duration: 0.46, ease: 'power2.out' })
-      ]);
+      gsap.set(textTargets, { y: inY });
+      await gsap.to(textTargets, {
+        opacity: 1,
+        y: 0,
+        duration: fadeInDuration,
+        ease: 'power2.out',
+        onUpdate: () => updateTopicsModelFit({ soft: true })
+      });
     }
 
+    finalizeMobileModeFit();
     textFading = false;
     cardsScrollAnimating = false;
     scheduleTopicsModelFit();
@@ -166,15 +207,21 @@
         wheelLock = true;
         goPrev();
         setTimeout(() => { wheelLock = false; }, 1000);
+        return;
+      }
+      if (!mobileCardsVisible && currentTopic === 0) {
+        wheelLock = true;
+        void exitTopicsToIntro().finally(() => {
+          setTimeout(() => { wheelLock = false; }, 400);
+        });
       }
       return;
     }
     if (currentTopic === 0) {
-      if (!$isMobile) {
-        wheelLock = true;
-        exitTopicsMode();
-        setTimeout(() => { wheelLock = false; }, 1000);
-      }
+      wheelLock = true;
+      void exitTopicsToIntro().finally(() => {
+        setTimeout(() => { wheelLock = false; }, 400);
+      });
       return;
     }
     wheelLock = true;
@@ -192,6 +239,8 @@
   // Set while goToSectionStart() rewinds to the intro, so the scroll-driven
   // auto-enter can't bounce us back into topics before we reach the top.
   let returningToStart = false;
+  /** Blocks ScrollTrigger from re-entering topics during a programmatic rewind. */
+  let suppressTopicsEnter = false;
 
   type Phase = 'intro' | 'topics' | 'feedback';
   let phase = $state<Phase>('intro');
@@ -228,6 +277,8 @@
   const TOPICS_SCALE = 0.48;
   const INTRO_MODEL_SCALE = 0.85; // model size when it first appears (before shrinking to TOPICS_SCALE)
   const INTRO_MODEL_Y_OFFSET = -0.10; // model starts slightly lower, rises into place as it fades in
+  const INTRO_PHRASE_BEAT = 0.75;
+  const INTRO_SCROLL_COMMIT = 1.65;
 
   // Mobile topics 3D fit: bottom third for the model in mode A; model anchored low in its band.
   const TOPICS_MODEL_MARGIN = 20;
@@ -238,9 +289,9 @@
   const PARTICLE_SCROLL_END = 0.98;
   const MOBILE_LAYOUT_START = 0.55;
   const MOBILE_TOPIC_COMPACT_RATIO = 24 / 36;
-  const MOBILE_TEXT_SCALE_DURATION = 0.4;
+  const MOBILE_TEXT_SCALE_DURATION = 0.52;
   const MOBILE_LAYOUT_PULSE_AMPLITUDE = 0.14;
-  const MOBILE_FIT_LERP_ANIMATING = 0.22;
+  const MOBILE_FIT_LERP_ANIMATING = 0.09;
   const MOBILE_MODE_B_MODEL_FRACTION = 0.30;
   const MOBILE_MODE_B_COMMENTS_FRACTION = 0.46;
   const MOBILE_MODE_B_MIN_MODEL_BAND = 64;
@@ -511,7 +562,7 @@
 
 
   function enterTopicsMode() {
-    if (phase !== 'intro') return;
+    if (phase !== 'intro' || suppressTopicsEnter) return;
     phase = 'topics';
     resetMobileTopicLayout();
     topicsScaleTween.value = topicsScaleTarget(false);
@@ -541,6 +592,38 @@ function exitTopicsMode() {
     gsap.set('.stage__text', { opacity: 0, y: 8 });
     if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
     get(lenisStore)?.start();
+  }
+
+  async function exitTopicsToIntro() {
+    if (phase !== 'topics' || isTransitioning) return;
+    isTransitioning = true;
+    suppressTopicsEnter = true;
+    resetMobileTopicLayout();
+    phase = 'intro';
+    scene3d?.clearMobileFit();
+    scene3d?.setMobileLayoutBlend(0);
+    gsap.set('.stage__text, .stage__heading', { opacity: 0, clearProps: 'transform' });
+
+    const lenis = get(lenisStore);
+    lenis?.start();
+
+    const vh = window.innerHeight;
+    const targetY = vh * INTRO_PHRASE_BEAT;
+
+    await new Promise<void>((resolve) => {
+      lenis?.scrollTo(targetY, {
+        duration: 0.9,
+        force: true,
+        onComplete: () => {
+          scene3d?.setTransitionProgress(0);
+          scene3d?.setScale(INTRO_MODEL_SCALE);
+          ScrollTrigger.update();
+          isTransitioning = false;
+          suppressTopicsEnter = false;
+          resolve();
+        }
+      });
+    });
   }
 
  
@@ -843,7 +926,7 @@ function exitTopicsMode() {
             // Ignore the auto-enter while rewinding to the intro: the scroll can
             // still be parked near the bottom (progress ~1) and would bounce us
             // straight back into topics (jumps / lock / ghost CTA).
-            if (returningToStart) return;
+            if (returningToStart || suppressTopicsEnter) return;
             const progress = self.progress;
             const particleT = particleProgressFromScroll(progress);
             scene3d?.setTransitionProgress(particleT);
@@ -959,11 +1042,8 @@ function exitTopicsMode() {
     let touchLastY = 0;
 
     // --- intro snap: settle the frost/phrase scroll onto rest beats ---
-    const INTRO_SNAP_IDLE_MS = 150; // snap after the scroll pauses
-    const PHRASE_BEAT = 0.75; // viewport-height fraction where the phrase rests
-    const INTRO_COMMIT = 1.65; // beyond this (x vh) scroll is free (heading to the 3D)
-    const INTRO_COMMIT_FRAC = 0.2; // #11 — how far into a gap a deliberate scroll must go
-                                   // to commit to the next beat (lower = more forgiving/forward)
+    const INTRO_SNAP_IDLE_MS = 150;
+    const INTRO_COMMIT_FRAC = 0.2;
     let introSnapTimer: ReturnType<typeof setTimeout> | null = null;
     let introDir = 1; // last intro wheel direction: 1 = down, -1 = up
 
@@ -971,10 +1051,24 @@ function exitTopicsMode() {
       if (phase !== 'intro') return;
       const vh = window.innerHeight;
       const y = window.scrollY;
-      if (y > vh * INTRO_COMMIT) return; // committed to the 3D reveal -> leave it free
+      if (y > vh * INTRO_SCROLL_COMMIT) {
+        // Rewinding from the 3D reveal: swipe up settles on the phrase beat.
+        if (introDir < 0) {
+          const target = vh * INTRO_PHRASE_BEAT;
+          const dist = Math.abs(target - y);
+          if (dist >= 4) {
+            const duration = Math.min(0.85, 0.18 + (dist / vh) * 0.6);
+            get(lenisStore)?.scrollTo(target, {
+              duration,
+              easing: (t: number) => Math.sin((t * Math.PI) / 2)
+            });
+          }
+        }
+        return;
+      }
 
       const title = 0;
-      const phraseY = vh * PHRASE_BEAT;
+      const phraseY = vh * INTRO_PHRASE_BEAT;
 
       // Directional commit (like the home scroll): a deliberate scroll settles onto
       // the beat it heads TOWARD, instead of the geometrically nearest one — so a
@@ -982,10 +1076,14 @@ function exitTopicsMode() {
       let target: number;
       if (y <= phraseY) {
         const progress = (y - title) / (phraseY - title || 1); // 0..1 within the gap
-        target =
-          introDir > 0
-            ? progress > INTRO_COMMIT_FRAC ? phraseY : title
-            : progress < 1 - INTRO_COMMIT_FRAC ? title : phraseY;
+        if (introDir > 0) {
+          target = progress > INTRO_COMMIT_FRAC ? phraseY : title;
+        } else if (y >= phraseY - 8) {
+          // At the phrase beat, swipe up always returns to the title.
+          target = title;
+        } else {
+          target = progress < 1 - INTRO_COMMIT_FRAC ? title : phraseY;
+        }
       } else {
         // past the phrase, in the run-up to the 3D reveal:
         // scrolling down flows on (no snap-back); scrolling up settles on the phrase
@@ -1041,13 +1139,12 @@ function exitTopicsMode() {
           return;
         }
 
-        // Desktop: at the first topic, scrolling up leaves topics mode
+        // Desktop: at the first topic, scrolling up rewinds to the intro phrase beat
         if (!goingDown && currentTopic === 0) {
           wheelLock = true;
-          exitTopicsMode();
-          setTimeout(() => {
-            wheelLock = false;
-          }, 1000);
+          void exitTopicsToIntro().finally(() => {
+            setTimeout(() => { wheelLock = false; }, 400);
+          });
           return;
         }
 
@@ -1117,13 +1214,38 @@ function exitTopicsMode() {
 
     function onTouchEnd(e: TouchEvent) {
       if (phase === 'intro') {
+        if (e.changedTouches.length === 1) {
+          const touch = e.changedTouches[0];
+          const dx = touch.clientX - touchStartX;
+          const dy = touchStartY - touch.clientY;
+          const vh = window.innerHeight;
+          const y = window.scrollY;
+          const phraseY = vh * INTRO_PHRASE_BEAT;
+          const commitY = vh * INTRO_SCROLL_COMMIT;
+
+          if (Math.abs(dy) > MOBILE_SWIPE_THRESHOLD && Math.abs(dy) > Math.abs(dx) && dy > 0) {
+            introDir = -1;
+            const lenis = get(lenisStore);
+            const easing = (t: number) => Math.sin((t * Math.PI) / 2);
+            if (y > commitY) {
+              lenis?.scrollTo(phraseY, { duration: 0.85, easing });
+              if (introSnapTimer) clearTimeout(introSnapTimer);
+              return;
+            }
+            if (y >= phraseY - 12) {
+              lenis?.scrollTo(0, { duration: 0.7, easing });
+              if (introSnapTimer) clearTimeout(introSnapTimer);
+              return;
+            }
+          }
+        }
         if (introSnapTimer) clearTimeout(introSnapTimer);
         introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
         return;
       }
 
       if (phase !== 'topics' || !$isMobile) return;
-      if (wheelLock || isTransitioning || textFading) return;
+      if (wheelLock || isTransitioning || textFading || cardsScrollAnimating) return;
 
       const touch = e.changedTouches[0];
       const dx = touch.clientX - touchStartX;
