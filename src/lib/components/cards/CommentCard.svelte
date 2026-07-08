@@ -246,8 +246,11 @@
 
   /* ── Mobile (≤768px): Figma comment card — fill width, min 96h hug, 20 padding ── */
   @media (max-width: 768px) {
-    .comment-card {
+    .comment-card,
+    .comment-card[data-size='sm'],
+    .comment-card[data-size='lg'] {
       padding: var(--spacing-comment-card-padding);
+      gap: var(--spacing-comment-card-inner-gap);
       height: auto;
       min-height: var(--spacing-comment-card-min-height);
       box-sizing: border-box;
@@ -259,10 +262,13 @@
       flex: 1;
       min-width: 0;
       max-width: var(--spacing-comment-body-max-width);
+      overflow-wrap: break-word;
     }
 
     .comment-card__heart {
       align-self: center;
+      flex-shrink: 0;
+      width: 32px;
     }
   }
 </style>

@@ -935,7 +935,17 @@ function exitTopicsMode() {
       onclick={goNext}
       aria-label={currentTopic === lastTopic ? 'Conferma le tue scelte' : 'Continua al prossimo argomento'}
     >
-      <span class="continue__label">{currentTopic === lastTopic ? 'Conferma le tue scelte' : 'Continua'}</span>
+      <span class="continue__label">
+        {#if currentTopic === lastTopic}
+          {#if $isMobile}
+            Conferma<br />le tue scelte
+          {:else}
+            Conferma le tue scelte
+          {/if}
+        {:else}
+          Continua
+        {/if}
+      </span>
       <svg class="continue__arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
         <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
@@ -1226,6 +1236,8 @@ function exitTopicsMode() {
 .continue__label {
       font: var(--text-caption-font);
       text-transform: var(--text-caption-text-transform);
+      text-align: center;
+      line-height: var(--line-height-tight);
     }
   }
 
