@@ -11,8 +11,8 @@
   import { isMobile } from '$lib/stores/viewport';
 
   const PRELOAD_URLS = ['/models/snow-mountain.glb', ...sections.map((s) => s.glbPath)];
-  const PRELOAD_FLAG = 'home-assets-ready';
-  const PRELOAD_MIN_MS = 1400; // minimum time the bar is shown (so it always fills)
+  const PRELOAD_MIN_MS = 1800; // minimum bar time; exit waits for assets + first mountain frame
+  const PRELOAD_MAX_MS = 12000; // never trap the user if WebGL stalls
   let preloadProgress = $state(0);
   let preloading = $state(true);
   let revealed = $state(false); // true one frame after preload ends -> enables fade-in
@@ -73,11 +73,11 @@
   const LAST = ANCHORS.length - 1;
 
   // --- feel controls (tune these) ---
-  const WHEEL_SENS = 0.00035; // free-scroll speed (progress per wheel unit)
-  const SMOOTH = 0.09; // how fast scrollProgress chases the target
-  const SNAP_IDLE_MS = 140; // pause after which it magnetically settles on a text
-  const GESTURE_GAP_MS = 110; // pause that counts as "lifting the finger" (new gesture)
-  const TOUCH_SENS = 0.0017; // finger-drag speed (progress per px); mobile counterpart of WHEEL_SENS
+  const WHEEL_SENS = 0.00038; // desktop wheel response
+  const SMOOTH = 0.075; // lower chase factor = smoother camera/text motion
+  const SNAP_IDLE_MS = 210; // wait a bit more before magnetic snap
+  const GESTURE_GAP_MS = 140; // avoids premature "new gesture" resets
+  const TOUCH_SENS = 0.00175; // mobile counterpart of WHEEL_SENS
 
   const WHITE_ZONE_AT = 0.66; // just inside the white zone, BEFORE the text-3 anchor (0.69)
   const TEXT3_FADE_MS = 900; // soft, time-based fade for the final text
@@ -155,7 +155,7 @@
     const lo = ANCHORS[Math.max(0, gestureAnchor - 1)];
     const hi = ANCHORS[Math.min(LAST, gestureAnchor + 1)];
 
-    const d = clamp(e.deltaY, -80, 80);
+    const d = clamp(e.deltaY, -65, 65);
     target = clamp(target + d * WHEEL_SENS, lo, hi);
     scheduleSnap();
   }
@@ -199,7 +199,7 @@
     if (!revealed || !touchActive || e.touches.length !== 1) return;
     e.preventDefault(); // we drive the engine ourselves: no native scroll / rubber-band
     const y = e.touches[0].clientY;
-    const d = clamp(lastTouchY - y, -60, 60); // finger up = scroll down (matches wheel sign)
+    const d = clamp(lastTouchY - y, -52, 52); // finger up = scroll down (matches wheel sign)
     lastTouchY = y;
 
     // same resistance as the wheel: one gesture moves at most one anchor step
@@ -242,33 +242,40 @@
     window.addEventListener('touchmove', onTouchMove, { passive: false });
     window.addEventListener('touchend', onTouchEnd, { passive: true });
 
-    // preload heavy 3D assets once per session (guarantees they're cached
-    // before the home is revealed, even on slow connections)
-    if (sessionStorage.getItem(PRELOAD_FLAG)) {
-      preloading = false;
-      requestAnimationFrame(() => (revealed = true));
-    } else {
-      // animate the bar over at least PRELOAD_MIN_MS, and never faster than
-      // the real download; whichever finishes last hides the overlay
-      const start = performance.now();
-      let realProgress = 0;
-      const load = preloadAssets(PRELOAD_URLS, (p) => (realProgress = p));
+    preloadProgress = 0;
+    preloading = true;
+    revealed = false;
+    mountainReady = false;
+    // Bar fills over PRELOAD_MIN_MS; overlay stays until assets AND mountain first frame.
+    const start = performance.now();
+    let realProgress = 0;
+    void preloadAssets(PRELOAD_URLS, (p) => (realProgress = p));
 
-      const tick = () => {
-        const timed = clamp((performance.now() - start) / PRELOAD_MIN_MS, 0, 1);
-        preloadProgress = Math.min(timed, Math.max(realProgress, timed * 0.15 + realProgress * 0.85));
-        if (preloadProgress < 1) {
-          requestAnimationFrame(tick);
-        } else {
-          sessionStorage.setItem(PRELOAD_FLAG, '1');
-          preloading = false;
-          requestAnimationFrame(() => (revealed = true));
-        }
-      };
-      load.finally(() => {}); // ensure caching proceeds
-      requestAnimationFrame(tick);
-    }
+    const tick = () => {
+      const timed = clamp((performance.now() - start) / PRELOAD_MIN_MS, 0, 1);
+      let p = Math.max(timed * 0.15 + realProgress * 0.85, timed);
+      // Hold the bar near-full while WebGL parses/renders the mountain (Safari-heavy).
+      if (realProgress >= 1 && !mountainReady) p = Math.min(p, 0.93);
+      if (mountainReady) p = Math.max(p, 0.97);
+      preloadProgress = Math.min(1, p);
+
+      const ready = timed >= 1 && realProgress >= 1 && mountainReady;
+      if (ready) {
+        preloadProgress = 1;
+        preloading = false;
+        requestAnimationFrame(() => (revealed = true));
+      } else {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+
+    const maxT = setTimeout(() => {
+      if (!mountainReady) mountainReady = true;
+    }, PRELOAD_MAX_MS);
+
     return () => {
+      clearTimeout(maxT);
       cancelAnimationFrame(rafId);
       if (snapTimer) clearTimeout(snapTimer);
       window.removeEventListener('wheel', onWheel);
@@ -286,9 +293,9 @@
 </svelte:head>
 
 <div class="home" class:is-revealed={revealed}>
-  <!-- 3D mountain background, driven by scrollProgress -->
+  <!-- Mount during preload (hidden behind overlay) so WebGL/GLB init finishes before reveal -->
   <div class="home__bg" class:is-ready={mountainReady} aria-hidden="true">
-    {#if !preloading}<MountainScene {scrollProgress} onReady={() => (mountainReady = true)} />{/if}
+    <MountainScene {scrollProgress} onReady={() => (mountainReady = true)} />
   </div>
 
   <section class="home__stage home__hero" style="opacity: {heroOpacity}; transform: translateY({heroLift}vh);" aria-hidden={heroOpacity < 0.05}>

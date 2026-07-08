@@ -80,6 +80,15 @@
     }
   }
 
+  /* Same-section menu link: SvelteKit won't navigate when the href matches the
+     current URL, so from feedback/topics the click would no-op. Delegate to the
+     section page's rewind handler instead (same as the centered header title). */
+  function handleSectionNavClick(event: MouseEvent, href: string) {
+    if (page.url.pathname !== href) return;
+    event.preventDefault();
+    onSectionTitleClick?.();
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape' && menuOpen) {
       closeMenu();
@@ -186,6 +195,7 @@
             href={link.href}
             onclick={(e) => {
               if (link.href === '/') handleHomeClick(e);
+              else if (link.href.startsWith('/sections/')) handleSectionNavClick(e, link.href);
               closeMenu();
             }}
           >
