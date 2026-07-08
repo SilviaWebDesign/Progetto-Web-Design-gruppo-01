@@ -187,13 +187,11 @@
 
   .comment-card[data-size='sm'] .comment-card__body {
     font: var(--text-comment-body-sm-font);
-    font-size: var(--font-size-xs);   
-     line-height: var(--line-height-normal);  
+    line-height: var(--line-height-normal);
   }
   .comment-card[data-size='lg'] .comment-card__body {
     font: var(--text-comment-body-lg-font);
-    font-size: var(--font-size-lg);
-     line-height: var(--line-height-normal);  
+    line-height: var(--line-height-normal);
   }
   
 

@@ -76,4 +76,43 @@
   /* --- Home subtitle (body bold, 16px) --- */
   --text-home-subtitle-font: var(--font-weight-bold) var(--font-size-sm) var(--font-family-body);
 
+
+  /* ============================================================
+     SECTION TOPICS (TextBlock — desktop @1512 + mobile overrides)
+     ============================================================ */
+
+  /* --- Topic counter (body bold, 14px) --- */
+  --text-section-topic-counter-font: var(--font-weight-bold) var(--font-size-xs) var(--font-family-body);
+
+  /* --- Topic title desktop (body extrabold, 45px) --- */
+  --text-section-topic-title-font: var(--font-weight-extrabold) var(--font-size-section-topic-title) / var(--line-height-tight) var(--font-family-body);
+
+  /* --- Topic body desktop (body bold, 22px) --- */
+  --text-section-topic-body-font: var(--font-weight-bold) var(--font-size-xl) / var(--line-height-tight) var(--font-family-body);
+
+  /* --- Topic sources desktop (body bold, 18px, UPPERCASE) --- */
+  --text-section-topic-sources-font:           var(--font-weight-bold) var(--font-size-md) var(--font-family-body);
+  --text-section-topic-sources-text-transform: uppercase;
+
+  /* --- Mobile topic mode A (expanded text + 3D object) --- */
+  --text-section-topic-title-expanded-font: var(--font-weight-extrabold) var(--font-size-section-topic-title-expanded) / var(--line-height-tight) var(--font-family-body);
+  --text-section-topic-body-expanded-font:  var(--font-weight-bold) var(--font-size-section-topic-body-expanded) / var(--line-height-tight) var(--font-family-body);
+
+  /* --- Mobile topic mode B (compact text + comments) --- */
+  --text-section-topic-title-compact-font: var(--font-weight-extrabold) var(--font-size-section-topic-title-compact) / var(--line-height-tight) var(--font-family-body);
+  --text-section-topic-body-compact-font:  var(--font-weight-bold) var(--font-size-section-topic-body-compact) / var(--line-height-tight) var(--font-family-body);
+
+
+  /* ============================================================
+     CAPTIONS / CTA LABELS (13px @390, scalable)
+     ============================================================
+     Shared by home CTAs, section "Continua", "Metti like…", topic sources (mobile).
+     ============================================================ */
+
+  --text-caption-font:           var(--font-weight-bold) var(--font-size-caption) / var(--line-height-tight) var(--font-family-body);
+  --text-caption-text-transform: uppercase;
+
+  /* --- Comments column heading (same recipe as caption) --- */
+  --text-section-comments-heading-font: var(--text-caption-font);
+
 }

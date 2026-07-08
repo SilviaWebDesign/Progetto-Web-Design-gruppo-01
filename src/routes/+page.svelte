@@ -573,11 +573,11 @@
 
     .home__brand {
       top: 12vh;
-      font-size: clamp(1.1rem, 5.13vw, 1.35rem); /* 20px @390 */
+      font-size: var(--font-size-section-topic-body-expanded); /* 20px @390 */
     }
 
     .home__title {
-      font-size: clamp(3rem, 14.36vw, 3.75rem); /* 56px @390 */
+      font-size: var(--font-size-home-title); /* 56px @390 */
     }
 
     /* narrative blocks: readable size + vertically centered like the Figma */
@@ -589,12 +589,13 @@
       margin-bottom: 0;
     }
     .home__line {
-      font-size: clamp(1.35rem, 6.15vw, 1.6rem); /* 24px @390 */
+      font-size: var(--font-size-section-topic-title-compact); /* 24px @390 */
     }
 
     .home__hint-text,
     .home__final-cta {
-      font-size: clamp(0.75rem, 3.33vw, 0.9rem); /* ~13px @390 (10px was too small for UX) */
+      font: var(--text-caption-font);
+      text-transform: var(--text-caption-text-transform);
     }
   }
 </style>

@@ -1120,9 +1120,8 @@ function exitTopicsMode() {
   .stage__heading {
     margin: 0;
     text-align: center;
-    font-family: var(--font-family-body);
-    font-weight: var(--font-weight-bold);
-    font-size: var(--font-size-xs); 
+    font: var(--text-section-comments-heading-font);
+    text-transform: var(--text-caption-text-transform);
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
   }
@@ -1137,7 +1136,7 @@ function exitTopicsMode() {
       gap: 0;
       align-items: stretch;
       justify-content: flex-start;
-      padding: 96px var(--page-gutter) 0; /* below the header */
+      padding: var(--spacing-section-stage-top) var(--page-gutter) 0;
     }
 
     .stage__center {
@@ -1157,30 +1156,34 @@ function exitTopicsMode() {
     }
     /* size changes happen while the text is faded out (see setMobileCards),
        so NO font-size transition here — that caused the visible scaling. */
-    /* Mode A (expanded) */
+    /* Mode A (expanded) — tokens: text-style.css + spacing.css */
     .stage__text :global(.text-block__title) {
-      font-size: 36px;
-      margin-bottom: 12px;
+      font: var(--text-section-topic-title-expanded-font);
+      margin-bottom: var(--spacing-section-topic-gap-title-body-expanded);
     }
     .stage__text :global(.text-block__body) {
-      font-size: 18px;
-      margin-bottom: 16px;
+      font: var(--text-section-topic-body-expanded-font);
+      margin-bottom: var(--spacing-section-topic-gap-body-sources-expanded);
     }
     .stage__text :global(.text-block__counter) {
-      margin-bottom: 12px;
+      margin-bottom: var(--spacing-section-topic-gap-counter-title);
     }
     .stage__text :global(.text-block__sources) {
-      font-size: 14px;
+      font: var(--text-caption-font);
+      text-transform: var(--text-caption-text-transform);
     }
-    /* Mode B (compact) — tighter vertical rhythm (prototype: frees room for comments) */
+
+    /* Mode B (compact) */
     .stage.m-cards-visible .stage__text :global(.text-block__title) {
-      font-size: 24px;
-      margin-bottom: var(--m-compact-title-mb, 6px);
+      font: var(--text-section-topic-title-compact-font);
+      margin-bottom: var(--spacing-section-topic-gap-title-body-compact);
     }
     .stage.m-cards-visible .stage__text :global(.text-block__body) {
-      font-size: 15px;
-      margin-bottom: var(--m-compact-body-mb, 8px);
+      font: var(--text-section-topic-body-compact-font);
+      margin-bottom: var(--spacing-section-topic-gap-body-end-compact);
     }
+
+    /* Layout manopoles — card/comments tuning (step 2); not typography tokens. */
 
     /* Mode B (compact): hide the topic counter to free vertical space. */
     .stage.m-cards-visible .stage__text :global(.text-block__counter) {
@@ -1236,6 +1239,11 @@ function exitTopicsMode() {
     }
     .stage.m-cards-visible :global(.card-stack) {
       gap: var(--m-card-gap, 10px); /* prototype gap; desktop uses 19px */
+    }
+
+    .continue__label {
+      font: var(--text-caption-font);
+      text-transform: var(--text-caption-text-transform);
     }
   }
 

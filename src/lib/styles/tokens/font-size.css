@@ -23,4 +23,15 @@
   --font-size-4xl: var(--unit-68);   /* 68 — section-intro */
   --font-size-5xl: var(--unit-150);  /* 150 — page-title */
   --font-size-6xl: var(--unit-260);  /* 260 — section-title */
+
+  /* --- Section topic title (desktop @1512, TextBlock) --- */
+  --font-size-section-topic-title: var(--unit-45); /* 45 — topic title desktop */
+
+  /* --- Mobile-responsive sizes (Figma frame 390px, clamp min/max cap the scale) --- */
+  --font-size-caption:                    clamp(0.75rem, 3.33vw, 0.9rem);   /* 13@390 — CTA labels, sources, comments heading */
+  --font-size-section-topic-title-expanded: clamp(1.6rem, 9.23vw, 2.25rem);   /* 36@390 — topic mode A title */
+  --font-size-section-topic-body-expanded:  clamp(1.1rem, 5.13vw, 1.35rem);    /* 20@390 — topic mode A body, home brand */
+  --font-size-section-topic-title-compact:  clamp(1.35rem, 6.15vw, 1.6rem);   /* 24@390 — topic mode B title, home narrative line */
+  --font-size-section-topic-body-compact:   clamp(0.875rem, 3.85vw, 1rem);    /* 15@390 — topic mode B body */
+  --font-size-home-title:                   clamp(3rem, 14.36vw, 3.75rem);     /* 56@390 — home hero title */
 }
