@@ -28,3 +28,45 @@
   --color-section-sport:          var(--sport-500);
   --color-section-infrastructure: var(--infrastructure-500);
 }
+
+/* ============================================================
+   HOME DARK MODE (negative mountain)
+   ============================================================
+   Activated via `body.theme-dark-home`.
+   We override ONLY semantic tokens so components (navbar, titles,
+   home texts, etc.) automatically pick the correct colors.
+   ============================================================ */
+body.theme-dark-home {
+  /* --- Text --- */
+  --color-text-primary: var(--neutral-50);
+  --color-text-secondary: var(--neutral-200);
+  --color-text-muted: var(--neutral-300);
+  --color-text-inverse: var(--neutral-900);
+
+  /* --- Background --- */
+  --color-background-page: var(--neutral-900);
+  --color-background-card: rgba(22, 26, 31, 0.6);
+  --color-background-inverse: var(--neutral-50);
+
+  /* --- Border --- */
+  --color-border: var(--neutral-50);
+}
+
+/* ============================================================
+   SECTIONS NEGATIVE (particles, frost, 3D)
+   ============================================================ */
+body.theme-dark-sections {
+  /* --- Text --- */
+  --color-text-primary: var(--neutral-50);
+  --color-text-secondary: var(--neutral-200);
+  --color-text-muted: var(--neutral-300);
+  --color-text-inverse: var(--neutral-900);
+
+  /* --- Background --- */
+  --color-background-page: var(--neutral-900);
+  --color-background-card: rgba(22, 26, 31, 0.6);
+  --color-background-inverse: var(--neutral-50);
+
+  /* --- Border --- */
+  --color-border: var(--neutral-50);
+}

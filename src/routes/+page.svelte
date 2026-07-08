@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { page } from '$app/state';
   import { overlayVisible } from '$lib/stores/pageTransition';
   import { headerState } from '$lib/stores/header';
@@ -9,6 +9,7 @@
   import { sections } from '$lib/data/sections';
   import { preloadAssets } from '$lib/utils/preloadAssets';
   import { isMobile } from '$lib/stores/viewport';
+  import { homeDarkModeEnabled } from '$lib/stores/theme';
 
   const PRELOAD_URLS = ['/models/snow-mountain.glb', ...sections.map((s) => s.glbPath)];
   const PRELOAD_MIN_MS = 1800; // minimum bar time; exit waits for assets + first mountain frame
@@ -17,6 +18,18 @@
   let preloading = $state(true);
   let revealed = $state(false); // true one frame after preload ends -> enables fade-in
   let mountainReady = $state(false); // true after the mountain's first render
+
+  const isHomeDarkMode = $derived($homeDarkModeEnabled);
+
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('theme-dark-home', isHomeDarkMode);
+  });
+
+  onDestroy(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.remove('theme-dark-home');
+  });
 
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
   const easeOutCubic = (t: number) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
@@ -295,7 +308,7 @@
 <div class="home" class:is-revealed={revealed}>
   <!-- Mount during preload (hidden behind overlay) so WebGL/GLB init finishes before reveal -->
   <div class="home__bg" class:is-ready={mountainReady} aria-hidden="true">
-    <MountainScene {scrollProgress} onReady={() => (mountainReady = true)} />
+    <MountainScene {scrollProgress} negative={isHomeDarkMode} onReady={() => (mountainReady = true)} />
   </div>
 
   <section class="home__stage home__hero" style="opacity: {heroOpacity}; transform: translateY({heroLift}vh);" aria-hidden={heroOpacity < 0.05}>

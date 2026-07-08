@@ -751,6 +751,15 @@
     filter: saturate(0);
   }
 
+  /* Negative/negative-sections mode (dark background + inverted frost). */
+  :global(body.theme-dark-sections) .sharp {
+    filter: grayscale(1) invert(1);
+  }
+
+  :global(body.theme-dark-sections) canvas {
+    filter: saturate(0) invert(1);
+  }
+
   /* Mobile: no defrost — keep the frost static and let the finger scroll the page
      instead of being captured for the cursor reveal (S2). */
   @media (max-width: 768px) {

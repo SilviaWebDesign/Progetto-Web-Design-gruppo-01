@@ -62,6 +62,7 @@
   interface Props {
     api?: Scene3DApi;
     modelSrc: string;
+    theme?: 'light' | 'dark';
     fitFactor?: number;
     resultScale?: number;
     resultPaths?: string[];
@@ -71,12 +72,30 @@
   let {
     api = $bindable(),
     modelSrc,
+    theme = 'light',
     fitFactor = 1,
     resultScale = 1,
     resultPaths = [],
     onModelLoaded,
     orbitEnabled = false
   }: Props = $props();
+
+  function modelColorHex(): number {
+    return theme === 'dark' ? 0xffffff : 0x181818;
+  }
+
+  function modelMetalness(): number {
+    return theme === 'dark' ? 0.0 : 1.0;
+  }
+
+  function modelRoughness(): number {
+    return theme === 'dark' ? 0.35 : 0.015;
+  }
+
+  function particleColor(): THREE.Color {
+    // Particles: in dark/negative we want white points.
+    return theme === 'dark' ? new THREE.Color(0xffffff) : new THREE.Color(0x000000);
+  }
 
   let wrapperEl = $state<HTMLDivElement | null>(null);
   let canvasEl = $state<HTMLCanvasElement | null>(null);
@@ -169,6 +188,33 @@
   const MORPH_ORBIT_AT = 0.16;      // when to hand the camera to OrbitControls during the morph (0..1)
   let morphDoneCallback: (() => void) | null = null;
   let resultModelMaterials: THREE.MeshPhysicalMaterial[] = [];
+
+  $effect(() => {
+    // Force dependency tracking on `theme` so shader/material colors update when toggling.
+    void theme;
+
+    if (particleMat?.uniforms?.uParticleColor) {
+      const uniform = particleMat.uniforms.uParticleColor as { value: THREE.Color };
+      uniform.value.copy(particleColor());
+      particleMat.needsUpdate = true;
+    }
+
+    for (const m of materials) {
+      if (!m) continue;
+      m.color.setHex(modelColorHex());
+      m.metalness = modelMetalness();
+      m.roughness = modelRoughness();
+      m.needsUpdate = true;
+    }
+
+    for (const m of resultModelMaterials) {
+      if (!m) continue;
+      m.color.setHex(modelColorHex());
+      m.metalness = modelMetalness();
+      m.roughness = modelRoughness();
+      m.needsUpdate = true;
+    }
+  });
 
   // --- Mobile topics layout fit (vertical band between DOM-measured edges) ---
   let mobileFitActive = false;
@@ -556,9 +602,9 @@
           if (!mesh.isMesh) return;
           mesh.geometry.computeVertexNormals();
           const chrome = new THREE.MeshPhysicalMaterial({
-            color: 0x181818,
-            metalness: 1.0,
-            roughness: 0.015,
+            color: modelColorHex(),
+            metalness: modelMetalness(),
+            roughness: modelRoughness(),
             envMapIntensity: 5.0,
             clearcoat: 1.0,
             clearcoatRoughness: 0.01,
@@ -685,7 +731,8 @@
     particleMat = new THREE.ShaderMaterial({
       uniforms: {
         uPulse: { value: 0.0 },
-        uBaseOpacity: { value: 0.0 }
+        uBaseOpacity: { value: 0.0 },
+        uParticleColor: { value: particleColor() }
       },
       vertexShader: `
         attribute vec3 aDirection;
@@ -700,8 +747,9 @@
       fragmentShader: `
         uniform float uPulse;
         uniform float uBaseOpacity;
+        uniform vec3 uParticleColor;
         void main() {
-          gl_FragColor = vec4(0.0, 0.0, 0.0, uBaseOpacity + uPulse * 0.5);
+          gl_FragColor = vec4(uParticleColor, uBaseOpacity + uPulse * 0.5);
         }
       `,
       transparent: true,
@@ -833,9 +881,9 @@
       if (!mesh.isMesh) return;
       mesh.geometry.computeVertexNormals();
       const chrome = new THREE.MeshPhysicalMaterial({
-        color: 0x181818,
-        metalness: 1.0,
-        roughness: 0.015,
+        color: modelColorHex(),
+        metalness: modelMetalness(),
+        roughness: modelRoughness(),
         envMapIntensity: 5.0,
         clearcoat: 1.0,
         clearcoatRoughness: 0.01,

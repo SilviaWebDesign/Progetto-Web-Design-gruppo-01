@@ -16,8 +16,16 @@
   let {
     scrollProgress = 0,
     snowZoneAt = 0.62,
+    darkMode = false,
+    negative = false,
     onReady
-  }: { scrollProgress?: number; snowZoneAt?: number; onReady?: () => void } = $props();
+  }: {
+    scrollProgress?: number;
+    snowZoneAt?: number;
+    darkMode?: boolean;
+    negative?: boolean;
+    onReady?: () => void;
+  } = $props();
 
   // --- scroll phase thresholds (must match the home anchors scale) ---
   const ORBIT_END = 0.45;
@@ -37,7 +45,8 @@
   // orientation as before, so the hero (scroll 0) angle is shifted back by that same amount
   const ORBIT_TURNS = 0.35; // fraction of a full turn during the intro (1 = full, like proto)
   const ORBIT_ARC = ORBIT_TURNS * Math.PI * 2;
-  const FOG_COLOR = '#ffffff';
+  const FOG_COLOR_LIGHT = '#ffffff';
+  const FOG_COLOR_DARK = '#161A1F';
 
   let container: HTMLDivElement | undefined = $state(undefined);
   let renderer: THREE.WebGLRenderer | undefined;
@@ -60,6 +69,7 @@
   type MountainMaterial = {
     material: THREE.Material;
     originalColor: THREE.Color;
+    darkTargetColor: THREE.Color;
   };
 
   let orbitConfig: OrbitConfig | null = null;
@@ -76,6 +86,17 @@
   const _snowLookAt = new THREE.Vector3();
   const _snowDir = new THREE.Vector3();
   const _whiteColor = new THREE.Color(0xffffff);
+  const _darkSnowColor = new THREE.Color(0x161A1F);
+  const _darkRockColor = new THREE.Color(0xf4f6f8);
+
+  function luma(c: THREE.Color): number {
+    // Rec. 709 luma
+    return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  }
+
+  // Threshold to decide "snow-like" vs "rock-like" materials in the GLB.
+  // Snow materials are expected to be much brighter in the original model.
+  const SNOW_LUMA_THRESHOLD = 0.72;
 
   // --- math helpers ---
   const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
@@ -234,9 +255,10 @@
     if (!snowMountainModel.visible) return;
 
     const meshOpacity = 1 - insideT * 0.96;
-    for (const { material, originalColor } of mountainMaterials) {
+    for (const { material, originalColor, darkTargetColor } of mountainMaterials) {
       if ('color' in material && material.color instanceof THREE.Color) {
-        material.color.copy(originalColor).lerp(_whiteColor, insideT * 0.9);
+        const target = darkMode ? darkTargetColor : _whiteColor;
+        material.color.copy(originalColor).lerp(target, insideT * 0.9);
       }
       material.opacity = meshOpacity;
     }
@@ -292,7 +314,9 @@
           'color' in material && material.color instanceof THREE.Color
             ? material.color.clone()
             : new THREE.Color(0xffffff);
-        mountainMaterials.push({ material, originalColor: color });
+        const darkTargetColor =
+          luma(color) > SNOW_LUMA_THRESHOLD ? _darkSnowColor : _darkRockColor;
+        mountainMaterials.push({ material, originalColor: color, darkTargetColor });
         return material;
       });
       o.material = cloned.length === 1 ? cloned[0] : cloned;
@@ -303,9 +327,9 @@
     if (!snowMountainModel) return;
     snowMountainModel.visible = visible;
     if (!visible) return;
-    for (const { material, originalColor } of mountainMaterials) {
+    for (const { material, originalColor, darkTargetColor } of mountainMaterials) {
       if ('color' in material && material.color instanceof THREE.Color) {
-        material.color.copy(originalColor);
+        material.color.copy(darkMode ? darkTargetColor : originalColor);
       }
       material.opacity = 1;
     }
@@ -352,9 +376,10 @@
 
       if (sceneFog) {
         sceneFog.density = lerp(0.03, 0.022, cardsT);
-        sceneFog.color.setRGB(1, 1, 1);
+        if (darkMode) sceneFog.color.copy(_darkSnowColor);
+        else sceneFog.color.setRGB(1, 1, 1);
       }
-      renderer.setClearColor(0xffffff, 1);
+      renderer.setClearColor(darkMode ? 0x161A1F : 0xffffff, 1);
       renderer.render(scene, camera);
       return;
     }
@@ -380,13 +405,14 @@
     const insideFog = smoothstep(0.28, 1, whiteT);
     if (sceneFog) {
       sceneFog.density = lerp(0.045, 0.38, insideFog);
-      sceneFog.color.setRGB(1, 1, 1);
+      if (darkMode) sceneFog.color.copy(_darkSnowColor);
+      else sceneFog.color.setRGB(1, 1, 1);
     }
 
     if (whiteT > 0.02) applySnowWhiteout(scroll);
     else setMountainVisible(true);
 
-    renderer.setClearColor(0xffffff, 1);
+    renderer.setClearColor(darkMode ? 0x161A1F : 0xffffff, 1);
     renderer.render(scene, camera);
   }
 
@@ -428,7 +454,7 @@
       if (gen !== initGeneration || !container) return;
 
       scene = new THREE.Scene();
-      sceneFog = new THREE.FogExp2(FOG_COLOR, 0.045);
+      sceneFog = new THREE.FogExp2(darkMode ? FOG_COLOR_DARK : FOG_COLOR_LIGHT, 0.045);
       scene.fog = sceneFog;
 
       const w = Math.max(container.clientWidth, 1);
@@ -472,7 +498,7 @@
   });
 </script>
 
-<div class="mountain-scene" bind:this={container}></div>
+<div class="mountain-scene" class:is-negative={negative} bind:this={container}></div>
 
 <style>
   .mountain-scene {
@@ -480,5 +506,10 @@
     height: 100%;
     background: #ffffff;
     filter: grayscale(1); /* render the mountain in black & white everywhere */
+  }
+
+  .mountain-scene.is-negative {
+    /* neve bianca -> nera, roccia scura -> chiara */
+    filter: grayscale(1) invert(1);
   }
 </style>

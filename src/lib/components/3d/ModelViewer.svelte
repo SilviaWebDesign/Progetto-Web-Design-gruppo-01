@@ -111,7 +111,7 @@
         const mesh = node as THREE.Mesh;
         if (!mesh.isMesh) return;
         mesh.geometry.computeVertexNormals();
-        // Same chrome material as Scene3D for visual consistency
+        // Same chrome material as Scene3D for visual consistency.
         mesh.material = new THREE.MeshPhysicalMaterial({
           color: 0x181818,
           metalness: 1.0,

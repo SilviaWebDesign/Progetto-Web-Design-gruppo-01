@@ -16,8 +16,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
+  import { base } from '$app/paths';
   import { sections } from '$lib/data/sections';
   import { headerState } from '$lib/stores/header';
+  import { isMobile } from '$lib/stores/viewport';
+  import { homeDarkModeEnabled, toggleHomeDarkMode } from '$lib/stores/theme';
 
  interface Props {
     /** Force the header to stay visible regardless of scroll. */
@@ -45,6 +48,57 @@
 
   const SCROLL_THRESHOLD = 8;
 
+  const isHomeDarkMode = $derived($homeDarkModeEnabled);
+  let darkIconHover = $state(false);
+
+  // Static assets for the mode switch button (desktop + mobile, default/hover/selected).
+  // Desktop:
+  // NOTE: filenames include a space after the comma => encode as `%20` so the browser resolves them.
+  function assetUrl(pathname: string) {
+    // SvelteKit può servire l'app sotto un base path; inoltre encodeURI gestisce i caratteri speciali
+    // (es. lo spazio nel filename: `mode=light, status=default.svg`).
+    const encoded = encodeURI(pathname);
+    // In dev `base` può essere '' o '.' (relativo): per gli assets in `static/` vogliamo sempre
+    // un path assoluto dal root, altrimenti su `/sections/...` si rompe (404).
+    const normalizedBase =
+      base === '' || base === '.'
+        ? '/'
+        : base.endsWith('/')
+          ? base
+          : `${base}/`;
+    const normalizedPath = encoded.replace(/^\/+/, '');
+    return `${normalizedBase}${normalizedPath}`;
+  }
+
+  const imgModeLightStatusHover = assetUrl('/mode=light, status=hover.svg');
+  const imgModeDarkStatusHover = assetUrl('/mode=dark, status=hover.svg');
+
+  // "Selected" icons (nome senza `status=` nel folder `static/`).
+  // Questo significa: quando la home è in light mode, la lente "light" è selezionata;
+  // quando la home è in dark mode, la lente "dark" è selezionata.
+  const imgModeLightSelected = assetUrl('/mode=light.svg');
+  const imgModeDarkSelected = assetUrl('/mode=dark.svg');
+
+  const modeSrc = $derived(
+    // Su mobile manteniamo lo stesso mapping (hover viene comunque gestito
+    // se la piattaforma genera eventi mouse).
+    $isMobile
+      ? isHomeDarkMode
+        ? darkIconHover
+          ? imgModeDarkStatusHover
+          : imgModeDarkSelected
+        : darkIconHover
+          ? imgModeLightStatusHover
+          : imgModeLightSelected
+      : isHomeDarkMode
+        ? darkIconHover
+          ? imgModeDarkStatusHover
+          : imgModeDarkSelected
+        : darkIconHover
+          ? imgModeLightStatusHover
+          : imgModeLightSelected
+  );
+
   /* Nav targets: home + the three sections, built from our data. */
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -67,6 +121,11 @@
 
   function closeMenu() {
     menuOpen = false;
+  }
+
+  function onDarkModeButtonClick() {
+    // Toggla solo "home dark mode". Le altre pagine non cambiano look.
+    toggleHomeDarkMode();
   }
 
   /* Logo / "Home" link: if we're already on "/", the URL doesn't change so
@@ -149,7 +208,22 @@
     </button>
   {/if}
 
-  <button
+  <div class="header__right-controls">
+    <button
+      type="button"
+      class="header__dark-button"
+      aria-label="Dark mode"
+      aria-pressed={isHomeDarkMode}
+      onclick={onDarkModeButtonClick}
+      onmouseenter={() => (darkIconHover = true)}
+      onmouseleave={() => (darkIconHover = false)}
+    >
+      <span class="header__dark-icon" aria-hidden="true">
+        <img class="header__dark-icon-img" alt="" src={modeSrc} />
+      </span>
+    </button>
+
+    <button
       type="button"
       class="header__menu-button"
       aria-expanded={menuOpen}
@@ -163,6 +237,7 @@
         <span class="header__burger-line"></span>
       </span>
     </button>
+  </div>
   </div>
 </header>
 
@@ -387,6 +462,59 @@
     outline-offset: 4px;
   }
 
+  .header__right-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .header__dark-button {
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: var(--control-height);
+    height: var(--control-height);
+    margin: 0;
+    padding: 0;
+
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-primary);
+  }
+
+  .header__dark-button:focus-visible {
+    outline: 2px solid var(--color-text-primary);
+    outline-offset: 4px;
+  }
+
+  .header__dark-icon {
+    position: relative;
+    width: 17px;
+    height: 17px;
+    display: block;
+    border-radius: 999px;
+    box-sizing: border-box;
+  }
+
+  /* Home dark mode: the icon's own dark stroke is invisible on black, so give the
+     circular icon a white border matching its size (17px). */
+  :global(body.theme-dark-home) .header__dark-icon {
+    border: 1px solid var(--color-text-primary);
+  }
+
+  .header__dark-icon-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
   .header__menu-button[aria-expanded='true'] {
     color: var(--color-text-primary);
     position: relative;
@@ -451,7 +579,7 @@
   .menu-overlay {
     /* Light tint on top of the page, which is blurred by a CSS filter on
        .app-shell (see app.css) — reliable on Chrome, unlike backdrop-filter. */
-    --menu-veil: rgba(249, 249, 250, 0.55);  /* light tint over the blurred page */
+    --menu-veil: color-mix(in srgb, var(--color-background-page) 55%, transparent);
 
     position: fixed;
     inset: 0;
