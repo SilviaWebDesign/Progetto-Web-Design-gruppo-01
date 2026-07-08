@@ -23,7 +23,7 @@
   /* --- Border --- */
   --color-border: var(--neutral-900);
 
-  /* --- Section --- */
+  /* --- Section  da eliminare--- */
   --color-section-sustainability: var(--sustainability-500);
   --color-section-sport:          var(--sport-500);
   --color-section-infrastructure: var(--infrastructure-500);

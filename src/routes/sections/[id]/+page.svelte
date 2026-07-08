@@ -597,7 +597,9 @@
     resetMobileTopicLayout();
     topicsScaleTween.value = topicsScaleTarget(false);
     get(lenisStore)?.stop();
-    scene3d?.setTransitionProgress(1);
+    // Desktop: animated dissolve. Mobile: scroll scrub already drove progress; finalize.
+    if (get(isMobile)) scene3d?.setTransitionProgress(1);
+    else scene3d?.settle();
     if (get(isMobile)) scene3d?.lockMobileFit();
     gsap.killTweensOf(['.stage__text', '.stage__heading', '.card-stack__item', '.continue']);
     cardStack?.resetHidden();
@@ -625,7 +627,7 @@ function exitTopicsMode() {
     phase = 'intro';
     scene3d?.clearMobileFit();
     teardownTopicsStageForExit();
-    get(lenisStore)?.start();
+    scene3d?.unsettle(() => get(lenisStore)?.start());
   }
 
   async function exitTopicsToIntro() {
@@ -971,15 +973,17 @@ function exitTopicsMode() {
             if (returningToStart) return;
             const progress = self.progress;
             const particleT = particleProgressFromScroll(progress);
-            scene3d?.setTransitionProgress(particleT);
-            updateTopicsScrollLayout(particleT);
-            // Keep scrubbing while rewinding; only block auto-enter into topics.
+            // Mobile: always scrub. Desktop: only while rewinding (suppressTopicsEnter).
+            if (get(isMobile) || suppressTopicsEnter) {
+              scene3d?.setTransitionProgress(particleT);
+              if (get(isMobile)) updateTopicsScrollLayout(particleT);
+            }
             if (suppressTopicsEnter) return;
             if (progress >= 0.999) enterTopicsMode();
           },
           onLeaveBack: () => {
-            syncIntroSceneBaseline();
             exitTopicsMode();
+            if (get(isMobile)) scene3d?.setTransitionProgress(0);
           }
         }
       });

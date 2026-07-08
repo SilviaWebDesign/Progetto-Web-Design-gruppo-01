@@ -231,7 +231,7 @@
         });
       },
       setTransitionProgress: (t) => applyTransitionProgress(t),
-      settle: () => applyTransitionProgress(1),
+      settle: startTransition,
       unsettle: (onDone) => {
         if (transitionState === 'none' && !particleMesh?.visible) {
           onDone?.();
@@ -990,8 +990,14 @@
     applyTransitionVisuals(p);
   }
 
+  /** Time-based solid → particles dissolve (~TRANSITION_DURATION). Used on desktop. */
   function startTransition() {
-    applyTransitionProgress(1);
+    if (transitionState !== 'none' || !particleMesh) return;
+    scrollDrivenTransition = false;
+    transitionPrepared = false;
+    ensureTransitionPrepared();
+    transitionState = 'in';
+    transitionProgress = 0;
   }
 
   function triggerManualPulse(amplitude = MANUAL_PULSE_AMPLITUDE) {
