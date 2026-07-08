@@ -348,9 +348,10 @@
       z-index: 2;
     }
 
-    /* CTA labels match the other mobile CTAs (~13px @390), scalable. */
+    /* CTA labels use the shared caption token, exactly like the section
+       "Continua" CTA (--font-size-caption ≈ 13px @390), so they stay in sync. */
     .results__cta {
-      font-size: clamp(0.75rem, 3.33vw, 0.9rem);
+      font-size: var(--font-size-caption);
     }
 
     /* Figma shows both arrows pointing DOWN; desktop rotates the primary one. */
