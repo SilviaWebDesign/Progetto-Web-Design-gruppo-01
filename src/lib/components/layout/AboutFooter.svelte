@@ -1,7 +1,4 @@
 <script>
-  import ddcLogo from '$lib/components/about/about/ddc-logo.svg';
-  import polimiLogo from '$lib/components/about/about/polimi-logo.png';
-
   /** @type {{ enabled?: boolean, visible?: boolean, height?: number }} */
   let { enabled = true, visible = $bindable(false), height = $bindable(0) } = $props();
 
@@ -86,14 +83,14 @@
           <div class="about-footer__logos">
             <img
               class="about-footer__ddc"
-              src={ddcLogo}
+              src="/loghi/ddc-logo.svg"
               alt="DDC"
               width="110"
               height="47"
             />
             <img
               class="about-footer__polimi"
-              src={polimiLogo}
+              src="/loghi/polimi-logo.png"
               alt="Politecnico di Milano"
               width="110"
               height="36"
@@ -169,7 +166,7 @@
 
   .about-footer__heading {
     margin: 0 0 5px;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 14px;
     font-weight: 800;
     line-height: 1.15;
@@ -187,7 +184,7 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 12px;
     font-weight: 500;
     line-height: 1.35;
@@ -198,7 +195,7 @@
   .about-footer__lab {
     margin: 0 0 10px;
     max-width: 168px;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 12px;
     font-weight: 800;
     line-height: 1.2;

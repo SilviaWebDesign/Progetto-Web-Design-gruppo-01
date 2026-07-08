@@ -42,6 +42,7 @@
     applyMarkerMaterial,
     disposeMarkerGeometries,
     updateMarkerParticlePulse,
+    updateMarkerCursorPhysics,
     updateMarkerParticleScatter,
     resetMarkerParticleScatter
   } from '$lib/components/about/aboutMarkerModels.js';
@@ -175,7 +176,9 @@
   const _refCam = new THREE.Vector3();
   const _refTarget = new THREE.Vector3();
   const _heroProj = new THREE.Vector3();
+  const _hoverNdc = new THREE.Vector2();
   let focusParticleHover = false;
+  let pointerInside = false;
   /** Quota minima camera (linea neve / base render). */
   /** @type {number | null} */
   let cameraFloorY = null;
@@ -1024,6 +1027,17 @@
   }
 
   /** @param {number} clientX @param {number} clientY */
+  function updateHoverPointer(clientX, clientY) {
+    if (!renderer) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    _hoverNdc.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1
+    );
+  }
+
+  /** @param {number} clientX @param {number} clientY */
   function pickHotspotAtClient(clientX, clientY) {
     if (!renderer || !camera || !markerGroup || transitionActive) return null;
 
@@ -1044,16 +1058,8 @@
   /** @param {PointerEvent} event */
   function onPointerMove(event) {
     if (!renderer || !markerGroup || transitionActive) return;
-
-    if (isAboutPanelMobileLayout()) {
-      if (hoveredHotspot) hoveredHotspot = null;
-      focusParticleHover = false;
-      for (const entry of markers) {
-        resetMarkerParticleScatter(entry.model);
-      }
-      updateCanvasCursor(null);
-      return;
-    }
+    pointerInside = true;
+    updateHoverPointer(event.clientX, event.clientY);
 
     if (selectedHotspot) {
       const entry = getHotspotMarkerEntry(selectedHotspot);
@@ -1066,6 +1072,17 @@
       resetMarkerParticleScatter(entry.model);
     }
 
+    // Even in the "panel mobile" layout we still allow hovering physics
+    // on the spheres, but without the extra "focus" scatter mode.
+    if (isAboutPanelMobileLayout()) {
+      const hotspot = pickHotspotAtClient(event.clientX, event.clientY);
+      if ((hotspot?.id ?? null) !== (hoveredHotspot?.id ?? null)) {
+        hoveredHotspot = hotspot;
+      }
+      updateCanvasCursor(hotspot);
+      return;
+    }
+
     const hotspot = pickHotspotAtClient(event.clientX, event.clientY);
     if ((hotspot?.id ?? null) !== (hoveredHotspot?.id ?? null)) {
       hoveredHotspot = hotspot;
@@ -1074,6 +1091,7 @@
   }
 
   function onPointerLeave() {
+    pointerInside = false;
     hoveredHotspot = null;
     focusParticleHover = false;
     for (const entry of markers) {
@@ -1175,10 +1193,17 @@
 
     for (const entry of markers) {
       const active = selectedHotspot?.id === entry.hotspot.id;
+      const hovered =
+        !!pointerInside &&
+        (
+          (active && focusParticleHover) ||
+          (!active && !selectedHotspot && hoveredHotspot?.id === entry.hotspot.id)
+        );
       const phase = now * 0.001 + entry.hotspot.azimuth * 4;
       const motionPhase = active ? phase * FOCUS_MOTION_PHASE_SCALE : phase;
 
       updateMarkerParticlePulse(entry.model, motionPhase, active);
+      updateMarkerCursorPhysics(entry.model, camera, _hoverNdc, hovered);
 
       if (active) {
         updateMarkerParticleScatter(entry.model, phase, focusParticleHover ? 1 : 0, true);

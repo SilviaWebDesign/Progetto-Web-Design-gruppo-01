@@ -75,7 +75,7 @@
 
   .hotspot-preview-card__title {
     margin: 0;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 12px;
     font-weight: 700;
     line-height: 1.2;
@@ -86,7 +86,7 @@
 
   .hotspot-preview-card__body {
     margin: 0;
-    font: var(--text-comment-body-sm-font, 600 14px/1.3 'Supreme Variable', sans-serif);
+    font: var(--text-comment-body-sm-font, 600 14px/1.3 'Supreme', sans-serif);
     display: -webkit-box;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
