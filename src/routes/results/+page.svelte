@@ -283,7 +283,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: var(--results-top-m, 96px) var(--page-gutter) var(--cta-bottom);
+      height: 100dvh;         /* exactly one screen so the CTAs stay pinned + visible */
+      /* bottom reserve clears the now-fixed CTA row (its height + --cta-bottom). */
+      padding: var(--results-top-m, 96px) var(--page-gutter) var(--results-cta-reserve-m, 4.5rem);
       box-sizing: border-box;
     }
 
@@ -306,6 +308,7 @@
       top: auto;
       transform: none;
       flex: 1;                /* fill the space between quote and CTAs */
+      min-height: 0;
       flex-direction: column;
       width: 100%;
       height: auto;
@@ -314,9 +317,9 @@
     }
 
     .results__model {
-      flex: 0 0 auto;
+      flex: 1;                /* the 3 models split the column equally and always fit */
+      min-height: 0;
       width: 100%;
-      height: var(--results-model-h-m, 22vh);  /* each stacked model — tune here */
     }
 
     .results__model:first-child {
@@ -324,14 +327,17 @@
     }
 
     .results__ctas {
-      order: 1;
-      position: static;
-      left: auto;
-      bottom: auto;
+      /* pinned exactly like the section CTAs (.continue): fixed at
+         bottom: var(--cta-bottom), so results CTAs sit at the SAME height. */
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: var(--cta-bottom);
       transform: none;
       width: 100%;
       justify-content: space-around;   /* the two CTAs spread like the Figma */
       gap: var(--spacing-md);
+      z-index: 2;
     }
 
     /* CTA labels match the other mobile CTAs (~13px @390), scalable. */
