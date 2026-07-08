@@ -1,7 +1,4 @@
 <script>
-  import ddcLogo from '$lib/components/about/about/ddc-logo.svg';
-  import polimiLogo from '$lib/components/about/about/polimi-logo.png';
-
   /** @type {{ enabled?: boolean, visible?: boolean, height?: number }} */
   let { enabled = true, visible = $bindable(false), height = $bindable(0) } = $props();
 
@@ -86,14 +83,14 @@
           <div class="about-footer__logos">
             <img
               class="about-footer__ddc"
-              src={ddcLogo}
+              src="/loghi/ddc-logo.svg"
               alt="DDC"
               width="110"
               height="47"
             />
             <img
               class="about-footer__polimi"
-              src={polimiLogo}
+              src="/loghi/polimi-logo.png"
               alt="Politecnico di Milano"
               width="110"
               height="36"

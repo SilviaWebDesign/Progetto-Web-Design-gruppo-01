@@ -7,6 +7,7 @@
   import { preloadMountainGltf } from '$lib/components/3d/mountainGltf.js';
   import { getNextHotspot, getPrevHotspot } from '$lib/components/3d/aboutHotspots.js';
   import { overlayVisible } from '$lib/stores/pageTransition';
+  import { headerState, resetHeaderState } from '$lib/stores/header';
   import { browser } from '$app/environment';
 
   /** @type {import('$lib/components/3d/aboutHotspots.js').AboutHotspot | null} */
@@ -89,6 +90,9 @@
 
   onMount(() => {
     overlayVisible.set(false);
+    // About usa una scena "intro" senza scroll reale: forziamo la navbar visibile
+    // come nelle altre pagine che non innescano lo scroll globale.
+    headerState.update((s) => ({ ...s, forceVisible: true }));
     preloadMountainGltf();
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
@@ -110,6 +114,7 @@
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('keydown', onIntroKeydown);
+      resetHeaderState();
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };

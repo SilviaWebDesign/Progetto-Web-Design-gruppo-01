@@ -18,6 +18,19 @@ const BASE_OPACITY = 0.85;
 const ACTIVE_OPACITY = 0.95;
 /** Colore particelle marker — allineato al testo UI (#161A1F). */
 const MARKER_COLOR_RGB = 'vec3(0.0862745, 0.1019608, 0.1215686)';
+const PART_RETURN = 0.10;
+const PART_DAMPING = 0.86;
+const CURSOR_RADIUS_FRAC = 0.056;
+const CURSOR_PUSH_FRAC = 0.028;
+const PART_MAX_OFFSET_FRAC = 0.4;
+const PART_SLEEP_V2 = 1e-8;
+const CURSOR_SPEED_BOOST = 24;
+const CURSOR_BOOST_MAX = 3;
+
+const raycaster = new THREE.Raycaster();
+const _rayOriginLocal = new THREE.Vector3();
+const _rayDirLocal = new THREE.Vector3();
+const _invMat = new THREE.Matrix4();
 
 /**
  * @param {number} count
@@ -70,32 +83,20 @@ function buildParticleSphereMesh(active = false) {
     vertexShader: /* glsl */ `
       attribute vec3 aDirection;
       uniform float uPulse;
-      uniform float uHover;
-      uniform float uTime;
-      uniform float uHoverScatter;
 
       void main() {
-        vec3 instPos = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-        float seed = fract(sin(dot(instPos, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
-        float t = uTime * 1.0 + seed * 6.28318;
-        float wobble =
-          0.55 +
-          0.22 * sin(t) +
-          0.12 * sin(t * 1.55 + seed * 4.0);
-        vec3 scatter = aDirection * uHover * uHoverScatter * wobble;
-        vec3 tangent = cross(normalize(instPos + vec3(0.001)), aDirection);
-        vec3 swirl = tangent * uHover * uHoverScatter * 0.28 * sin(t * 1.2 + seed * 5.0);
-        vec3 p = position + aDirection * uPulse + scatter + swirl;
-        gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(p, 1.0);
+        // Same idea as Scene3D's particle shader:
+        // "breath" = expand along each particle's scatter direction (aDirection)
+        // driven by uPulse. (About keeps uHover/uTime uniforms for compatibility.)
+        vec3 local = position + aDirection * uPulse;
+        gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(local, 1.0);
       }
     `,
     fragmentShader: /* glsl */ `
       uniform float uPulse;
-      uniform float uHover;
       uniform float uBaseOpacity;
       void main() {
         float alpha = uBaseOpacity + uPulse * 0.5;
-        alpha *= mix(1.0, 0.82, uHover);
         gl_FragColor = vec4(${MARKER_COLOR_RGB}, alpha);
       }
     `,
@@ -115,6 +116,23 @@ function buildParticleSphereMesh(active = false) {
     mesh.setMatrixAt(i, matrix);
   }
   mesh.instanceMatrix.needsUpdate = true;
+
+  const current = targets.slice();
+  const velocity = new Float32Array(PARTICLE_COUNT * 3);
+  const localExtent = MARKER_RADIUS * 2;
+  mesh.userData.particleState = {
+    targets,
+    current,
+    velocity,
+    iMatBuf: mesh.instanceMatrix.array,
+    cursorRadius: localExtent * CURSOR_RADIUS_FRAC,
+    cursorPush: localExtent * CURSOR_PUSH_FRAC,
+    maxOffset: localExtent * PART_MAX_OFFSET_FRAC,
+    physicsAsleep: true,
+    hoverWasActive: false,
+    cursorSpeed: 0,
+    prevNdc: new THREE.Vector2()
+  };
 
   return mesh;
 }
@@ -148,6 +166,132 @@ export function updateMarkerParticlePulse(object, elapsedSeconds, active = false
     const mat = child.material;
     if (!(mat instanceof THREE.ShaderMaterial)) return;
     mat.uniforms.uPulse.value = pulse;
+  });
+}
+
+/** @param {THREE.Object3D} object @param {THREE.Camera} camera @param {THREE.Vector2} pointerNdc @param {boolean} hovering */
+export function updateMarkerCursorPhysics(object, camera, pointerNdc, hovering) {
+  object.traverse((child) => {
+    if (!(child instanceof THREE.InstancedMesh) || !child.userData.isMarkerParticles) return;
+    const state = child.userData.particleState;
+    if (!state) return;
+
+    const {
+      targets,
+      current,
+      velocity,
+      iMatBuf,
+      cursorRadius,
+      cursorPush,
+      maxOffset,
+      prevNdc
+    } = state;
+
+    if (state.physicsAsleep && !hovering) return;
+    state.physicsAsleep = false;
+
+    let hasCursor = false;
+    if (hovering) {
+      if (!state.hoverWasActive) prevNdc.copy(pointerNdc);
+      const sdx = (pointerNdc.x - prevNdc.x) * camera.aspect;
+      const sdy = pointerNdc.y - prevNdc.y;
+      state.cursorSpeed = Math.hypot(sdx, sdy);
+      prevNdc.copy(pointerNdc);
+
+      raycaster.setFromCamera(pointerNdc, camera);
+      _invMat.copy(child.matrixWorld).invert();
+      _rayOriginLocal.copy(raycaster.ray.origin).applyMatrix4(_invMat);
+      _rayDirLocal.copy(raycaster.ray.direction).transformDirection(_invMat).normalize();
+      hasCursor = true;
+    } else {
+      state.cursorSpeed = 0;
+    }
+    state.hoverWasActive = hovering;
+
+    const boost = 1 + Math.min(state.cursorSpeed * CURSOR_SPEED_BOOST, CURSOR_BOOST_MAX);
+    const r2 = cursorRadius * cursorRadius;
+    const maxOff2 = maxOffset * maxOffset;
+    let maxV2 = 0;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const ix = i * 3;
+      const hx = targets[ix], hy = targets[ix + 1], hz = targets[ix + 2];
+      let cx = current[ix], cy = current[ix + 1], cz = current[ix + 2];
+      let vx = velocity[ix], vy = velocity[ix + 1], vz = velocity[ix + 2];
+
+      if (hasCursor) {
+        const wx = cx - _rayOriginLocal.x;
+        const wy = cy - _rayOriginLocal.y;
+        const wz = cz - _rayOriginLocal.z;
+        const t = wx * _rayDirLocal.x + wy * _rayDirLocal.y + wz * _rayDirLocal.z;
+        const dx = wx - _rayDirLocal.x * t;
+        const dy = wy - _rayDirLocal.y * t;
+        const dz = wz - _rayDirLocal.z * t;
+        const d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 < r2 && d2 > 1e-9) {
+          const d = Math.sqrt(d2);
+          const f = (1 - d / cursorRadius) * cursorPush * boost;
+          const inv = 1 / d;
+          vx += dx * inv * f;
+          vy += dy * inv * f;
+          vz += dz * inv * f;
+        }
+      }
+
+      vx *= PART_DAMPING;
+      vy *= PART_DAMPING;
+      vz *= PART_DAMPING;
+      cx += vx;
+      cy += vy;
+      cz += vz;
+      cx += (hx - cx) * PART_RETURN;
+      cy += (hy - cy) * PART_RETURN;
+      cz += (hz - cz) * PART_RETURN;
+
+      const ox = cx - hx, oy = cy - hy, oz = cz - hz;
+      const o2 = ox * ox + oy * oy + oz * oz;
+      if (o2 > maxOff2) {
+        const sc = maxOffset / Math.sqrt(o2);
+        cx = hx + ox * sc;
+        cy = hy + oy * sc;
+        cz = hz + oz * sc;
+      }
+
+      current[ix] = cx;
+      current[ix + 1] = cy;
+      current[ix + 2] = cz;
+      velocity[ix] = vx;
+      velocity[ix + 1] = vy;
+      velocity[ix + 2] = vz;
+
+      const v2 = vx * vx + vy * vy + vz * vz;
+      if (v2 > maxV2) maxV2 = v2;
+
+      const b = i * 16 + 12;
+      iMatBuf[b] = cx;
+      iMatBuf[b + 1] = cy;
+      iMatBuf[b + 2] = cz;
+    }
+
+    child.instanceMatrix.needsUpdate = true;
+
+    if (!hovering && maxV2 < PART_SLEEP_V2) {
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const ix = i * 3;
+        current[ix] = targets[ix];
+        current[ix + 1] = targets[ix + 1];
+        current[ix + 2] = targets[ix + 2];
+        velocity[ix] = 0;
+        velocity[ix + 1] = 0;
+        velocity[ix + 2] = 0;
+        const b = i * 16 + 12;
+        iMatBuf[b] = targets[ix];
+        iMatBuf[b + 1] = targets[ix + 1];
+        iMatBuf[b + 2] = targets[ix + 2];
+      }
+      child.instanceMatrix.needsUpdate = true;
+      state.physicsAsleep = true;
+    }
   });
 }
 
