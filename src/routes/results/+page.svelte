@@ -132,8 +132,16 @@
   </div>
 
   <p class="results__quote">
-    La realtà non è mai unica e uguale per tutti.<br />
-    Lo stesso evento può generare visioni differenti e soggettive, in base alle opinioni di ognuno.
+    {#if $isMobile}
+      <!-- Figma mobile: shorter quote, broken over 4 lines (knobs = the <br/>) -->
+      La realtà non è mai unica<br />
+      e uguale per tutti.<br />
+      Lo stesso evento può generare<br />
+      visioni differenti e soggettive.
+    {:else}
+      La realtà non è mai unica e uguale per tutti.<br />
+      Lo stesso evento può generare visioni differenti e soggettive, in base alle opinioni di ognuno.
+    {/if}
   </p>
 
  <div class="results__ctas">
