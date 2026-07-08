@@ -166,8 +166,9 @@ export function getHotspotPathIndex(id) {
  */
 export function getNextHotspot(id) {
   const index = getHotspotPathIndex(id);
-  if (index < 0 || index >= ABOUT_HOTSPOT_PATH.length - 1) return null;
-  return ABOUT_HOTSPOT_PATH[index + 1];
+  const len = ABOUT_HOTSPOT_PATH.length;
+  if (index < 0 || len === 0) return null;
+  return ABOUT_HOTSPOT_PATH[(index + 1) % len];
 }
 
 /**
@@ -176,8 +177,9 @@ export function getNextHotspot(id) {
  */
 export function getPrevHotspot(id) {
   const index = getHotspotPathIndex(id);
-  if (index <= 0) return null;
-  return ABOUT_HOTSPOT_PATH[index - 1];
+  const len = ABOUT_HOTSPOT_PATH.length;
+  if (index < 0 || len === 0) return null;
+  return ABOUT_HOTSPOT_PATH[(index - 1 + len) % len];
 }
 
 /** Distanza dalla superficie per appoggiare le card all'esterno del mesh. */
