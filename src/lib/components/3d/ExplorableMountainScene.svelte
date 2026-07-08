@@ -1061,16 +1061,6 @@
     pointerInside = true;
     updateHoverPointer(event.clientX, event.clientY);
 
-    if (isAboutPanelMobileLayout()) {
-      if (hoveredHotspot) hoveredHotspot = null;
-      focusParticleHover = false;
-      for (const entry of markers) {
-        resetMarkerParticleScatter(entry.model);
-      }
-      updateCanvasCursor(null);
-      return;
-    }
-
     if (selectedHotspot) {
       const entry = getHotspotMarkerEntry(selectedHotspot);
       updateFocusParticleHover(event.clientX, event.clientY, entry);
@@ -1080,6 +1070,17 @@
     focusParticleHover = false;
     for (const entry of markers) {
       resetMarkerParticleScatter(entry.model);
+    }
+
+    // Even in the "panel mobile" layout we still allow hovering physics
+    // on the spheres, but without the extra "focus" scatter mode.
+    if (isAboutPanelMobileLayout()) {
+      const hotspot = pickHotspotAtClient(event.clientX, event.clientY);
+      if ((hotspot?.id ?? null) !== (hoveredHotspot?.id ?? null)) {
+        hoveredHotspot = hotspot;
+      }
+      updateCanvasCursor(hotspot);
+      return;
     }
 
     const hotspot = pickHotspotAtClient(event.clientX, event.clientY);
