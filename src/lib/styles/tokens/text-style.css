@@ -69,9 +69,12 @@
      OTHER (body, regular/medium/bold)
      ============================================================ */
 
-  /* --- Comment body (body medium, 14 or 18px depending on card size) --- */
-  --text-comment-body-sm-font: var(--font-weight-bold) var(--font-size-xs) var(--font-family-body);
-  --text-comment-body-lg-font: var(--font-weight-bold) var(--font-size-md) var(--font-family-body);
+  /* --- Comment body (body bold, 14 or 18px depending on card size) --- */
+--text-comment-body-sm-font: var(--font-weight-bold) var(--font-size-xs) var(--font-family-body);
+--text-comment-body-lg-font: var(--font-weight-bold) var(--font-size-md) var(--font-family-body);
+
+/* --- Comment body mobile (body bold, 14px @390, scalable) --- */
+--text-comment-body-mobile-font: var(--font-weight-bold) var(--font-size-comment-body) / var(--line-height-normal) var(--font-family-body);
   
   /* --- Home subtitle (body bold, 16px) --- */
   --text-home-subtitle-font: var(--font-weight-bold) var(--font-size-sm) var(--font-family-body);

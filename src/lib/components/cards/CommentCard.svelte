@@ -239,8 +239,27 @@
     transition: fill 200ms ease, stroke 200ms ease;
   }
 
-  .comment-card[data-liked='true'] .comment-card__heart-shape {
+    .comment-card[data-liked='true'] .comment-card__heart-shape {
     fill: var(--color-border);
     stroke: var(--color-border);
+  }
+
+  /* ── Mobile (≤768px): Figma comment card — fill width, 96h, 20 padding, 270×56 text box ── */
+  @media (max-width: 768px) {
+    .comment-card {
+      padding: var(--spacing-comment-card-padding);
+      height: var(--spacing-comment-card-height);
+      min-height: var(--spacing-comment-card-height);
+      box-sizing: border-box;
+    }
+
+    .comment-card__body {
+      font: var(--text-comment-body-mobile-font);
+      flex: 1;
+      min-width: 0;
+      max-width: var(--spacing-comment-body-max-width);
+      max-height: var(--spacing-comment-body-max-height);
+      overflow: hidden;
+    }
   }
 </style>

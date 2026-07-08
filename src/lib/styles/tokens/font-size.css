@@ -34,4 +34,5 @@
   --font-size-section-topic-title-compact:  clamp(1.35rem, 6.15vw, 1.6rem);   /* 24@390 — topic mode B title, home narrative line */
   --font-size-section-topic-body-compact:   clamp(0.875rem, 3.85vw, 1rem);    /* 15@390 — topic mode B body */
   --font-size-home-title:                   clamp(3rem, 14.36vw, 3.75rem);     /* 56@390 — home hero title */
+  --font-size-comment-body:                 clamp(0.875rem, 3.59vw, 0.9375rem); /* 14@390 — comment card body mobile */
 }

@@ -1183,8 +1183,6 @@ function exitTopicsMode() {
       margin-bottom: var(--spacing-section-topic-gap-body-end-compact);
     }
 
-    /* Layout manopoles — card/comments tuning (step 2); not typography tokens. */
-
     /* Mode B (compact): hide the topic counter to free vertical space. */
     .stage.m-cards-visible .stage__text :global(.text-block__counter) {
       display: none;
@@ -1198,10 +1196,9 @@ function exitTopicsMode() {
     .stage.m-cards-visible .stage__right {
       display: block;
       margin-top: auto;
-      /* --m-comments-lift raises the whole comment block off the bottom edge.
-         margin-top:auto pins it low; this margin lifts it back up. Tune freely. */
-      margin-bottom: var(--m-comments-lift, 6vh);
-      min-height: 0; /* let the inner scroll wrapper size correctly in flex/grid */
+      /* Tune --spacing-section-comments-lift in spacing.css to clear the Continua CTA. */
+      margin-bottom: var(--spacing-section-comments-lift);
+      min-height: 0;
     }
 
     /* dedicated scroll VIEWPORT (prototype approach): a plain block with a fixed
@@ -1210,38 +1207,22 @@ function exitTopicsMode() {
     /* dedicated scroll VIEWPORT: fixed height + overflow so the cards scroll
        natively (data-lenis-prevent on the element keeps Lenis off these events). */
     .stage.m-cards-visible .stage__right-scroll {
-      /* --m-comments-h = height of the comment viewport = how many cards you
-         see at once. ~26vh ≈ 1.5 cards, ~40vh ≈ 2.5 cards (Figma). Tune freely. */
-      --m-comments-h: 26vh;
-      --m-comments-inset: 8px;  /* side room so a card's border/shadow isn't clipped */
-      --m-comments-fade: 48px;  /* height of the soft fade at the bottom edge */
-
-      height: var(--m-comments-h);
-      padding: 6px var(--m-comments-inset);
+      height: var(--spacing-section-comments-viewport-height);
+      padding: 6px var(--spacing-section-comments-scroll-inset);
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
 
       /* soft bottom fade, hinting there's more to scroll (matches the Figma). */
       -webkit-mask-image: linear-gradient(
-        to bottom, #000 calc(100% - var(--m-comments-fade)), transparent 100%
+            to bottom, #000 calc(100% - var(--spacing-section-comments-fade)), transparent 100%
       );
       mask-image: linear-gradient(
-        to bottom, #000 calc(100% - var(--m-comments-fade)), transparent 100%
+        to bottom, #000 calc(100% - var(--spacing-section-comments-fade)), transparent 100%
       );
-    }
+}
 
-    /* Fixed card height on mobile B (prototype: 96px). height:auto made long
-       comments stretch each card and only ~1 fit in the viewport. */
-    .stage.m-cards-visible :global(.comment-card) {
-      height: var(--m-card-h, 96px);
-      min-height: var(--m-card-h, 96px);
-    }
-    .stage.m-cards-visible :global(.card-stack) {
-      gap: var(--m-card-gap, 10px); /* prototype gap; desktop uses 19px */
-    }
-
-    .continue__label {
+.continue__label {
       font: var(--text-caption-font);
       text-transform: var(--text-caption-text-transform);
     }

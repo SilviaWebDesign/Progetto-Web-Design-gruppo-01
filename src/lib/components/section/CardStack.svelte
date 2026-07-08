@@ -193,4 +193,10 @@
     opacity: 0;
     will-change: transform;
   }
+
+  @media (max-width: 768px) {
+    .card-stack {
+      gap: var(--spacing-comment-card-stack-gap);
+    }
+  }
 </style>

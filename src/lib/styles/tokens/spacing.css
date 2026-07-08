@@ -28,5 +28,16 @@
   --spacing-section-topic-gap-title-body-expanded: clamp(0.4rem, 2.56vw, 0.625rem); /* 10@390 — mode A */
   --spacing-section-topic-gap-body-sources-expanded: clamp(0.5rem, 3.08vw, 0.75rem); /* 12@390 — mode A */
   --spacing-section-topic-gap-title-body-compact: clamp(0.25rem, 1.54vw, 0.375rem); /* 6@390 — mode B */
-  --spacing-section-topic-gap-body-end-compact:   clamp(0.35rem, 2.05vw, 0.5rem);  /* 8@390 — mode B */
+    --spacing-section-topic-gap-body-end-compact:   clamp(0.35rem, 2.05vw, 0.5rem);  /* 8@390 — mode B */
+
+  /* --- Comment cards + comments column (Figma frame 390px) --- */
+  --spacing-comment-card-height:                clamp(5.5rem, 24.62vw, 6rem);       /* 96@390 — card hug height */
+  --spacing-comment-card-padding:               clamp(1rem, 5.13vw, 1.25rem);       /* 20@390 — padding around text + heart */
+  --spacing-comment-card-stack-gap:             clamp(0.5rem, 2.56vw, 0.625rem);   /* 10@390 — gap between cards */
+  --spacing-comment-body-max-width:             clamp(14rem, 69.23vw, 17rem);       /* 270@390 — inner text box width */
+  --spacing-comment-body-max-height:            clamp(3rem, 14.36vw, 3.5rem);       /* 56@390 — inner text box height */
+  --spacing-section-comments-viewport-height:   clamp(8.75rem, 39.5vw, 10.5rem);  /* ~1.5 cards visible @390 */
+  --spacing-section-comments-scroll-inset:      clamp(0.35rem, 2.05vw, 0.5rem);   /* 8@390 — side inset in scroll viewport */
+  --spacing-section-comments-fade:              clamp(2.5rem, 12.31vw, 3rem);      /* 48@390 — bottom fade height */
+  --spacing-section-comments-lift:              clamp(7rem, 22vw, 9rem);           /* raises comment block above Continua — tune */
 }
