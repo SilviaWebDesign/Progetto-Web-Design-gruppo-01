@@ -244,13 +244,14 @@
     stroke: var(--color-border);
   }
 
-  /* ── Mobile (≤768px): Figma comment card — fill width, 96h, 20 padding, 270×56 text box ── */
+  /* ── Mobile (≤768px): Figma comment card — fill width, min 96h hug, 20 padding ── */
   @media (max-width: 768px) {
     .comment-card {
       padding: var(--spacing-comment-card-padding);
-      height: var(--spacing-comment-card-height);
-      min-height: var(--spacing-comment-card-height);
+      height: auto;
+      min-height: var(--spacing-comment-card-min-height);
       box-sizing: border-box;
+      align-items: flex-start;
     }
 
     .comment-card__body {
@@ -258,8 +259,10 @@
       flex: 1;
       min-width: 0;
       max-width: var(--spacing-comment-body-max-width);
-      max-height: var(--spacing-comment-body-max-height);
-      overflow: hidden;
+    }
+
+    .comment-card__heart {
+      align-self: center;
     }
   }
 </style>

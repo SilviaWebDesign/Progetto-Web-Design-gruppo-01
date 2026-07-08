@@ -95,12 +95,17 @@
     });
   }
 
-  // Mobile topics scroll nav (prototype model): first swipe opens comments (A→B),
-  // then scrolls comments; at the edge, advances/hides topic or toggles back to A.
+  function resetMobileTopicLayout() {
+    if (!$isMobile) return;
+    mobileCardsVisible = false;
+    if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
+  }
+
+  // Mobile topics scroll nav: swipe toggles A↔B only. Topic changes via Continua button.
   function handleTopicsForwardNavigation() {
     if (wheelLock || isTransitioning || textFading) return;
-    if ($isMobile && !mobileCardsVisible) {
-      setMobileCards(true);
+    if ($isMobile) {
+      if (!mobileCardsVisible) setMobileCards(true);
       return;
     }
     wheelLock = true;
@@ -110,9 +115,8 @@
 
   function handleTopicsBackwardNavigation() {
     if (wheelLock || isTransitioning || textFading) return;
-    if ($isMobile && mobileCardsVisible) {
-      if (!cardsScrollAtTop()) return;
-      setMobileCards(false);
+    if ($isMobile) {
+      if (mobileCardsVisible && cardsScrollAtTop()) setMobileCards(false);
       return;
     }
     if (currentTopic === 0) {
@@ -239,6 +243,7 @@
       // 2) swap the topic (new cards mount at opacity 0)
       tl.add(() => {
         applyChange();
+        resetMobileTopicLayout();
       });
 
       // 3) after the DOM updates, place the new content and fade it in
@@ -283,6 +288,7 @@
   function enterTopicsMode() {
     if (phase !== 'intro') return;
     phase = 'topics';
+    resetMobileTopicLayout();
     get(lenisStore)?.stop();
     scene3d?.settle();
     void (async () => {
@@ -326,6 +332,7 @@ function exitTopicsMode() {
   async function enterFeedbackPhase() {
     if (phase !== 'topics' || isTransitioning || !anyLiked) return;
     isTransitioning = true;
+    resetMobileTopicLayout();
 
     const OUT = 0.5;
     gsap.to('.stage__text', { opacity: 0, y: -8, duration: OUT, ease: 'power3.inOut' });
@@ -730,8 +737,7 @@ function exitTopicsMode() {
         e.preventDefault();
 
         if ($isMobile) {
-          if (e.deltaY > 0) handleTopicsForwardNavigation();
-          else handleTopicsBackwardNavigation();
+          // Mobile: no wheel topic navigation — Continua button only. Block stray momentum.
           return;
         }
 
@@ -830,13 +836,9 @@ function exitTopicsMode() {
           return;
         }
         handleTopicsForwardNavigation();
-      } else if (dy < 0) {
-        if (mobileCardsVisible) {
-          if (cardsScrollRef?.contains(e.target as Node) && !cardsScrollAtTop()) return;
-          handleTopicsBackwardNavigation();
-        } else if (currentTopic > 0) {
-          handleTopicsBackwardNavigation();
-        }
+      } else if (dy < 0 && mobileCardsVisible) {
+        if (cardsScrollRef?.contains(e.target as Node) && !cardsScrollAtTop()) return;
+        handleTopicsBackwardNavigation();
       }
     }
 
@@ -1070,7 +1072,7 @@ function exitTopicsMode() {
     .phrase {
       height: auto;
       align-items: flex-start;
-      font-size: clamp(1.7rem, 8.2vw, 2.2rem); /* 32px @390 */
+      font-size: var(--font-size-section-intro-phrase); /* 36px @390 */
     }
   }
 
@@ -1121,7 +1123,6 @@ function exitTopicsMode() {
     margin: 0;
     text-align: center;
     font: var(--text-section-comments-heading-font);
-    text-transform: var(--text-caption-text-transform);
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
   }
