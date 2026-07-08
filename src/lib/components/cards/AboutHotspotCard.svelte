@@ -111,7 +111,7 @@
   }
 
   .path-progress {
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 0.85rem;
     font-weight: 800;
     letter-spacing: 0.06em;

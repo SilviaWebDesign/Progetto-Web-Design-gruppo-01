@@ -166,7 +166,7 @@
 
   .about-footer__heading {
     margin: 0 0 5px;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 14px;
     font-weight: 800;
     line-height: 1.15;
@@ -184,7 +184,7 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 12px;
     font-weight: 500;
     line-height: 1.35;
@@ -195,7 +195,7 @@
   .about-footer__lab {
     margin: 0 0 10px;
     max-width: 168px;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 12px;
     font-weight: 800;
     line-height: 1.2;

@@ -162,7 +162,7 @@
   }
 
   .fact-badge span {
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 14px;
     font-weight: 800;
     text-transform: uppercase;
@@ -179,7 +179,7 @@
 
   .fact-body {
     margin: 0;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: clamp(1rem, 2vw, 22px);
     font-weight: 800;
     line-height: 1.1;
@@ -195,7 +195,7 @@
     justify-content: space-between;
     align-items: flex-end;
     gap: 1rem;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 18px;
     font-weight: 800;
     text-transform: uppercase;

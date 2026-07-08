@@ -354,7 +354,7 @@
     transition:
       opacity 1100ms ease,
       visibility 0ms linear 1100ms;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: clamp(1.25rem, 3.2vw, 1.75rem);
     font-weight: 800;
     line-height: 1.1;
@@ -372,7 +372,7 @@
 
   .mountain-hover-hint__cta {
     position: relative;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: clamp(0.75rem, 1.6vw, 0.875rem);
     font-weight: 700;
     line-height: 1.2;
@@ -425,7 +425,7 @@
 
   .intro-message {
     margin: 0;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: clamp(1.65rem, 4.6vw, 2.75rem);
     font-weight: 700;
     line-height: 1.1;
@@ -435,7 +435,7 @@
   }
 
   .scroll-hint {
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;

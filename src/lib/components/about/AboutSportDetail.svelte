@@ -386,7 +386,7 @@
 
   .sport-title {
     margin: 0 0 16px;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: var(--sport-title-size);
     font-weight: 800;
     line-height: 1.1;
@@ -402,7 +402,7 @@
 
   .sport-body p {
     margin: 0;
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 16px;
     font-weight: 400;
     line-height: normal;
@@ -420,7 +420,7 @@
   }
 
   .continue-btn {
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -434,7 +434,7 @@
   }
 
   .continue-label {
-    font-family: 'Supreme Variable', sans-serif;
+    font-family: 'Supreme', sans-serif;
     font-size: 12px;
     font-weight: 700;
     line-height: 1;
