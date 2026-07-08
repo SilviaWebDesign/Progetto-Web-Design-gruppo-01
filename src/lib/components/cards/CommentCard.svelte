@@ -263,6 +263,8 @@
       min-width: 0;
       max-width: var(--spacing-comment-body-max-width);
       overflow-wrap: break-word;
+      /* Mobile: ignore desktop manual line breaks — let text reflow naturally. */
+      white-space: normal;
     }
 
     .comment-card__heart {
