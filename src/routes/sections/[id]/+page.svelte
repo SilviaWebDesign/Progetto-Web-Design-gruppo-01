@@ -646,24 +646,43 @@ function exitTopicsMode() {
 
     const vh = window.innerHeight;
     const targetY = vh * INTRO_PHRASE_BEAT;
+    const REWIND_DURATION = 0.85;
 
     await new Promise<void>((resolve) => {
-      lenis?.scrollTo(targetY, {
-        duration: 0.85,
-        force: true,
-        onComplete: () => {
-          syncIntroSceneBaseline();
+      // The scrollTo can be cancelled (e.g. the user keeps scrolling up towards the
+      // title), and then `onComplete` never fires. Without this guard isTransitioning
+      // and suppressTopicsEnter would stay true forever, so enterTopicsMode() would
+      // bail out on every later attempt and only the particle model would show.
+      let settled = false;
+      let fallback: ReturnType<typeof setTimeout> | undefined;
+
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (fallback) clearTimeout(fallback);
+        syncIntroSceneBaseline();
+        ScrollTrigger.update();
+        requestAnimationFrame(() => {
           ScrollTrigger.update();
-          requestAnimationFrame(() => {
-            ScrollTrigger.update();
-            isTransitioning = false;
-            // Brief guard so a parked scroll position cannot bounce back into topics.
-            setTimeout(() => {
-              suppressTopicsEnter = false;
-            }, 450);
-            resolve();
-          });
-        }
+          isTransitioning = false;
+          // Brief guard so a parked scroll position cannot bounce back into topics.
+          setTimeout(() => {
+            suppressTopicsEnter = false;
+          }, 450);
+          resolve();
+        });
+      };
+
+      fallback = setTimeout(finish, REWIND_DURATION * 1000 + 250); // safety net
+      if (!lenis) {
+        finish();
+        return;
+      }
+      lenis.scrollTo(targetY, {
+        duration: REWIND_DURATION,
+        force: true,
+        lock: true, // user input can't cancel the rewind halfway through
+        onComplete: finish
       });
     });
   }
@@ -677,6 +696,12 @@ function exitTopicsMode() {
   function fitFeedbackBody() {
     const el = document.querySelector<HTMLElement>('.feedback__body');
     if (!el) return;
+    // Mobile: the size is a scalable clamp in CSS (16px @390). Clear any inline size
+    // left behind by the desktop fit, otherwise it would win over the stylesheet.
+    if (get(isMobile)) {
+      el.style.fontSize = '';
+      return;
+    }
     let fs = FEEDBACK_BODY_MAX_FONT;
     el.style.fontSize = `${fs}px`;
     // step down 1px at a time until it fits in <= max lines or hits the floor
@@ -1847,6 +1872,35 @@ function exitTopicsMode() {
     font-size: 24px;
     line-height: 1.5;
     color: var(--color-text-primary);
+  }
+
+  /* ── Mobile (≤768px) feedback: the body is a fixed 1000px column on desktop, which
+     overflows a phone. Make it fluid and use the mobile CTA size. The 3D result is
+     framed by Scene3D's own box constants. ── */
+  @media (max-width: 768px) {
+    .feedback__heading {
+      top: 12vh;
+      width: 100%;
+      padding: 0 var(--page-gutter);
+      box-sizing: border-box;
+      white-space: pre-line; /* let the desktop breaks wrap instead of overflowing */
+      font-size: clamp(1.1rem, 5.13vw, 1.35rem); /* 20px @390 */
+      font-weight: var(--font-weight-bold);
+    }
+
+    .feedback__body {
+      width: 100%;
+      max-width: none;
+      padding: 0 var(--page-gutter);
+      bottom: calc(var(--cta-bottom) + 64px); /* clears the CTA */
+      text-wrap: pretty;
+      font-size: clamp(0.9rem, 4.1vw, 1.05rem); /* 16px @390 */
+      font-weight: var(--font-weight-regular);
+    }
+
+    .feedback__cta-label {
+      font-size: clamp(0.75rem, 3.33vw, 0.9rem); /* same as the other mobile CTAs */
+    }
   }
 
   .feedback__cta {
