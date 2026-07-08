@@ -145,11 +145,22 @@
     const outY = next ? -40 : 40;
     const inY = next ? 40 : -40;
 
-    // Capture where the model STARTS (band + scale of the current mode) before we
-    // touch anything. The fit stays locked so nothing lerps on its own.
+    // Capture where the model STARTS before we touch anything, and where its SCALE
+    // must end (known immediately). The fit stays locked so nothing lerps on its own.
     scene3d?.lockMobileFit();
     const startBand = computeTopicsModelBand(mobileCardsVisible);
-    const startScale = topicsScaleTween.value;
+    const endScale = topicsScaleTarget(next);
+
+    // Model SCALE glides across the WHOLE crossfade (fade-out + fade-in) starting
+    // NOW, so the model reacts together with the text from t=0 (no delayed start /
+    // "chasing"). Its POSITION is handled once we know the destination band (step 3).
+    gsap.killTweensOf(topicsScaleTween);
+    const scaleSettle = gsap.to(topicsScaleTween, {
+      value: endScale,
+      duration: fadeOutDuration + fadeInDuration,
+      ease: SETTLE_EASE,
+      onUpdate: () => scene3d?.setScale(topicsScaleTween.value)
+    });
 
     // 1) Fade the current content out.
     if (next) {
@@ -180,21 +191,17 @@
     }
 
     // 2) New mode's layout is in the DOM now (text at opacity 0, settled at y:0),
-    //    so we can measure the exact DESTINATION band + scale.
+    //    so we can measure the exact DESTINATION band.
     gsap.set(textTargets, { y: 0, opacity: 0 });
     await tick();
     const endBand = computeTopicsModelBand(mobileCardsVisible);
-    const endScale = topicsScaleTarget(mobileCardsVisible);
 
-    // 3) Glide the model from start→end with ONE eased tween (like the intro
-    //    settle): position + scale interpolated together, fit kept locked so we
-    //    drive spinner.y directly (no constant-rate lerp = no fast-start lunge).
-    //    It shares the fade-in duration + ease with the text so the two move in
-    //    lockstep (knobs: fadeInDuration + SETTLE_EASE).
+    // 3) Model POSITION glides start→end over the fade-in (eased, fit kept locked so
+    //    we drive spinner.y directly — no constant-rate lerp = no fast-start lunge).
+    //    Shares fadeInDuration + SETTLE_EASE with the text so they move in lockstep.
     const settle = { t: 0 };
-    gsap.killTweensOf(topicsScaleTween);
     gsap.killTweensOf(settle);
-    const modelSettle =
+    const posSettle =
       startBand && endBand
         ? gsap.to(settle, {
             t: 1,
@@ -206,8 +213,6 @@
               const bottomPx = startBand.bottomPx + (endBand.bottomPx - startBand.bottomPx) * k;
               const centerBias =
                 startBand.centerBias + (endBand.centerBias - startBand.centerBias) * k;
-              topicsScaleTween.value = startScale + (endScale - startScale) * k;
-              scene3d?.setScale(topicsScaleTween.value);
               scene3d?.setModelBaseYOffset(0);
               // fit is locked → setMobileFit snaps spinner.y to this interpolated band
               scene3d?.setMobileFit(topPx, bottomPx, {
@@ -216,19 +221,15 @@
               });
             }
           })
-        : gsap.to(topicsScaleTween, {
-            value: endScale,
-            duration: fadeInDuration,
-            ease: SETTLE_EASE,
-            onUpdate: () => scene3d?.setScale(topicsScaleTween.value)
-          });
+        : null;
 
     // 4) Fade the new content in, concurrently with the model glide.
     if (next) {
       gsap.set('.stage__right', { opacity: 0 });
       gsap.set(cardTargets, { opacity: 0, y: 0 });
       await Promise.all([
-        modelSettle,
+        scaleSettle,
+        posSettle,
         gsap.to(textTargets, {
           opacity: 1,
           y: 0,
@@ -251,7 +252,8 @@
     } else {
       gsap.set(textTargets, { y: inY });
       await Promise.all([
-        modelSettle,
+        scaleSettle,
+        posSettle,
         gsap.to(textTargets, {
           opacity: 1,
           y: 0,
