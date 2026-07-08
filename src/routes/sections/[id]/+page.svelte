@@ -32,7 +32,7 @@
   import { isMobile } from '$lib/stores/viewport';
   import { progress, allSectionsCompleted, SECTION_ORDER } from '$lib/stores/progress';
   import { computeOpinionState } from '$lib/utils/result';
-  import { FEEDBACK_HEADING } from '$lib/data/feedback';
+  import { FEEDBACK_HEADING, FEEDBACK_HEADING_MOBILE } from '$lib/data/feedback';
   import { get } from 'svelte/store';
   import type { OpinionState } from '$lib/types';
   import type { PageData } from './$types';
@@ -1604,7 +1604,7 @@ function exitTopicsMode() {
          be framed against the real text box) ── -->
     {#if phase === 'feedback' || feedbackMounting}
       <div class="feedback" class:is-visible={phase === 'feedback'}>
-        <p class="feedback__heading">{FEEDBACK_HEADING}</p>
+        <p class="feedback__heading">{$isMobile ? FEEDBACK_HEADING_MOBILE : FEEDBACK_HEADING}</p>
         <p class="feedback__body">{feedbackBody}</p>
         <button
           class="feedback__cta"
@@ -1934,7 +1934,7 @@ function exitTopicsMode() {
       position: absolute;
       top: 0;
       right: 0;
-      bottom: var(--spacing-section-comments-fade);  /* stop where the blur begins */
+      bottom: 0;  /* run the track down to the end of the last comment */
       width: 2px;
       border-radius: var(--radius-pill, 999px);
       background: var(--neutral-200);
@@ -2092,13 +2092,14 @@ function exitTopicsMode() {
      framed by Scene3D's own box constants. ── */
   @media (max-width: 768px) {
     .feedback__heading {
-      top: 12vh;
+      top: 18vh;             /* B: title lowered a bit on mobile (was 12vh) — tune here */
       width: 100%;
       padding: 0 var(--page-gutter);
       box-sizing: border-box;
-      white-space: pre-line; /* let the desktop breaks wrap instead of overflowing */
+      white-space: pre-line;  /* honors \n breaks and wraps the rest */
       font-size: clamp(1.1rem, 5.13vw, 1.35rem); /* 20px @390 */
       font-weight: var(--font-weight-bold);
+      line-height: normal;    /* B: "interlinea auto" (era 1.25 ereditato) */
     }
 
     .feedback__body {
