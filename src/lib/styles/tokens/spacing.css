@@ -39,8 +39,8 @@
   --spacing-section-comments-scroll-inset:      clamp(0.35rem, 2.05vw, 0.5rem);   /* 8@390 — side inset in scroll viewport */
   --spacing-section-comments-fade:              clamp(2rem, 10.26vw, 2.5rem);     /* 40@390 — bottom fade height */
   --spacing-section-comments-heading-gap:       clamp(0.35rem, 2.05vw, 0.5rem);   /* 8@390 — heading ↔ card list */
-  /* Mode B bands: text 25% · model 25% · comments+CTA 50% of viewport */
-  --spacing-section-mode-b-text-band:           25dvh;
-  --spacing-section-mode-b-comments-band:      50dvh;
+  /* Mode B bands: text ~24% · model ~30% · comments+CTA ~46% of viewport */
+  --spacing-section-mode-b-text-band:           24dvh;
+  --spacing-section-mode-b-comments-band:      46dvh;
   --spacing-section-comments-cta-reserve:      clamp(3rem, 15.38vw, 3.5rem);     /* 60@390 — Continua + tight gap above */
 }

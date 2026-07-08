@@ -122,8 +122,8 @@
     if (!$isMobile) return;
     mobileCardsVisible = false;
     if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
-    topicsScaleTween.value = TOPICS_SCALE;
-    scene3d?.setScale(TOPICS_SCALE);
+    topicsScaleTween.value = topicsScaleTarget(false);
+    scene3d?.setScale(topicsScaleTween.value);
   }
 
   // Mobile topics scroll nav: swipe toggles A↔B only. Topic changes via Continua button.
@@ -209,16 +209,29 @@
   const MOBILE_MODEL_BOTTOM_MARGIN = 16;
   const MOBILE_MODEL_BAND_FRACTION = 1 / 3;
   const MOBILE_THEME_CENTER_BIAS = 0.4;
-  const MOBILE_CARDS_CENTER_BIAS = 0.42;
   const PARTICLE_SCROLL_START = 0.58;
   const PARTICLE_SCROLL_END = 0.98;
   const MOBILE_LAYOUT_START = 0.55;
   const MOBILE_TOPIC_COMPACT_RATIO = 24 / 36;
   const MOBILE_TEXT_SCALE_DURATION = 0.4;
   const MOBILE_LAYOUT_PULSE_AMPLITUDE = 0.14;
-  const MOBILE_MODE_B_TEXT_FRACTION = 0.25;
-  const MOBILE_MODE_B_MODEL_FRACTION = 0.25;
+  const MOBILE_MODE_B_MODEL_FRACTION = 0.30;
+  const MOBILE_MODE_B_COMMENTS_FRACTION = 0.46;
+  const MOBILE_MODE_B_MIN_MODEL_BAND = 64;
+  /** Mode A: tree + crane read small at default scale on mobile. */
+  const MOBILE_MODE_A_SCALE_MUL: Partial<Record<string, number>> = {
+    sustainability: 1.14,
+    infrastructure: 1.14
+  };
   const topicsScaleTween = { value: TOPICS_SCALE };
+
+  function sectionModeAScaleMul(): number {
+    return MOBILE_MODE_A_SCALE_MUL[section.id] ?? 1;
+  }
+
+  function topicsEntryScale(): number {
+    return TOPICS_SCALE * sectionModeAScaleMul();
+  }
 
   function particleProgressFromScroll(scrollProgress: number): number {
     if (scrollProgress <= PARTICLE_SCROLL_START) return 0;
@@ -235,7 +248,10 @@
 
   function topicsScaleTarget(cardsMode: boolean): number {
     if (!get(isMobile)) return TOPICS_SCALE;
-    return cardsMode ? TOPICS_SCALE * MOBILE_TOPIC_COMPACT_RATIO : TOPICS_SCALE;
+    let scale = TOPICS_SCALE;
+    if (!cardsMode) scale *= sectionModeAScaleMul();
+    else scale *= MOBILE_TOPIC_COMPACT_RATIO;
+    return scale;
   }
 
   function applyTopicsScale(animate = false, cardsMode = mobileCardsVisible) {
@@ -311,11 +327,25 @@
     let centerBias = MOBILE_THEME_CENTER_BIAS;
 
     if (cardsActive) {
-      const modelBandTop = vh * MOBILE_MODE_B_TEXT_FRACTION;
-      const modelBandBottom = vh * (MOBILE_MODE_B_TEXT_FRACTION + MOBILE_MODE_B_MODEL_FRACTION);
-      topPx = modelBandTop + TOPICS_MODEL_MARGIN;
-      bottomPx = modelBandBottom - TOPICS_MODEL_MARGIN;
-      centerBias = MOBILE_CARDS_CENTER_BIAS;
+      const cardsRect = stageRightEl?.getBoundingClientRect();
+      const commentsTop =
+        cardsRect && cardsRect.top > 0
+          ? cardsRect.top
+          : vh * (1 - MOBILE_MODE_B_COMMENTS_FRACTION);
+
+      // Anchor the model band strictly between measured text bottom and comments top.
+      topPx = textRect.bottom + TOPICS_MODEL_MARGIN;
+      bottomPx = commentsTop - TOPICS_MODEL_MARGIN;
+
+      const targetBand = vh * MOBILE_MODE_B_MODEL_FRACTION;
+      if (bottomPx - topPx < targetBand) {
+        bottomPx = Math.min(commentsTop - TOPICS_MODEL_MARGIN, topPx + targetBand);
+      }
+      if (bottomPx - topPx < MOBILE_MODE_B_MIN_MODEL_BAND) {
+        bottomPx = Math.min(commentsTop - TOPICS_MODEL_MARGIN, topPx + MOBILE_MODE_B_MIN_MODEL_BAND);
+      }
+
+      centerBias = 0.5;
     } else {
       const modelBandTop = vh * (1 - MOBILE_MODEL_BAND_FRACTION);
       topPx = Math.max(textRect.bottom + TOPICS_MODEL_MARGIN, modelBandTop);
@@ -452,7 +482,7 @@
     if (phase !== 'intro') return;
     phase = 'topics';
     resetMobileTopicLayout();
-    topicsScaleTween.value = TOPICS_SCALE;
+    topicsScaleTween.value = topicsScaleTarget(false);
     get(lenisStore)?.stop();
     scene3d?.setTransitionProgress(1);
     scene3d?.lockMobileFit();
@@ -662,8 +692,8 @@ function exitTopicsMode() {
 
     if (saved.phase === 'topics') {
       scene3d?.snapToParticles();
-      topicsScaleTween.value = TOPICS_SCALE;
-      scene3d?.setScale(TOPICS_SCALE);
+      topicsScaleTween.value = topicsScaleTarget(false);
+      scene3d?.setScale(topicsScaleTween.value);
       void tick().then(() => {
         if (get(isMobile)) {
           gsap.set('.stage__text', { opacity: 1, y: 0 });
@@ -811,7 +841,12 @@ function exitTopicsMode() {
       );
       threeTl.to(
         proxy,
-        { scale: TOPICS_SCALE, ease: 'power2.inOut', duration: 0.46, onUpdate: () => scene3d?.setScale(proxy.scale) },
+        {
+          scale: topicsEntryScale(),
+          ease: 'power2.inOut',
+          duration: 0.46,
+          onUpdate: () => scene3d?.setScale(proxy.scale)
+        },
         0.06
       );
 
@@ -1420,14 +1455,29 @@ function exitTopicsMode() {
     }
     .stage.m-cards-visible .stage__text :global(.text-block__body) {
       font: var(--text-section-topic-body-compact-font);
-      margin-bottom: var(--spacing-section-topic-gap-body-end-compact);
+      margin-bottom: 0;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 5;
+      line-clamp: 5;
     }
 
-    /* Mode B: cap text to the top quarter of the viewport. */
+    /* Mode B: flex column — body truncates, sources always visible (never clipped). */
     .stage.m-cards-visible .stage__text {
-      max-height: var(--spacing-section-mode-b-text-band);
-      overflow: hidden;
       flex-shrink: 0;
+    }
+
+    .stage.m-cards-visible .stage__text :global(.text-block) {
+      max-height: var(--spacing-section-mode-b-text-band);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .stage.m-cards-visible .stage__text :global(.text-block__sources) {
+      flex-shrink: 0;
+      margin-top: var(--spacing-section-topic-gap-body-end-compact);
     }
 
     /* Mode B (compact): hide the topic counter to free vertical space. */
@@ -1440,7 +1490,7 @@ function exitTopicsMode() {
       display: none;
     }
 
-    /* Mode B: bottom half = heading + scrollable cards + Continua reserve. */
+    /* Mode B: bottom ~46% = heading + scrollable cards + Continua reserve. */
     .stage.m-cards-visible .stage__right {
       position: absolute;
       left: var(--page-gutter);
