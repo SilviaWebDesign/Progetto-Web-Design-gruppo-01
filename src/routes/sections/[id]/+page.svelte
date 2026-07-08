@@ -1273,6 +1273,10 @@ function exitTopicsMode() {
     window.addEventListener('touchend', onTouchEnd, { passive: true });
 
     return () => {
+      const lenis = get(lenisStore);
+      lenis?.start();
+      lenis?.scrollTo(0, { immediate: true, force: true });
+      ScrollTrigger.update();
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('resize', onFeedbackResize);
       window.removeEventListener('touchstart', onTouchStart);

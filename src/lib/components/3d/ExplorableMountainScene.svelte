@@ -120,8 +120,9 @@
   /** @type {Map<THREE.Material, THREE.Color>} */
   const mountainBaseColors = new Map();
 
-  /** @type {{ selectedHotspot?: import('./aboutHotspots.js').AboutHotspot | null; hoveredHotspot?: import('./aboutHotspots.js').AboutHotspot | null }} */
-  let { selectedHotspot = $bindable(null), hoveredHotspot = $bindable(null) } = $props();
+  /** @type {{ selectedHotspot?: import('./aboutHotspots.js').AboutHotspot | null; hoveredHotspot?: import('./aboutHotspots.js').AboutHotspot | null; onReady?: () => void }} */
+  let { selectedHotspot = $bindable(null), hoveredHotspot = $bindable(null), onReady } = $props();
+  let readyNotified = false;
 
   /** @type {HTMLDivElement | undefined} */
   let container = $state(undefined);
@@ -1419,6 +1420,11 @@
         syncCameraToSelectedHotspot();
 
         resizeRenderer();
+
+        if (!readyNotified) {
+          readyNotified = true;
+          onReady?.();
+        }
       } catch (err) {
         console.error('[ExplorableMountainScene] caricamento montagna fallito:', err);
       }
