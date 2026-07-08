@@ -244,7 +244,9 @@
     position: fixed;
     inset: 0;
     background: #ffffff;
-    overflow: hidden;
+    /* Evita il taglio orizzontale del testo che usa text-indent negativo. */
+    overflow-x: visible;
+    overflow-y: hidden;
     --panel-padding-x: clamp(24px, 5.23vw, 79px);
   }
 
