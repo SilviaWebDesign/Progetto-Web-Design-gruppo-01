@@ -140,6 +140,8 @@
     const cardTargets = '.card-stack__item';
     const fadeOutDuration = 0.4;
     const fadeInDuration = 0.5;
+    // Shared by the model glide AND the text fade-in so they start/move in sync.
+    const SETTLE_EASE = 'power2.inOut';
     const outY = next ? -40 : 40;
     const inY = next ? 40 : -40;
 
@@ -187,7 +189,8 @@
     // 3) Glide the model from start→end with ONE eased tween (like the intro
     //    settle): position + scale interpolated together, fit kept locked so we
     //    drive spinner.y directly (no constant-rate lerp = no fast-start lunge).
-    //    Knob: MOBILE_MODE_SETTLE_DURATION + the ease.
+    //    It shares the fade-in duration + ease with the text so the two move in
+    //    lockstep (knobs: fadeInDuration + SETTLE_EASE).
     const settle = { t: 0 };
     gsap.killTweensOf(topicsScaleTween);
     gsap.killTweensOf(settle);
@@ -195,8 +198,8 @@
       startBand && endBand
         ? gsap.to(settle, {
             t: 1,
-            duration: MOBILE_MODE_SETTLE_DURATION,
-            ease: 'power2.inOut',
+            duration: fadeInDuration,
+            ease: SETTLE_EASE,
             onUpdate: () => {
               const k = settle.t;
               const topPx = startBand.topPx + (endBand.topPx - startBand.topPx) * k;
@@ -215,8 +218,8 @@
           })
         : gsap.to(topicsScaleTween, {
             value: endScale,
-            duration: MOBILE_MODE_SETTLE_DURATION,
-            ease: 'power2.inOut',
+            duration: fadeInDuration,
+            ease: SETTLE_EASE,
             onUpdate: () => scene3d?.setScale(topicsScaleTween.value)
           });
 
@@ -230,7 +233,7 @@
           opacity: 1,
           y: 0,
           duration: fadeInDuration,
-          ease: 'power2.out'
+          ease: SETTLE_EASE
         }),
         gsap.to('.stage__right', {
           opacity: 1,
@@ -253,7 +256,7 @@
           opacity: 1,
           y: 0,
           duration: fadeInDuration,
-          ease: 'power2.out'
+          ease: SETTLE_EASE
         })
       ]);
     }
@@ -420,8 +423,6 @@
   const MOBILE_TEXT_SCALE_DURATION = 0.52;
   const MOBILE_LAYOUT_PULSE_AMPLITUDE = 0.14;
   const MOBILE_FIT_LERP_ANIMATING = 0.09;
-  // A↔B model reposition/resize glide duration (eased tween, like the intro settle).
-  const MOBILE_MODE_SETTLE_DURATION = 0.55;
   const MOBILE_MODE_B_MODEL_FRACTION = 0.30;
   const MOBILE_MODE_B_COMMENTS_FRACTION = 0.46;
   const MOBILE_MODE_B_MIN_MODEL_BAND = 64;
@@ -589,7 +590,9 @@
   }
 
   function scheduleTopicsModelFit() {
-    if (!$isMobile || phase !== 'topics') return;
+    // Don't schedule non-soft snaps mid A↔B glide (setMobileCards re-runs this
+    // itself once the transition finishes).
+    if (!$isMobile || phase !== 'topics' || textFading) return;
     void tick().then(() => {
       updateTopicsModelFit();
       requestAnimationFrame(() => updateTopicsModelFit());
@@ -1043,7 +1046,8 @@ function exitTopicsMode() {
   $effect(() => {
     if (!stageTextEl || phase === 'feedback') return;
     const observer = new ResizeObserver(() => {
-      if ($isMobile && phase === 'topics') updateTopicsModelFit();
+      // Skip while an A↔B glide is running, or the resize-driven snap fights it.
+      if ($isMobile && phase === 'topics' && !textFading) updateTopicsModelFit();
     });
     observer.observe(stageTextEl);
     return () => observer.disconnect();
@@ -1052,7 +1056,9 @@ function exitTopicsMode() {
   $effect(() => {
     if (!stageRightEl || phase === 'feedback') return;
     const observer = new ResizeObserver(() => {
-      if ($isMobile && phase === 'topics' && mobileCardsVisible) updateTopicsModelFit();
+      // Skip while an A↔B glide is running, or the resize-driven snap fights it.
+      if ($isMobile && phase === 'topics' && mobileCardsVisible && !textFading)
+        updateTopicsModelFit();
     });
     observer.observe(stageRightEl);
     return () => observer.disconnect();
