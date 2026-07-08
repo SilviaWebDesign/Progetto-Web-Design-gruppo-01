@@ -72,11 +72,11 @@
   const LAST = ANCHORS.length - 1;
 
   // --- feel controls (tune these) ---
-  const WHEEL_SENS = 0.0003; // slightly softer desktop wheel response
+  const WHEEL_SENS = 0.00038; // desktop wheel response
   const SMOOTH = 0.075; // lower chase factor = smoother camera/text motion
   const SNAP_IDLE_MS = 210; // wait a bit more before magnetic snap
   const GESTURE_GAP_MS = 140; // avoids premature "new gesture" resets
-  const TOUCH_SENS = 0.00145; // mobile counterpart of WHEEL_SENS
+  const TOUCH_SENS = 0.00175; // mobile counterpart of WHEEL_SENS
 
   const WHITE_ZONE_AT = 0.66; // just inside the white zone, BEFORE the text-3 anchor (0.69)
   const TEXT3_FADE_MS = 900; // soft, time-based fade for the final text
