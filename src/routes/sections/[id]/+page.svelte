@@ -188,7 +188,7 @@
   const TOPICS_MODEL_MARGIN = 20;
   const MOBILE_MODEL_BOTTOM_MARGIN = 16;
   const MOBILE_MODEL_BAND_FRACTION = 1 / 3;
-  const MOBILE_THEME_CENTER_BIAS = 0.2;
+  const MOBILE_THEME_CENTER_BIAS = 0.4;
   const MOBILE_CARDS_CENTER_BIAS = 0.42;
 
   function mobileTopicsViewportHeightPx(): number {
