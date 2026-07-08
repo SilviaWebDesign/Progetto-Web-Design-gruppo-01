@@ -239,6 +239,8 @@
   // Set while goToSectionStart() rewinds to the intro, so the scroll-driven
   // auto-enter can't bounce us back into topics before we reach the top.
   let returningToStart = false;
+  /** Clears the reveal auto-complete timer on teardown. */
+  let revealAutoCompleteCleanup: (() => void) | null = null;
   /** Blocks ScrollTrigger from re-entering topics during a programmatic rewind. */
   let suppressTopicsEnter = false;
 
@@ -992,6 +994,33 @@ function exitTopicsMode() {
 
       const proxy = { rot: 0, scale: INTRO_MODEL_SCALE, appear: 0, posY: INTRO_MODEL_Y_OFFSET };
 
+      // --- auto-complete the reveal rotation ---
+      // If the user stops scrolling just short of the end, finish the rotation for them
+      // instead of leaving them stranded mid-spin. Below AUTO_COMPLETE_FROM we never
+      // intervene, so whoever scrolls slowly to inspect the object stays in control.
+      const AUTO_COMPLETE_FROM = 0.75; // only near the end (0..1 of the reveal)
+      const AUTO_COMPLETE_IDLE_MS = 260; // pause after the scroll settles
+      const AUTO_COMPLETE_DURATION = 1.4; // seconds; higher = softer/slower
+      let autoCompleteTimer: ReturnType<typeof setTimeout> | null = null;
+
+      function scheduleRevealAutoComplete(self: { progress: number; end: number }) {
+        if (autoCompleteTimer) clearTimeout(autoCompleteTimer);
+        if (self.progress < AUTO_COMPLETE_FROM || self.progress >= 0.999) return;
+        autoCompleteTimer = setTimeout(() => {
+          autoCompleteTimer = null;
+          if (phase !== 'intro' || isTransitioning || suppressTopicsEnter || returningToStart) return;
+          if (self.progress < AUTO_COMPLETE_FROM || self.progress >= 0.999) return;
+          get(lenisStore)?.scrollTo(self.end, {
+            duration: AUTO_COMPLETE_DURATION,
+            easing: (t: number) => -(Math.cos(Math.PI * t) - 1) / 2, // easeInOutSine: gentle start AND stop
+            force: true
+          });
+        }, AUTO_COMPLETE_IDLE_MS);
+      }
+      revealAutoCompleteCleanup = () => {
+        if (autoCompleteTimer) clearTimeout(autoCompleteTimer);
+      };
+
       const threeTl = gsap.timeline({
         scrollTrigger: {
           trigger: scrollArea,
@@ -1008,7 +1037,11 @@ function exitTopicsMode() {
               if (get(isMobile)) updateTopicsScrollLayout(particleT);
             }
             if (suppressTopicsEnter) return;
-            if (progress >= 0.999) enterTopicsMode();
+            if (progress >= 0.999) {
+              enterTopicsMode();
+              return;
+            }
+            scheduleRevealAutoComplete(self);
           },
           onLeaveBack: () => {
             exitTopicsMode();
@@ -1174,11 +1207,50 @@ function exitTopicsMode() {
       });
     }
 
+    // --- intro checkpoint (title -> phrase) ---
+    // A single gesture cannot blow past the phrase and land on the 3D model. This is a
+    // HARD STOP exactly at the checkpoint, never a rubber-band back to the title (that
+    // bounce is what felt wrong before). Pause/lift the finger to continue past it.
+    const INTRO_GATE_GAP_MS = 220; // pause that starts a new gesture (same idea as the home)
+    let introGateArmed = false; // this gesture began before the checkpoint
+    let introLastInputAt = 0;
+    let introGateRaf = 0;
+
+    const introGateY = () => window.innerHeight * INTRO_PHRASE_BEAT;
+
+    /** Called on every intro wheel/touch input, to open or keep the gate. */
+    function noteIntroInput() {
+      const now = performance.now();
+      if (now - introLastInputAt > INTRO_GATE_GAP_MS) {
+        // new gesture: it may only run up TO the checkpoint if it started before it
+        introGateArmed = window.scrollY < introGateY() - 2;
+      }
+      introLastInputAt = now;
+      if (introGateArmed && !introGateRaf) introGateRaf = requestAnimationFrame(introGateTick);
+    }
+
+    /** Holds the scroll at the checkpoint while the gesture (and its inertia) lasts. */
+    function introGateTick() {
+      introGateRaf = 0;
+      if (phase !== 'intro' || !introGateArmed) return;
+      const lenis = get(lenisStore);
+      const limit = introGateY();
+      if (lenis && lenis.scroll > limit) {
+        // stop AT the checkpoint: this also kills the leftover momentum
+        lenis.scrollTo(limit, { immediate: true, force: true });
+      }
+      // keep watching a little past the gesture, since inertia arrives late
+      if (performance.now() - introLastInputAt < INTRO_GATE_GAP_MS + 400) {
+        introGateRaf = requestAnimationFrame(introGateTick);
+      }
+    }
+
     function onWheel(e: WheelEvent) {
       if (phase === 'intro') {
         // free scroll, but settle onto the intro beat we're heading toward on pause
         if (e.deltaY !== 0) introDir = e.deltaY > 0 ? 1 : -1;
         if (!isTransitioning && !suppressTopicsEnter) {
+          noteIntroInput();
           if (introSnapTimer) clearTimeout(introSnapTimer);
           introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
         }
@@ -1263,6 +1335,7 @@ function exitTopicsMode() {
         // let native/Lenis scroll drive the reveal; we only track direction for the snap
         if (dy !== 0) introDir = dy > 0 ? 1 : -1;
         if (!isTransitioning && !suppressTopicsEnter) {
+          noteIntroInput();
           if (introSnapTimer) clearTimeout(introSnapTimer);
           introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
         }
@@ -1337,6 +1410,8 @@ function exitTopicsMode() {
       lenis?.scrollTo(0, { immediate: true, force: true });
       ScrollTrigger.update();
       window.removeEventListener('wheel', onWheel);
+      if (introGateRaf) cancelAnimationFrame(introGateRaf);
+      revealAutoCompleteCleanup?.();
       window.removeEventListener('resize', onFeedbackResize);
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
