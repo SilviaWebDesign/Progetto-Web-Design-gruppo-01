@@ -10,7 +10,7 @@
   let { hotspot, onclose, onnext } = $props();
 
   const pathIndex = $derived(getHotspotPathIndex(hotspot.id));
-  const hasNext = $derived(pathIndex >= 0 && pathIndex < ABOUT_HOTSPOT_PATH.length - 1);
+  const hasNext = $derived(pathIndex >= 0 && ABOUT_HOTSPOT_PATH.length > 1);
   const title = $derived(hotspot.title ?? hotspot.label);
   const paragraphs = $derived(
     hotspot.body

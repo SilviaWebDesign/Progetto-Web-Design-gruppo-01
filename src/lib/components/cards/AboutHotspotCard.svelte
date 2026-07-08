@@ -10,8 +10,8 @@
   let { hotspot, onprev, onnext } = $props();
 
   const pathIndex = $derived(getHotspotPathIndex(hotspot.id));
-  const hasPrev = $derived(pathIndex > 0);
-  const hasNext = $derived(pathIndex >= 0 && pathIndex < ABOUT_HOTSPOT_PATH.length - 1);
+  const hasPrev = $derived(pathIndex >= 0 && ABOUT_HOTSPOT_PATH.length > 1);
+  const hasNext = $derived(pathIndex >= 0 && ABOUT_HOTSPOT_PATH.length > 1);
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
