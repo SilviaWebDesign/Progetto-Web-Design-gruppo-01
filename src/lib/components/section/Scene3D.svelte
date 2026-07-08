@@ -824,8 +824,12 @@
   /** The result group currently in the scene, so it can be re-framed on layout change. */
   let currentResultGroup: THREE.Group | null = null;
 
-  /** (Re)compute scale + position of a result group from the CURRENT layout. */
-  function frameResultGroup(group: THREE.Group) {
+  /** (Re)compute scale + position of a result group from the CURRENT layout.
+   *  compensateParent=true (default) cancels the spinner's scale/offset so a STATIC
+   *  result sits correctly; it MUST be false during the morph, where the particle
+   *  sampling already accounts for the parent transform (otherwise it double-counts,
+   *  which mis-places and over-sizes the end-of-section model). */
+  function frameResultGroup(group: THREE.Group, compensateParent = true) {
     if (!camera) return;
     const horizExtent = (group.userData.horizExtent as number) || 1;
     const vertExtent = (group.userData.vertExtent as number) || 1;
@@ -839,20 +843,24 @@
     const boxCenterFrac = (topFrac + bottomFrac) / 2;
     const worldCenterY = (0.5 - boxCenterFrac) * visibleH; // > 0 = above screen center
 
-    // fit BOTH height and width, so it never overflows a narrow phone
+    // fit BOTH height and width, so it never overflows a narrow phone.
+    // NB: the height term uses the LARGEST extent (like the old maxDim), not just size.y —
+    // otherwise flat/long models (the crane) get a huge height-scale and end up oversized.
+    const fitExtent = Math.max(vertExtent, horizExtent);
     const scale =
       Math.min(
-        (boxWorldH * RESULT_BOX_FILL) / vertExtent,
+        (boxWorldH * RESULT_BOX_FILL) / fitExtent,
         (visibleW * RESULT_BOX_WIDTH_FILL) / horizExtent
       ) * resultScale;
 
     // The group lives under `spinner`, whose transform is NOT identity: applyViewportFit()
     // scales the rig down on narrow screens and the topics mobile-fit offsets it in Y.
     // Convert the world-space target into the parent's local space, otherwise the model
-    // ends up smaller and vertically shifted (and only a reload looked right).
+    // ends up smaller and vertically shifted (and only a reload looked right). Skipped
+    // during the morph, where the particle sampling already handles the parent.
     const parent = group.parent ?? spinner;
-    const parentScale = parent ? parent.scale.x || 1 : 1;
-    const parentOffsetY = parent ? parent.position.y : 0;
+    const parentScale = compensateParent && parent ? parent.scale.x || 1 : 1;
+    const parentOffsetY = compensateParent && parent ? parent.position.y : 0;
 
     group.scale.setScalar(scale / parentScale);
     group.position.set(
@@ -862,7 +870,7 @@
     );
   }
 
-  function buildResultGroup(source: THREE.Group): THREE.Group | null {
+  function buildResultGroup(source: THREE.Group, compensateParent = true): THREE.Group | null {
     if (!camera || !modelGroup) return null;
 
     // Outer group = placed in the box and scaled. Inner = the geometry, shifted so its
@@ -884,7 +892,7 @@
     resultGroup.userData.vertExtent = Math.max(size.y, 1e-6);
 
     inner.position.sub(center); // recentre the geometry on the rotation pivot
-    frameResultGroup(resultGroup); // scale + place from the current layout
+    frameResultGroup(resultGroup, compensateParent); // scale + place from the current layout
     currentResultGroup = resultGroup;
 
     resultModelMaterials = [];
@@ -912,7 +920,9 @@
   function doMorph(source: THREE.Group, onDone: () => void) {
     if (!scene || !camera || !spinner || !modelGroup || !particleMesh || !iMatBuf) return;
 
-    const resultGroup = buildResultGroup(source);
+    // No parent compensation here: the sampling below re-applies the parent transform
+    // via relMatrix, so compensating would double-count it (the regression we saw).
+    const resultGroup = buildResultGroup(source, false);
     if (!resultGroup) return;
 
 

@@ -252,6 +252,10 @@
   // Set while goToSectionStart() rewinds to the intro, so the scroll-driven
   // auto-enter can't bounce us back into topics before we reach the top.
   let returningToStart = false;
+  // True from the moment the morph starts, so the feedback texts are in the DOM and
+  // morphToResult() can frame the model against the REAL box (no post-morph reframe
+  // jump). Kept independent from `phase` so the overlay can be pre-mounted invisibly.
+  let feedbackMounting = $state(false);
   /** Clears the reveal auto-complete timer on teardown. */
   let revealAutoCompleteCleanup: (() => void) | null = null;
   /** Blocks ScrollTrigger from re-entering topics during a programmatic rewind. */
@@ -746,18 +750,21 @@ function exitTopicsMode() {
 
     gsap.to('.layer--bg', { filter: 'blur(12px)', duration: 0.8, ease: 'power2.inOut' });
 
+    // Pre-mount the feedback overlay (still invisible) and let it lay out, so the model
+    // is framed against the REAL text box BEFORE the morph — the particles then fly
+    // straight to their final place/scale, with no post-morph reframe "scattino".
+    feedbackMounting = true;
+    await tick();
+    fitFeedbackBody();
+    // hide the texts until the model has settled
+    gsap.set(['.feedback__heading', '.feedback__body', '.feedback__cta'], { opacity: 0 });
+
     scene3d?.morphToResult(resultPathFor(result), () => {
       phase = 'feedback';
       isTransitioning = false;
-      void tick().then(() => {
-        gsap.fromTo('.feedback__heading', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' });
-        gsap.fromTo('.feedback__body', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.15 });
-        gsap.fromTo('.feedback__cta', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.25 });
-        // The model was built BEFORE these texts entered the DOM, so it was framed
-        // against a fallback box. Re-frame it against the real layout now — this is what
-        // previously required a page reload to look right.
-        requestAnimationFrame(() => requestAnimationFrame(() => scene3d?.reframeResult()));
-      });
+      gsap.to('.feedback__heading', { opacity: 1, duration: 0.5, ease: 'power2.out' });
+      gsap.to('.feedback__body', { opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.15 });
+      gsap.to('.feedback__cta', { opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.25 });
     });
   }
 
@@ -774,6 +781,7 @@ function exitTopicsMode() {
     gsap.to('.layer--bg', { filter: 'none', duration: 0.6, ease: 'power2.inOut' });
     scene3d?.returnToParticles();
     currentResult = null;
+    feedbackMounting = false;
     phase = 'topics';
     await tick();
 
@@ -826,6 +834,7 @@ function exitTopicsMode() {
     topicLikes = section.topics.map(() => ({}));
     progress.clearSection(section.id);
     resetMobileTopicLayout();
+    feedbackMounting = false;
     phase = 'intro';
     syncIntroSceneBaseline();
     scene3d?.resetOrientation();
@@ -1531,9 +1540,10 @@ function exitTopicsMode() {
       </svg>
     </button>
 
-    <!-- ── Feedback overlay ── -->
-    {#if phase === 'feedback'}
-      <div class="feedback">
+    <!-- ── Feedback overlay (pre-mounted invisibly during the morph so the model can
+         be framed against the real text box) ── -->
+    {#if phase === 'feedback' || feedbackMounting}
+      <div class="feedback" class:is-visible={phase === 'feedback'}>
         <p class="feedback__heading">{FEEDBACK_HEADING}</p>
         <p class="feedback__body">{feedbackBody}</p>
         <button
