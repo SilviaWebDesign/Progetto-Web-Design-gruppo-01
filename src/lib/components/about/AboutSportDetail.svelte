@@ -1,6 +1,10 @@
 <script>
   import { tick, onMount } from 'svelte';
-  import { getHotspotPathIndex, ABOUT_HOTSPOT_PATH } from '$lib/components/3d/aboutHotspots.js';
+  import {
+    getHotspotPathIndex,
+    ABOUT_HOTSPOT_PATH,
+    ABOUT_PANEL_MOBILE_BREAKPOINT
+  } from '$lib/components/3d/aboutHotspots.js';
 
   /** @type {{
    *   hotspot: import('$lib/components/3d/aboutHotspots.js').AboutHotspot;
@@ -12,12 +16,9 @@
   const pathIndex = $derived(getHotspotPathIndex(hotspot.id));
   const hasNext = $derived(pathIndex >= 0 && ABOUT_HOTSPOT_PATH.length > 1);
   const title = $derived(hotspot.title ?? hotspot.label);
-  const paragraphs = $derived(
-    hotspot.body
-      .split(/\n\n+/)
-      .map((p) => p.trim())
-      .filter(Boolean)
-      .map((p) => p.split(/\n/).map((line) => line.trim()))
+  let isMobilePanel = $state(false);
+  const bodyLines = $derived(
+    (isMobilePanel ? hotspot.bodyMobile ?? hotspot.body : hotspot.body).split('\n')
   );
 
   /** @type {HTMLElement | null} */
@@ -126,7 +127,7 @@
 
   $effect(() => {
     hotspot.id;
-    paragraphs.length;
+    bodyLines.length;
     scrollAdvanceAccum = 0;
     resetPanelForHotspot();
   });
@@ -147,11 +148,21 @@
   });
 
   onMount(() => {
+    const syncIsMobilePanel = () => {
+      isMobilePanel = window.innerWidth <= ABOUT_PANEL_MOBILE_BREAKPOINT;
+    };
+
+    syncIsMobilePanel();
+
     document.fonts?.ready.then(() => fitPanelContent());
-    window.addEventListener('resize', fitPanelContent);
+    const onResize = () => {
+      syncIsMobilePanel();
+      fitPanelContent();
+    };
+    window.addEventListener('resize', onResize);
 
     return () => {
-      window.removeEventListener('resize', fitPanelContent);
+      window.removeEventListener('resize', onResize);
     };
   });
 
@@ -266,11 +277,9 @@
         {#key hotspot.id}
           <h1 id="sport-detail-title" class="sport-title" bind:this={titleEl}>{title}</h1>
           <div class="sport-body">
-            {#each paragraphs as lines}
-              <p>
-                {#each lines as line, i}
-                  {#if i > 0}<br />{/if}{line}
-                {/each}
+            {#each bodyLines as line, index}
+              <p class:line-spacer={line.trim() === ''} class:line-first={index === 0}>
+                {line.trim() === '' ? '\u200b' : line}
               </p>
             {/each}
           </div>
@@ -317,14 +326,18 @@
     position: fixed;
     inset: 0;
     z-index: 50;
+    isolation: isolate;
     pointer-events: none;
     --panel-padding-x: clamp(24px, 5.23vw, 79px);
+    --panel-right: clamp(24px, 9.13vw, 138px);
+    --panel-w: min(401px, calc(100vw - var(--panel-padding-x) - var(--panel-right)));
   }
 
   .sport-detail-gradients {
     position: absolute;
     inset: 0;
     pointer-events: none;
+    z-index: 0;
   }
 
   .grad-side {
@@ -333,6 +346,7 @@
     left: 14%;
     right: 0;
     height: 100%;
+    z-index: 0;
     background: linear-gradient(
       to right,
       rgba(249, 249, 250, 0) 0%,
@@ -349,13 +363,17 @@
 
   .sport-panel {
     position: absolute;
-    top: calc(50% + 22px);
-    right: 0;
-    left: 50%;
+    top: calc(50% + 17px);
+    left: auto;
+    right: var(--panel-right);
     transform: translateY(-50%);
-    width: 50vw;
+    width: var(--panel-w);
+    max-width: 401px;
     max-height: calc(100vh - clamp(108px, 14vh, 136px));
-    overflow: hidden;
+    z-index: 10;
+    /* Serve per evitare il taglio della "prima riga" (text-indent negativo). */
+    overflow-x: visible;
+    overflow-y: hidden;
     padding: 0;
     box-sizing: border-box;
     pointer-events: auto;
@@ -365,7 +383,7 @@
   .sport-panel-scroll {
     position: relative;
     height: 100%;
-    overflow-x: hidden;
+    overflow-x: visible;
     overflow-y: auto;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
@@ -375,9 +393,11 @@
 
   .sport-panel-content {
     position: relative;
-    padding: 0 calc(var(--panel-padding-x) + 44px) 28px var(--panel-padding-x);
-    transform-origin: top right;
-    --sport-title-size: clamp(1.75rem, 3.2vw, 36px);
+    width: 100%;
+    max-width: 401px;
+    padding: 0 0 28px;
+    transform-origin: top left;
+    z-index: 11;
   }
 
   .sport-text-slider {
@@ -385,11 +405,11 @@
   }
 
   .sport-title {
-    margin: 0 0 16px;
+    margin: 0 0 20px;
     font-family: 'Supreme', sans-serif;
-    font-size: var(--sport-title-size);
+    font-size: 36px;
     font-weight: 800;
-    line-height: 1.1;
+    line-height: normal;
     letter-spacing: 0.2px;
     color: #161a1f;
   }
@@ -397,7 +417,9 @@
   .sport-body {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
+    width: 100%;
+    max-width: 401px;
   }
 
   .sport-body p {
@@ -409,14 +431,24 @@
     color: #161a1f;
   }
 
+  .sport-body p.line-first {
+    text-indent: 0;
+  }
+
+  .sport-body p.line-spacer {
+    min-height: 16px;
+    line-height: 16px;
+  }
+
   .sport-continue-wrap {
     position: absolute;
-    left: 75%;
-    bottom: clamp(28px, 6vh, 48px);
-    transform: translateX(-50%);
+    left: auto;
+    right: calc(var(--panel-right) + var(--panel-w) / 2);
+    bottom: clamp(24px, 4vh, 40px);
+    transform: translateX(50%);
     z-index: 51;
     pointer-events: none;
-    padding-top: 64px;
+    padding-top: 0;
   }
 
   .continue-btn {
@@ -424,9 +456,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 16px;
     margin: 0;
-    padding: 0 14px 10px;
+    padding: 0 14px;
     border: none;
     background: transparent;
     cursor: pointer;
@@ -435,18 +467,18 @@
 
   .continue-label {
     font-family: 'Supreme', sans-serif;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 700;
-    line-height: 1;
-    margin-top: -4px;
+    line-height: 1.1;
+    margin-top: 0;
     text-transform: uppercase;
     color: #161a1f;
   }
 
   .continue-chevron {
     display: block;
-    width: 21px;
-    height: 9px;
+    width: 25px;
+    height: 10px;
     animation: chevron-bounce 1.4s ease-in-out infinite;
   }
 
@@ -526,7 +558,9 @@
       height: calc(50vh - 68px);
       max-height: calc(50vh - 68px);
       display: block;
-      overflow: hidden;
+      /* Evita taglio anche su mobile */
+      overflow-x: visible;
+      overflow-y: hidden;
       padding: 0;
       background: transparent;
       border-radius: 0;
@@ -535,6 +569,7 @@
 
     .sport-panel-scroll {
       height: 100%;
+      overflow-x: visible;
       overflow-y: scroll;
       touch-action: pan-y;
       padding-right: calc(17px + var(--panel-padding-x));
