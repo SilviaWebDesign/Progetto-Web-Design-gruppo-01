@@ -742,39 +742,72 @@
   // Clone, center, scale and chrome-material a result model so it sits
   // exactly where doMorph and snapToResult both need it. Returns null if
   // prerequisites aren't ready.
+  // The "safe box" is the gap between the feedback heading and the body text.
+  // Measured from the DOM so it is correct on every viewport (desktop and mobile)
+  // instead of hardcoded fractions that only matched the desktop layout.
+  const RESULT_BOX_FALLBACK_TOP = 0.24; // used only if the texts aren't in the DOM yet
+  const RESULT_BOX_FALLBACK_BOTTOM = 0.68;
+  const RESULT_BOX_PADDING = 0.02; // breathing room from the texts (fraction of vh)
+
+  function resultBoxFractions(): { topFrac: number; bottomFrac: number } {
+    const fallback = {
+      topFrac: RESULT_BOX_FALLBACK_TOP,
+      bottomFrac: RESULT_BOX_FALLBACK_BOTTOM
+    };
+    const vh = window.innerHeight;
+    const heading = document.querySelector<HTMLElement>('.feedback__heading');
+    const body = document.querySelector<HTMLElement>('.feedback__body');
+    if (!heading || !body || !vh) return fallback;
+    const topFrac = heading.getBoundingClientRect().bottom / vh + RESULT_BOX_PADDING;
+    const bottomFrac = body.getBoundingClientRect().top / vh - RESULT_BOX_PADDING;
+    if (!(bottomFrac > topFrac)) return fallback;
+    return { topFrac, bottomFrac };
+  }
+
   function buildResultGroup(source: THREE.Group): THREE.Group | null {
     if (!camera || !modelGroup) return null;
 
-    const resultGroup = source.clone();
+    // Outer group = placed in the box and scaled. Inner = the geometry, shifted so its
+    // visual centre sits on the outer group's origin. Without this the spinner rotates
+    // an off-centre group, so the model ORBITS instead of spinning in place — which is
+    // why its position looked different (and never right) at every angle.
+    const resultGroup = new THREE.Group();
+    const inner = source.clone();
+    resultGroup.add(inner);
     resultGroup.updateMatrixWorld(true);
 
-    // --- fit the model into a "safe box" between the top heading and the bottom text ---
-    // box edges as fractions of viewport height (0 = top, 1 = bottom)
-    const RESULT_BOX_TOP = 0.24; // just below the heading
-    const RESULT_BOX_BOTTOM = 0.68; // just above the body text
-   const RESULT_BOX_FILL = 0.9; // how much of the box the model fills
-    const RESULT_BOX_LIFT = 0.06; // extra upward nudge (fraction of viewport height)
+    const RESULT_BOX_FILL = 0.9; // how much of the box height the model fills
+    const RESULT_BOX_WIDTH_FILL = 0.86; // how much of the screen width it may use
+    const RESULT_BOX_LIFT = 0; // optional optical nudge (fraction of viewport height)
+
+    // measure in local units (scale is still 1 here)
+    const box = new THREE.Box3().setFromObject(inner);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    // the model spins around Y, so its worst-case horizontal extent is the XZ diagonal
+    const horizExtent = Math.max(Math.hypot(size.x, size.z), 1e-6);
+    const vertExtent = Math.max(size.y, 1e-6);
 
     const fov = camera.fov * (Math.PI / 180);
     const visibleH = 2 * Math.tan(fov / 2) * camera.position.z; // world height at z = 0
-    const boxWorldH = (RESULT_BOX_BOTTOM - RESULT_BOX_TOP) * visibleH;
-    const boxCenterFrac = (RESULT_BOX_TOP + RESULT_BOX_BOTTOM) / 2;
+    const visibleW = visibleH * camera.aspect;
+
+    const { topFrac, bottomFrac } = resultBoxFractions();
+    const boxWorldH = (bottomFrac - topFrac) * visibleH;
+    const boxCenterFrac = (topFrac + bottomFrac) / 2;
     const worldCenterY = (0.5 - boxCenterFrac) * visibleH; // > 0 = above screen center
 
-    // 1) scale so the model's largest dimension fills the box (rotation-safe)
-    const box = new THREE.Box3().setFromObject(resultGroup);
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    resultGroup.scale.setScalar((boxWorldH * RESULT_BOX_FILL * resultScale) / maxDim);
+    // fit BOTH height and width, so it never overflows a narrow phone
+    const scale =
+      Math.min(
+        (boxWorldH * RESULT_BOX_FILL) / vertExtent,
+        (visibleW * RESULT_BOX_WIDTH_FILL) / horizExtent
+      ) * resultScale;
 
-    // 2) recenter on the SCALED bounding box, then lift to the box center
-    resultGroup.updateMatrixWorld(true);
-    const scaledBox = new THREE.Box3().setFromObject(resultGroup);
-    const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
-    const RESULT_OPTICAL_LIFT = 0.04; // frazione di boxWorldH, da tarare a occhio
-
-    resultGroup.position.sub(scaledCenter);
-    resultGroup.position.y += worldCenterY + RESULT_BOX_LIFT * visibleH;
+    resultGroup.scale.setScalar(scale);
+    inner.position.sub(center); // recentre the geometry on the rotation pivot
+    resultGroup.position.set(0, worldCenterY + RESULT_BOX_LIFT * visibleH, 0);
 
     resultModelMaterials = [];
     resultGroup.traverse((node) => {
