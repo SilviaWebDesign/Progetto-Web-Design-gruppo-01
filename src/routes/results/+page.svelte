@@ -5,6 +5,7 @@
   import { sectionState } from '$lib/stores/sectionState';
   import { overlayVisible } from '$lib/stores/pageTransition';
   import { headerState } from '$lib/stores/header';
+  import { isMobile } from '$lib/stores/viewport';
   import ModelViewer from '$lib/components/3d/ModelViewer.svelte';
   import MountainScene from '$lib/components/3d/MountainScene.svelte';
   import Preloader from '$lib/components/layout/Preloader.svelte';
@@ -143,7 +144,7 @@
       </svg>
     </button>
     <button class="results__cta results__cta--secondary" type="button" onclick={goAbout}>
-      <span class="results__cta-label">Scopri di più sul progetto</span>
+      <span class="results__cta-label">{$isMobile ? 'Scopri di più' : 'Scopri di più sul progetto'}</span>
       <svg class="results__cta-arrow" viewBox="0 0 25 10" fill="none" aria-hidden="true">
         <path d="M2 2l10.5 6 10.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
@@ -272,5 +273,75 @@
     color: var(--color-text-primary);
     font-weight: var(--font-weight-bold);
     opacity: 1;
+  }
+
+  /* ── Mobile (≤768px): reflow the fixed desktop layout into one column — quote on
+     top, the 3 result models stacked, CTAs in a row at the bottom. Desktop is
+     untouched. Knobs (--results-*-m) let you fine-tune the spacing/size. ── */
+  @media (max-width: 768px) {
+    .results {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--results-top-m, 96px) var(--page-gutter) var(--cta-bottom);
+      box-sizing: border-box;
+    }
+
+    .results__quote {
+      order: -1;              /* DOM has the quote after the models; pull it on top */
+      position: static;
+      left: auto;
+      bottom: auto;
+      transform: none;
+      max-width: 100%;
+      padding: 0;
+      font-size: clamp(1.1rem, 5.13vw, 1.35rem); /* 20px @390, scalable */
+      line-height: 1.3;
+    }
+
+    .results__models {
+      order: 0;
+      position: static;
+      left: auto;
+      top: auto;
+      transform: none;
+      flex: 1;                /* fill the space between quote and CTAs */
+      flex-direction: column;
+      width: 100%;
+      height: auto;
+      gap: var(--results-model-gap-m, var(--spacing-sm));
+      margin: var(--results-models-margin-m, var(--spacing-md)) 0;
+    }
+
+    .results__model {
+      flex: 0 0 auto;
+      width: 100%;
+      height: var(--results-model-h-m, 22vh);  /* each stacked model — tune here */
+    }
+
+    .results__model:first-child {
+      transform: none;        /* drop the desktop 3vw nudge */
+    }
+
+    .results__ctas {
+      order: 1;
+      position: static;
+      left: auto;
+      bottom: auto;
+      transform: none;
+      width: 100%;
+      justify-content: space-around;   /* the two CTAs spread like the Figma */
+      gap: var(--spacing-md);
+    }
+
+    /* CTA labels match the other mobile CTAs (~13px @390), scalable. */
+    .results__cta {
+      font-size: clamp(0.75rem, 3.33vw, 0.9rem);
+    }
+
+    /* Figma shows both arrows pointing DOWN; desktop rotates the primary one. */
+    .results__cta--primary .results__cta-arrow {
+      transform: none;
+    }
   }
 </style>
