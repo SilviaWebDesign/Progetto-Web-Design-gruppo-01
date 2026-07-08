@@ -646,24 +646,43 @@ function exitTopicsMode() {
 
     const vh = window.innerHeight;
     const targetY = vh * INTRO_PHRASE_BEAT;
+    const REWIND_DURATION = 0.85;
 
     await new Promise<void>((resolve) => {
-      lenis?.scrollTo(targetY, {
-        duration: 0.85,
-        force: true,
-        onComplete: () => {
-          syncIntroSceneBaseline();
+      // The scrollTo can be cancelled (e.g. the user keeps scrolling up towards the
+      // title), and then `onComplete` never fires. Without this guard isTransitioning
+      // and suppressTopicsEnter would stay true forever, so enterTopicsMode() would
+      // bail out on every later attempt and only the particle model would show.
+      let settled = false;
+      let fallback: ReturnType<typeof setTimeout> | undefined;
+
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (fallback) clearTimeout(fallback);
+        syncIntroSceneBaseline();
+        ScrollTrigger.update();
+        requestAnimationFrame(() => {
           ScrollTrigger.update();
-          requestAnimationFrame(() => {
-            ScrollTrigger.update();
-            isTransitioning = false;
-            // Brief guard so a parked scroll position cannot bounce back into topics.
-            setTimeout(() => {
-              suppressTopicsEnter = false;
-            }, 450);
-            resolve();
-          });
-        }
+          isTransitioning = false;
+          // Brief guard so a parked scroll position cannot bounce back into topics.
+          setTimeout(() => {
+            suppressTopicsEnter = false;
+          }, 450);
+          resolve();
+        });
+      };
+
+      fallback = setTimeout(finish, REWIND_DURATION * 1000 + 250); // safety net
+      if (!lenis) {
+        finish();
+        return;
+      }
+      lenis.scrollTo(targetY, {
+        duration: REWIND_DURATION,
+        force: true,
+        lock: true, // user input can't cancel the rewind halfway through
+        onComplete: finish
       });
     });
   }
