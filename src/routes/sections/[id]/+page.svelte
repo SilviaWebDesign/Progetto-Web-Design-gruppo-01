@@ -185,10 +185,10 @@
   const INTRO_MODEL_Y_OFFSET = -0.10; // model starts slightly lower, rises into place as it fades in
 
   // Mobile topics 3D fit: bottom third for the model in mode A; model anchored low in its band.
-  const TOPICS_MODEL_MARGIN = 12;
+  const TOPICS_MODEL_MARGIN = 20;
   const MOBILE_MODEL_BOTTOM_MARGIN = 16;
   const MOBILE_MODEL_BAND_FRACTION = 1 / 3;
-  const MOBILE_THEME_CENTER_BIAS = 0.88;
+  const MOBILE_THEME_CENTER_BIAS = 0.2;
   const MOBILE_CARDS_CENTER_BIAS = 0.42;
 
   function mobileTopicsViewportHeightPx(): number {
