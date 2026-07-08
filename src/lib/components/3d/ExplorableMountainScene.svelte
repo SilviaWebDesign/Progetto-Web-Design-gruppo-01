@@ -956,6 +956,13 @@
     const baseY = root.userData.baseY;
     if (baseY == null) return;
 
+    // Mobile panel: keep the focused sphere perfectly stable in the upper-half
+    // framing (no floating drift while the text panel is open).
+    if (active && isAboutPanelMobileLayout()) {
+      root.position.y = baseY;
+      return;
+    }
+
     const speed = active ? FOCUS_FLOAT_SPEED : MARKER_FLOAT_SPEED;
     const floatY = Math.sin(elapsedSeconds * Math.PI * 2 * speed) * MARKER_FLOAT_AMPLITUDE;
     root.position.y = baseY + floatY;
@@ -1222,7 +1229,10 @@
     }
 
     if (controls && cameraReady) {
-      controls.enabled = !transitionActive;
+      // On mobile, once a hotspot is selected we lock OrbitControls so the
+      // active sphere stays pinned in the intended upper-half viewport area.
+      const lockMobileFocus = isAboutPanelMobileLayout() && !!selectedHotspot;
+      controls.enabled = !transitionActive && !lockMobileFocus;
     }
 
     renderScene();
