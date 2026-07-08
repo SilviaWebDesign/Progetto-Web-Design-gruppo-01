@@ -618,11 +618,18 @@
     });
   }
 
+  function onContinue() {
+    // Mobile mode A: the CTA opens the comments (mode B); it does NOT advance.
+    // In mode B (and on desktop) it advances via goNext, gated by a like.
+    if ($isMobile && !mobileCardsVisible) {
+      setMobileCards(true);
+      return;
+    }
+    goNext();
+  }
+
   async function goNext() {
-    // Mobile mode A: the CTA is active by default (no like needed to advance).
-    // Everywhere else the like-gate stays (you must like before continuing).
-    const likeRequired = !($isMobile && !mobileCardsVisible);
-    if ((likeRequired && !anyLiked) || isTransitioning) return;
+    if (!anyLiked || isTransitioning) return;
     if (currentTopic === lastTopic) {
       enterFeedbackPhase();
       return;
@@ -1574,7 +1581,7 @@ function exitTopicsMode() {
       class="continue"
       class:is-visible={phase === 'topics'}
       disabled={$isMobile && !mobileCardsVisible ? false : !anyLiked}
-      onclick={goNext}
+      onclick={onContinue}
       aria-label={currentTopic === lastTopic ? 'Conferma le tue scelte' : 'Continua al prossimo argomento'}
     >
       <span class="continue__label">
@@ -1907,6 +1914,8 @@ function exitTopicsMode() {
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;        /* hide the NATIVE bar — our custom one replaces it */
+      -ms-overflow-style: none;
 
       /* soft bottom fade, hinting there's more to scroll (matches the Figma). */
       -webkit-mask-image: linear-gradient(
@@ -1940,6 +1949,12 @@ function exitTopicsMode() {
       border-radius: var(--radius-pill, 999px);
       background: var(--neutral-600);
       will-change: transform;
+    }
+
+    /* Hide the native scrollbar (WebKit) — the custom .stage__scrollbar replaces it. */
+    .stage.m-cards-visible .stage__right-scroll::-webkit-scrollbar {
+      width: 0;
+      height: 0;
     }
 
     /* At scroll bottom the last card keeps a crisp edge (no fade on nothing). */
