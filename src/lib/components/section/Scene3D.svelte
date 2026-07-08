@@ -798,8 +798,20 @@
         (visibleW * RESULT_BOX_WIDTH_FILL) / horizExtent
       ) * resultScale;
 
-    group.scale.setScalar(scale);
-    group.position.set(0, worldCenterY + RESULT_BOX_LIFT * visibleH, 0);
+    // The group lives under `spinner`, whose transform is NOT identity: applyViewportFit()
+    // scales the rig down on narrow screens and the topics mobile-fit offsets it in Y.
+    // Convert the world-space target into the parent's local space, otherwise the model
+    // ends up smaller and vertically shifted (and only a reload looked right).
+    const parent = group.parent ?? spinner;
+    const parentScale = parent ? parent.scale.x || 1 : 1;
+    const parentOffsetY = parent ? parent.position.y : 0;
+
+    group.scale.setScalar(scale / parentScale);
+    group.position.set(
+      0,
+      (worldCenterY + RESULT_BOX_LIFT * visibleH - parentOffsetY) / parentScale,
+      0
+    );
   }
 
   function buildResultGroup(source: THREE.Group): THREE.Group | null {
