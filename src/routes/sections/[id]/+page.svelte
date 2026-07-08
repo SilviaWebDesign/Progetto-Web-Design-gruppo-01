@@ -1094,7 +1094,7 @@ function exitTopicsMode() {
     let introDir = 1; // last intro wheel direction: 1 = down, -1 = up
 
     function introSnap() {
-      if (phase !== 'intro') return;
+      if (phase !== 'intro' || isTransitioning || suppressTopicsEnter) return;
       const vh = window.innerHeight;
       const y = window.scrollY;
       if (y > vh * INTRO_SCROLL_COMMIT) {
@@ -1149,8 +1149,10 @@ function exitTopicsMode() {
       if (phase === 'intro') {
         // free scroll, but settle onto the intro beat we're heading toward on pause
         if (e.deltaY !== 0) introDir = e.deltaY > 0 ? 1 : -1;
-        if (introSnapTimer) clearTimeout(introSnapTimer);
-        introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        if (!isTransitioning && !suppressTopicsEnter) {
+          if (introSnapTimer) clearTimeout(introSnapTimer);
+          introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        }
         return;
       }
 
@@ -1231,8 +1233,10 @@ function exitTopicsMode() {
       if (phase === 'intro') {
         // let native/Lenis scroll drive the reveal; we only track direction for the snap
         if (dy !== 0) introDir = dy > 0 ? 1 : -1;
-        if (introSnapTimer) clearTimeout(introSnapTimer);
-        introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        if (!isTransitioning && !suppressTopicsEnter) {
+          if (introSnapTimer) clearTimeout(introSnapTimer);
+          introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        }
         return; // no preventDefault -> native scroll moves the intro
       }
 
@@ -1258,8 +1262,10 @@ function exitTopicsMode() {
 
     function onTouchEnd(e: TouchEvent) {
       if (phase === 'intro') {
-        if (introSnapTimer) clearTimeout(introSnapTimer);
-        introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        if (!isTransitioning && !suppressTopicsEnter) {
+          if (introSnapTimer) clearTimeout(introSnapTimer);
+          introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
+        }
         return;
       }
 
