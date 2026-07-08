@@ -44,6 +44,8 @@
     snapToResult: (path: string) => void;
     preloadResultModels: () => void;
     morphToResult: (path: string, onDone: () => void) => void;
+    /** Abort an in-flight result morph without firing its onDone callback. */
+    cancelMorph: () => void;
     returnToParticles: () => void;
     setMobileFit: (topPx: number, bottomPx: number, options?: MobileFitOptions) => void;
     setMobileLayoutBlend: (t: number) => void;
@@ -327,6 +329,22 @@
       },
       preloadResultModels,
       morphToResult,
+      cancelMorph: () => {
+        morphDoneCallback = null;
+        morphState = 'none';
+        morphElapsed = 0;
+        if (controls) controls.enabled = false;
+        if (particleMesh) particleMesh.visible = false;
+        if (particleMat) {
+          particleMat.uniforms.uBaseOpacity.value = 0;
+          particleMat.uniforms.uPulse.value = 0;
+        }
+        resultModelMaterials.forEach((m) => {
+          m.opacity = 0;
+          m.visible = false;
+          m.needsUpdate = true;
+        });
+      },
       returnToParticles: () => {
         if (controls) controls.enabled = false;
         // Restore the base particle cloud: after a morph, iMatBuf still holds the

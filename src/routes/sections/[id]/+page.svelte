@@ -715,59 +715,73 @@ function exitTopicsMode() {
   }
 
   async function goToSectionStart() {
-    if (isTransitioning) return;
-
-    // From feedback OR topics, the header title rewinds to the intro at the top.
-    // We deliberately DON'T call exitFeedbackPhase() here: it rebuilds the whole
-    // topics UI (card entrance, stage fades, .continue) only for us to hide it
-    // again — which left a ghost CTA and, with the scroll parked at the bottom,
-    // let ScrollTrigger re-enter topics (the jumps / lock). Tear down to intro.
-    if (phase === 'feedback' || phase === 'topics') {
-      const fromFeedback = phase === 'feedback';
-      isTransitioning = true;
-      returningToStart = true;
-
-      if (fromFeedback) {
-        gsap.to('.layer--bg', { filter: 'none', duration: 0.3, ease: 'power2.inOut' });
-        scene3d?.returnToParticles();
-      }
-
-      // Rewind to the very start of the section and reset it COMPLETELY: first
-      // topic, no result, likes/choices cleared, and this section removed from
-      // progress (redoing it from scratch, desktop fix A4).
-      currentTopic = 0;
-      currentResult = null;
-      topicLikes = section.topics.map(() => ({}));
-      progress.clearSection(section.id);
-      phase = 'intro';
-      syncIntroSceneBaseline();
-      scene3d?.resetOrientation(); // reset any rotation done in the feedback (S5)
-      gsap.set('.stage__text', { opacity: 0, y: 8 });
-      if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
-      // Clear leftover GSAP inline styles from earlier topic crossfades so the
-      // topic texts re-enter clean when the user scrolls back down.
-      gsap.set(['.stage__text', '.stage__heading'], { clearProps: 'opacity,transform' });
-      await tick();
-
-      // Drop GSAP inline styles so the CSS visibility classes win again.
-      gsap.set('.continue', { clearProps: 'opacity' });
-
-      const lenis = get(lenisStore);
-      lenis?.start();
-      lenis?.scrollTo(0, { immediate: true, force: true });
-      ScrollTrigger.update();
-
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          ScrollTrigger.update();
-          returningToStart = false;
-          isTransitioning = false;
-        })
-      );
+    // Header rewind must always win — even mid morph / crossfade / scroll animation.
+    if (phase !== 'feedback' && phase !== 'topics') {
+      get(lenisStore)?.scrollTo(0, { immediate: true, force: true });
       return;
     }
 
-    get(lenisStore)?.scrollTo(0, { immediate: true, force: true });
+    const fromFeedback = phase === 'feedback';
+
+    // Cancel in-flight GSAP / 3D work so the rewind is immediate and reliable.
+    gsap.killTweensOf([
+      '.feedback__heading',
+      '.feedback__body',
+      '.feedback__cta',
+      '.stage__text',
+      '.stage__heading',
+      '.continue',
+      '.card-stack__item',
+      '.layer--bg'
+    ]);
+    scene3d?.cancelMorph();
+    scene3d?.clearMobileFit();
+
+    isTransitioning = true;
+    returningToStart = true;
+    suppressTopicsEnter = true;
+
+    if (fromFeedback) {
+      gsap.set('.layer--bg', { filter: 'none' });
+      gsap.set('.feedback__heading, .feedback__body, .feedback__cta', { opacity: 0 });
+    }
+
+    // Rewind to the very start of the section and reset it COMPLETELY: first
+    // topic, no result, likes/choices cleared, and this section removed from
+    // progress (redoing it from scratch, desktop fix A4).
+    currentTopic = 0;
+    currentResult = null;
+    topicLikes = section.topics.map(() => ({}));
+    progress.clearSection(section.id);
+    resetMobileTopicLayout();
+    phase = 'intro';
+    syncIntroSceneBaseline();
+    scene3d?.resetOrientation();
+    cardStack?.resetHidden();
+
+    gsap.set('.stage__text', { opacity: 0, y: 8 });
+    if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
+    gsap.set(['.stage__text', '.stage__heading', '.card-stack__item'], {
+      clearProps: 'opacity,transform'
+    });
+    gsap.set('.continue', { clearProps: 'opacity' });
+    await tick();
+
+    const lenis = get(lenisStore);
+    lenis?.start();
+    lenis?.scrollTo(0, { immediate: true, force: true });
+    ScrollTrigger.update();
+
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        ScrollTrigger.update();
+        returningToStart = false;
+        isTransitioning = false;
+        setTimeout(() => {
+          suppressTopicsEnter = false;
+        }, 450);
+      })
+    );
   }
 
   async function goToNextSection() {
