@@ -552,9 +552,10 @@
       top: auto;
       right: 0;
       left: 0;
-      bottom: 68px;
+      bottom: 64px;
       transform: none;
       width: 100%;
+      /* Non compensiamo cambiando anche height: così il box scende davvero. */
       height: calc(50vh - 68px);
       max-height: calc(50vh - 68px);
       display: block;
