@@ -96,8 +96,10 @@
     cursor: pointer;
   }
 
-  .path-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.98);
+  @media (hover: hover) {
+    .path-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.98);
+    }
   }
 
   .path-btn:disabled {

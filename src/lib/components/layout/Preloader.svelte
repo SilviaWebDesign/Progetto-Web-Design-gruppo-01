@@ -56,10 +56,7 @@
   <div class="preloader" role="status" aria-live="polite" transition:fade={{ duration: 400 }}>
     <div class="preloader__inner">
       <p class="preloader__msg">
-        {LABEL}<span class="preloader__dots" aria-hidden="true"
-          ><span class="preloader__dot"></span><span class="preloader__dot"></span
-          ><span class="preloader__dot"></span></span
-        >
+        {LABEL}<span class="preloader__dots" aria-hidden="true"></span>
       </p>
       <div class="preloader__bar">
         <div class="preloader__fill" style="width: {pct}%"></div>
@@ -97,48 +94,37 @@
     font-size: var(--font-size-lg);
   }
 
+  /* Three dots revealed one after another, then the cycle restarts.
+     They never move: `steps()` just uncovers one more dot each tick. */
   .preloader__dots {
-    display: inline-flex;
-    align-items: flex-end;
-    gap: 0.12em;
-    margin-left: 0.08em;
-  }
-
-  .preloader__dot {
     display: inline-block;
-    width: 0.22em;
-    height: 0.22em;
-    border-radius: 50%;
-    background: currentColor;
-    transform: translateY(0);
-    animation: preloader-dot-jump 2s ease-in-out infinite;
+    /* empty inline-block: its bottom edge lands on the text baseline,
+       so the dots rest on the same line as the label, like an ellipsis */
+    vertical-align: baseline;
+    width: 1.4em; /* holds three dots: wider cells = more space between them */
+    aspect-ratio: 5.5; /* higher = smaller dots, so the gaps read wider */
+    margin-left: 0.18em;
+    background: radial-gradient(circle closest-side, currentColor 90%, transparent) 0 / calc(100% / 3)
+      100% space;
+    clip-path: inset(0 100% 0 0);
+    animation: preloader-dots 0.9s steps(4) infinite; /* lower = faster */
   }
 
-  .preloader__dot:nth-child(1) {
-    animation-delay: 0s;
-  }
-
-  .preloader__dot:nth-child(2) {
-    animation-delay: 0.66s;
-  }
-
-  .preloader__dot:nth-child(3) {
-    animation-delay: 1.32s;
-  }
-
-  @keyframes preloader-dot-jump {
-    0%,
-    12%,
-    100% {
-      transform: translateY(0);
-      opacity: 0.45;
-    }
-
-    6% {
-      transform: translateY(-0.42em);
-      opacity: 1;
+  @keyframes preloader-dots {
+    to {
+      clip-path: inset(0 -34% 0 0);
     }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .preloader__dots {
+      animation: none;
+      clip-path: none;
+      opacity: 0.55;
+    }
+  }
+
+  
   .preloader__bar {
     width: 100%;
     height: 3px;

@@ -90,9 +90,16 @@
     transition: transform 0.2s ease;
   }
 
-  .text-block__source:hover,
+  /* keyboard focus keeps the effect on every device */
   .text-block__source:focus-visible {
     transform: scale(1.05); /* same grow-on-hover as the CTAs */
     text-decoration-thickness: 2px;
+  }
+
+  @media (hover: hover) {
+    .text-block__source:hover {
+      transform: scale(1.05);
+      text-decoration-thickness: 2px;
+    }
   }
 </style>

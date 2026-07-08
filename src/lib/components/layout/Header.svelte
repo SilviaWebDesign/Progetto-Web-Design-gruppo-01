@@ -414,8 +414,10 @@
     pointer-events: auto;
   }
 
-  .header__section:hover {
-    opacity: 0.85;
+  @media (hover: hover) {
+    .header__section:hover {
+      opacity: 0.85;
+    }
   }
 
   .header__section:focus-visible {
@@ -430,8 +432,10 @@
     }
   }
 
-  .header__logo:hover {
-    opacity: 0.85;
+  @media (hover: hover) {
+    .header__logo:hover {
+      opacity: 0.85;
+    }
   }
 
 
@@ -695,8 +699,10 @@
     text-decoration: none;
   }
 
-  .menu-overlay__link:hover {
-    opacity: 0.75;
+  @media (hover: hover) {
+    .menu-overlay__link:hover {
+      opacity: 0.75;
+    }
   }
 
   .menu-overlay__link:focus-visible {
