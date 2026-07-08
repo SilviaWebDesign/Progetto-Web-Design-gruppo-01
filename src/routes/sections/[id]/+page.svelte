@@ -215,6 +215,9 @@
   const MOBILE_LAYOUT_START = 0.55;
   const MOBILE_TOPIC_COMPACT_RATIO = 24 / 36;
   const MOBILE_TEXT_SCALE_DURATION = 0.4;
+  const MOBILE_LAYOUT_PULSE_AMPLITUDE = 0.14;
+  const MOBILE_MODE_B_TEXT_FRACTION = 0.25;
+  const MOBILE_MODE_B_MODEL_FRACTION = 0.25;
   const topicsScaleTween = { value: TOPICS_SCALE };
 
   function particleProgressFromScroll(scrollProgress: number): number {
@@ -240,7 +243,7 @@
     const target = topicsScaleTarget(cardsMode);
     gsap.killTweensOf(topicsScaleTween);
     if (animate && get(isMobile)) {
-      scene3d.pulse();
+      scene3d.pulse(MOBILE_LAYOUT_PULSE_AMPLITUDE);
       gsap.to(topicsScaleTween, {
         value: target,
         duration: MOBILE_TEXT_SCALE_DURATION,
@@ -308,12 +311,10 @@
     let centerBias = MOBILE_THEME_CENTER_BIAS;
 
     if (cardsActive) {
-      const cardsRect = stageRightEl?.getBoundingClientRect();
-      topPx = textRect.bottom + TOPICS_MODEL_MARGIN;
-      bottomPx =
-        cardsRect && cardsRect.height > 0
-          ? cardsRect.top - TOPICS_MODEL_MARGIN
-          : vh - MOBILE_MODEL_BOTTOM_MARGIN;
+      const modelBandTop = vh * MOBILE_MODE_B_TEXT_FRACTION;
+      const modelBandBottom = vh * (MOBILE_MODE_B_TEXT_FRACTION + MOBILE_MODE_B_MODEL_FRACTION);
+      topPx = modelBandTop + TOPICS_MODEL_MARGIN;
+      bottomPx = modelBandBottom - TOPICS_MODEL_MARGIN;
       centerBias = MOBILE_CARDS_CENTER_BIAS;
     } else {
       const modelBandTop = vh * (1 - MOBILE_MODEL_BAND_FRACTION);
@@ -1422,6 +1423,13 @@ function exitTopicsMode() {
       margin-bottom: var(--spacing-section-topic-gap-body-end-compact);
     }
 
+    /* Mode B: cap text to the top quarter of the viewport. */
+    .stage.m-cards-visible .stage__text {
+      max-height: var(--spacing-section-mode-b-text-band);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
     /* Mode B (compact): hide the topic counter to free vertical space. */
     .stage.m-cards-visible .stage__text :global(.text-block__counter) {
       display: none;
@@ -1432,22 +1440,26 @@ function exitTopicsMode() {
       display: none;
     }
 
+    /* Mode B: bottom half = heading + scrollable cards + Continua reserve. */
     .stage.m-cards-visible .stage__right {
-      display: block;
-      margin-top: auto;
-      /* Tune --spacing-section-comments-lift in spacing.css to clear the Continua CTA. */
-      margin-bottom: var(--spacing-section-comments-lift);
+      position: absolute;
+      left: var(--page-gutter);
+      right: var(--page-gutter);
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-section-comments-heading-gap);
+      height: var(--spacing-section-mode-b-comments-band);
+      padding-bottom: var(--spacing-section-comments-cta-reserve);
+      box-sizing: border-box;
       min-height: 0;
     }
 
-    /* dedicated scroll VIEWPORT (prototype approach): a plain block with a fixed
-       height + overflow, wrapping ONLY the CardStack, so it's not resized by the
-       .stage layout and the cards overflow & scroll natively. */
-    /* dedicated scroll VIEWPORT: fixed height + overflow so the cards scroll
-       natively (data-lenis-prevent on the element keeps Lenis off these events). */
     .stage.m-cards-visible .stage__right-scroll {
-      height: var(--spacing-section-comments-viewport-height);
-      padding: 6px var(--spacing-section-comments-scroll-inset);
+      flex: 1;
+      min-height: 0;
+      height: auto;
+      padding: 4px var(--spacing-section-comments-scroll-inset);
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;

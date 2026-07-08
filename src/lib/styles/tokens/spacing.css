@@ -31,13 +31,16 @@
   --spacing-section-topic-gap-body-end-compact:   clamp(0.35rem, 2.05vw, 0.5rem);  /* 8@390 — mode B */
 
   /* --- Comment cards + comments column (Figma frame 390px) --- */
-  --spacing-comment-card-min-height:            clamp(5.5rem, 24.62vw, 6rem);       /* 96@390 — minimum card height (hug grows with text) */
-  --spacing-comment-card-padding:               clamp(1rem, 5.13vw, 1.25rem);       /* 20@390 — padding around text + heart */
-  --spacing-comment-card-stack-gap:             clamp(0.5rem, 2.56vw, 0.625rem);   /* 10@390 — gap between cards */
-  --spacing-comment-card-inner-gap:             clamp(0.5rem, 2.56vw, 0.625rem);   /* 10@390 — gap text ↔ heart inside card */
+  --spacing-comment-card-min-height:            clamp(4.75rem, 21.54vw, 5.5rem);   /* ~4 lines @390 */
+  --spacing-comment-card-padding:               clamp(0.65rem, 3.59vw, 0.875rem); /* 14@390 — padding around text + heart */
+  --spacing-comment-card-stack-gap:             clamp(0.4rem, 2.05vw, 0.5rem);    /* 8@390 — gap between cards */
+  --spacing-comment-card-inner-gap:             clamp(0.4rem, 2.05vw, 0.5rem);   /* 8@390 — gap text ↔ heart inside card */
   --spacing-comment-body-max-width:             clamp(13rem, 67.18vw, 16.5rem);   /* ~262@390 — 354 card minus padding+heart+gap */
-  --spacing-section-comments-viewport-height:   clamp(11.5rem, 52vw, 13.5rem);   /* ~2 cards visible @390 (96+10+96) */
   --spacing-section-comments-scroll-inset:      clamp(0.35rem, 2.05vw, 0.5rem);   /* 8@390 — side inset in scroll viewport */
-  --spacing-section-comments-fade:              clamp(2.5rem, 12.31vw, 3rem);      /* 48@390 — bottom fade height */
-  --spacing-section-comments-lift:              clamp(7.75rem, 23.72vw, 10.25rem); /* gap comment block ↔ Continua (~5px less @390) */
+  --spacing-section-comments-fade:              clamp(2rem, 10.26vw, 2.5rem);     /* 40@390 — bottom fade height */
+  --spacing-section-comments-heading-gap:       clamp(0.35rem, 2.05vw, 0.5rem);   /* 8@390 — heading ↔ card list */
+  /* Mode B bands: text 25% · model 25% · comments+CTA 50% of viewport */
+  --spacing-section-mode-b-text-band:           25dvh;
+  --spacing-section-mode-b-comments-band:      50dvh;
+  --spacing-section-comments-cta-reserve:      clamp(3rem, 15.38vw, 3.5rem);     /* 60@390 — Continua + tight gap above */
 }

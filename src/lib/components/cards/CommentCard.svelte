@@ -265,6 +265,11 @@
       overflow-wrap: break-word;
       /* Mobile: ignore desktop manual line breaks — let text reflow naturally. */
       white-space: normal;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+      overflow: hidden;
     }
 
     .comment-card__heart {

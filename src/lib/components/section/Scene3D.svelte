@@ -38,7 +38,7 @@
     setTransitionProgress: (t: number) => void;
     settle: () => void;
     unsettle: (onDone?: () => void) => void;
-    pulse: () => void;
+    pulse: (amplitude?: number) => void;
     resetPulse: () => void;
     snapToParticles: () => void;
     snapToResult: (path: string) => void;
@@ -143,6 +143,7 @@
 
   let manualPulseActive = false;
   let manualPulseElapsed = 0;
+  let manualPulseAmplitude = 0.4;
   const MANUAL_PULSE_DURATION = 1.5;
   const MANUAL_PULSE_AMPLITUDE = 0.4; 
   const IDLE_PULSE_AMPLITUDE = 0.06;
@@ -244,7 +245,7 @@
         transitionState = 'out';
         unsettleElapsed = 0;
       },
-      pulse: triggerManualPulse,
+      pulse: (amplitude) => triggerManualPulse(amplitude),
       resetPulse: () => {
         manualPulseActive = false;
         manualPulseElapsed = 0;
@@ -968,8 +969,9 @@
     applyTransitionProgress(1);
   }
 
-  function triggerManualPulse() {
+  function triggerManualPulse(amplitude = MANUAL_PULSE_AMPLITUDE) {
     if (transitionState !== 'done') return;
+    manualPulseAmplitude = amplitude;
     manualPulseActive = true;
     manualPulseElapsed = 0;
   }
@@ -1191,7 +1193,7 @@
       if (manualPulseActive) {
         manualPulseElapsed += dt;
         const t = Math.min(1, manualPulseElapsed / MANUAL_PULSE_DURATION);
-        particleMat.uniforms.uPulse.value = Math.sin(t * Math.PI) * MANUAL_PULSE_AMPLITUDE;
+        particleMat.uniforms.uPulse.value = Math.sin(t * Math.PI) * manualPulseAmplitude;
         if (t >= 1) manualPulseActive = false;
       } else {
         particleMat.uniforms.uPulse.value =
