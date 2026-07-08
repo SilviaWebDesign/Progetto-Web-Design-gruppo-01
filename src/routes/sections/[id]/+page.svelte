@@ -172,15 +172,30 @@
     await tick();
 
     gsap.set(textTargets, { y: 0, opacity: 0 });
-    topicsScaleTween.value = topicsScaleTarget(mobileCardsVisible);
-    scene3d?.setScale(topicsScaleTween.value);
-    updateTopicsModelFit({ soft: true });
+    // Approach A: instead of snapping the model to its new mode scale/position
+    // (which read as a teleport/pop), glide it there DURING the content fade-in.
+    const modelScaleTarget = topicsScaleTarget(mobileCardsVisible);
+    updateTopicsModelFit({ soft: true }); // re-anchor the fit band for the new mode
     await tick();
+
+    // Model scale+fit tween, run concurrently with the fade-in below. Knobs:
+    // fadeInDuration (sync with text/cards) and the ease.
+    gsap.killTweensOf(topicsScaleTween);
+    const modelSettle = gsap.to(topicsScaleTween, {
+      value: modelScaleTarget,
+      duration: fadeInDuration,
+      ease: 'power2.inOut',
+      onUpdate: () => {
+        scene3d?.setScale(topicsScaleTween.value);
+        updateTopicsModelFit({ soft: true });
+      }
+    });
 
     if (next) {
       gsap.set('.stage__right', { opacity: 0 });
       gsap.set(cardTargets, { opacity: 0, y: 0 });
       await Promise.all([
+        modelSettle,
         gsap.to(textTargets, {
           opacity: 1,
           y: 0,
@@ -203,13 +218,16 @@
       ]);
     } else {
       gsap.set(textTargets, { y: inY });
-      await gsap.to(textTargets, {
-        opacity: 1,
-        y: 0,
-        duration: fadeInDuration,
-        ease: 'power2.out',
-        onUpdate: () => updateTopicsModelFit({ soft: true })
-      });
+      await Promise.all([
+        modelSettle,
+        gsap.to(textTargets, {
+          opacity: 1,
+          y: 0,
+          duration: fadeInDuration,
+          ease: 'power2.out',
+          onUpdate: () => updateTopicsModelFit({ soft: true })
+        })
+      ]);
     }
 
     finalizeMobileModeFit();
