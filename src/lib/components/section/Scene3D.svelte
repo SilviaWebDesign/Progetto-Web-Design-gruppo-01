@@ -24,6 +24,11 @@
   import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+  export interface MobileFitOptions {
+    centerBias?: number;
+    viewportHeightPx?: number;
+  }
+
   export interface Scene3DApi {
     setRotationY: (rad: number) => void;
     setScale: (factor: number) => void;
@@ -39,6 +44,13 @@
     preloadResultModels: () => void;
     morphToResult: (path: string, onDone: () => void) => void;
     returnToParticles: () => void;
+    setMobileFit: (topPx: number, bottomPx: number, options?: MobileFitOptions) => void;
+    setMobileLayoutBlend: (t: number) => void;
+    setModelBaseYOffset: (vhFraction: number) => void;
+    snapMobileFit: () => void;
+    lockMobileFit: () => void;
+    unlockMobileFit: () => void;
+    clearMobileFit: () => void;
   }
 
   interface Props {
@@ -149,6 +161,24 @@
   let morphDoneCallback: (() => void) | null = null;
   let resultModelMaterials: THREE.MeshPhysicalMaterial[] = [];
 
+  // --- Mobile topics layout fit (vertical band between DOM-measured edges) ---
+  let mobileFitActive = false;
+  let mobileFitFinalOffsetY = 0;
+  let mobileLayoutBlend = 0;
+  let mobileFitLocked = false;
+  let modelBaseYOffsetVh = 0;
+  const MOBILE_FIT_LERP = 0.12;
+
+  function getCameraVisibleH(): number {
+    if (!camera) return 0;
+    const fov = camera.fov * (Math.PI / 180);
+    return 2 * Math.tan(fov / 2) * camera.position.z;
+  }
+
+  function getModelBaseYOffset(): number {
+    return modelBaseYOffsetVh * getCameraVisibleH();
+  }
+
   onMount(() => {
     if (!canvasEl || !wrapperEl) return;
 
@@ -165,6 +195,11 @@
       resetOrientation: () => {
         // Undo rotation from the feedback OrbitControls + idle spin, so the model
         // reappears at its default facing when we rewind to the intro (S5).
+        mobileFitActive = false;
+        mobileFitLocked = false;
+        mobileLayoutBlend = 0;
+        mobileFitFinalOffsetY = 0;
+        modelBaseYOffsetVh = 0;
         if (spinner) {
           spinner.rotation.y = 0;
           spinner.position.y = 0;
@@ -309,6 +344,46 @@
           m.visible = false;
         });
         morphState = 'none';
+      },
+      setMobileFit: (topPx, bottomPx, options = {}) => {
+        if (!camera) return;
+        mobileFitActive = true;
+        const vh = options.viewportHeightPx ?? window.innerHeight;
+        const visibleH = getCameraVisibleH();
+        const gapPx = Math.max(24, bottomPx - topPx);
+        const centerBias = options.centerBias ?? 0.5;
+        const centerPx = topPx + gapPx * centerBias;
+        mobileFitFinalOffsetY = ((vh / 2 - centerPx) / vh) * visibleH;
+        if (mobileFitLocked && spinner) {
+          spinner.position.y = mobileFitFinalOffsetY * mobileLayoutBlend + getModelBaseYOffset();
+        }
+      },
+      setMobileLayoutBlend: (t) => {
+        if (mobileFitLocked) return;
+        mobileLayoutBlend = Math.max(0, Math.min(1, t));
+      },
+      setModelBaseYOffset: (vh) => {
+        modelBaseYOffsetVh = vh;
+      },
+      snapMobileFit: () => {
+        if (!spinner || !mobileFitActive) return;
+        spinner.position.y = mobileFitFinalOffsetY * mobileLayoutBlend + getModelBaseYOffset();
+      },
+      lockMobileFit: () => {
+        mobileFitLocked = true;
+        if (!spinner || !mobileFitActive) return;
+        spinner.position.y = mobileFitFinalOffsetY * mobileLayoutBlend + getModelBaseYOffset();
+      },
+      unlockMobileFit: () => {
+        mobileFitLocked = false;
+      },
+      clearMobileFit: () => {
+        mobileFitActive = false;
+        mobileFitLocked = false;
+        mobileLayoutBlend = 0;
+        mobileFitFinalOffsetY = 0;
+        modelBaseYOffsetVh = 0;
+        if (spinner) spinner.position.y = 0;
       }
     };
 
@@ -959,6 +1034,16 @@
     const elapsed = clock.elapsedTime;
 
     if (spinner && !orbitEnabled) spinner.rotation.y += IDLE_RAD_S * dt;
+    if (
+      spinner &&
+      !orbitEnabled &&
+      morphState === 'none' &&
+      !mobileFitLocked &&
+      mobileFitActive
+    ) {
+      const targetY = mobileFitFinalOffsetY * mobileLayoutBlend + getModelBaseYOffset();
+      spinner.position.y += (targetY - spinner.position.y) * MOBILE_FIT_LERP;
+    }
     if (controls?.enabled) controls.update();
 
     if (transitionState === 'in' && particleMesh && particleMat && iMatBuf) {
@@ -1110,6 +1195,9 @@
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     applyViewportFit();
+    if (mobileFitActive && mobileFitLocked && spinner) {
+      spinner.position.y = mobileFitFinalOffsetY * mobileLayoutBlend + getModelBaseYOffset();
+    }
   }
 </script>
 

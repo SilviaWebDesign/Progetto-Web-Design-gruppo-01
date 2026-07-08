@@ -57,6 +57,8 @@
   let mobileCardsVisible = $state(false);
   let textFading = false;
   let cardsScrollRef = $state<HTMLElement | null>(null);
+  let stageTextEl = $state<HTMLElement | null>(null);
+  let stageRightEl = $state<HTMLElement | null>(null);
 
   function cardsScrollAtBottom(): boolean {
     const el = cardsScrollRef;
@@ -88,7 +90,10 @@
             opacity: 1,
             duration: 0.28,
             ease: 'power2.out',
-            onComplete: () => { textFading = false; }
+            onComplete: () => {
+              textFading = false;
+              scheduleTopicsModelFit();
+            }
           });
         });
       }
@@ -179,6 +184,64 @@
   const INTRO_MODEL_SCALE = 0.85; // model size when it first appears (before shrinking to TOPICS_SCALE)
   const INTRO_MODEL_Y_OFFSET = -0.10; // model starts slightly lower, rises into place as it fades in
 
+  // Mobile topics 3D fit: bottom third for the model in mode A; model anchored low in its band.
+  const TOPICS_MODEL_MARGIN = 12;
+  const MOBILE_MODEL_BOTTOM_MARGIN = 16;
+  const MOBILE_MODEL_BAND_FRACTION = 1 / 3;
+  const MOBILE_THEME_CENTER_BIAS = 0.88;
+  const MOBILE_CARDS_CENTER_BIAS = 0.42;
+
+  function mobileTopicsViewportHeightPx(): number {
+    return sceneEl?.getBoundingClientRect().height ?? window.innerHeight;
+  }
+
+  function topicsCardsActive(): boolean {
+    return $isMobile && mobileCardsVisible;
+  }
+
+  function updateTopicsModelFit() {
+    if (!scene3d || !stageTextEl || phase === 'feedback') return;
+    if (!$isMobile || phase !== 'topics') return;
+
+    const cardsActive = topicsCardsActive();
+    const textRect = stageTextEl.getBoundingClientRect();
+    const vh = mobileTopicsViewportHeightPx();
+    let topPx: number;
+    let bottomPx: number;
+    let centerBias = MOBILE_THEME_CENTER_BIAS;
+
+    if (cardsActive) {
+      const cardsRect = stageRightEl?.getBoundingClientRect();
+      topPx = textRect.bottom + TOPICS_MODEL_MARGIN;
+      bottomPx =
+        cardsRect && cardsRect.height > 0
+          ? cardsRect.top - TOPICS_MODEL_MARGIN
+          : vh - MOBILE_MODEL_BOTTOM_MARGIN;
+      centerBias = MOBILE_CARDS_CENTER_BIAS;
+    } else {
+      const modelBandTop = vh * (1 - MOBILE_MODEL_BAND_FRACTION);
+      topPx = Math.max(textRect.bottom + TOPICS_MODEL_MARGIN, modelBandTop);
+      bottomPx = vh - MOBILE_MODEL_BOTTOM_MARGIN;
+    }
+
+    if (bottomPx - topPx < 48) bottomPx = topPx + 48;
+
+    scene3d.setModelBaseYOffset(0);
+    scene3d.setMobileFit(topPx, bottomPx, { centerBias, viewportHeightPx: vh });
+    scene3d.setMobileLayoutBlend(1);
+    scene3d.snapMobileFit();
+    scene3d.lockMobileFit();
+  }
+
+  function scheduleTopicsModelFit() {
+    if (!$isMobile || phase !== 'topics') return;
+    void tick().then(() => {
+      updateTopicsModelFit();
+      requestAnimationFrame(updateTopicsModelFit);
+      setTimeout(updateTopicsModelFit, 450);
+    });
+  }
+
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
   // Shuffle each topic's comments once per session, so positive and negative
@@ -254,7 +317,8 @@
           opacity: 1,
           y: 0,
           duration: 0.5,
-          ease: 'power2.out'
+          ease: 'power2.out',
+          onComplete: scheduleTopicsModelFit
         });
       });
     });
@@ -299,6 +363,7 @@
         await new Promise((r) => requestAnimationFrame(r));
       }
       await cardStack?.animateIn();
+      scheduleTopicsModelFit();
     })();
   }
 
@@ -306,6 +371,7 @@
 function exitTopicsMode() {
     if (phase !== 'topics') return;
     phase = 'intro';
+    scene3d?.clearMobileFit();
     scene3d?.unsettle(() => get(lenisStore)?.start());
   }
 
@@ -333,6 +399,7 @@ function exitTopicsMode() {
     if (phase !== 'topics' || isTransitioning || !anyLiked) return;
     isTransitioning = true;
     resetMobileTopicLayout();
+    scene3d?.clearMobileFit();
 
     const OUT = 0.5;
     gsap.to('.stage__text', { opacity: 0, y: -8, duration: OUT, ease: 'power3.inOut' });
@@ -378,6 +445,7 @@ function exitTopicsMode() {
     await tick();
     await cardStack?.animateIn();
     gsap.to('.continue', { opacity: 1, duration: 0.3, delay: 0.1 });
+    scheduleTopicsModelFit();
     isTransitioning = false;
   }
 
@@ -489,7 +557,10 @@ function exitTopicsMode() {
 
     if (saved.phase === 'topics') {
       scene3d?.snapToParticles();
-      void tick().then(() => cardStack?.animateIn());
+      void tick().then(() => {
+        cardStack?.animateIn();
+        scheduleTopicsModelFit();
+      });
     } else {
       // feedback: show the result model formed, blur the backdrop.
       if (currentResult) scene3d?.snapToResult(resultPathFor(currentResult));
@@ -502,6 +573,38 @@ function exitTopicsMode() {
     if (phase === 'feedback' && feedbackBody) {
       void tick().then(fitFeedbackBody);
     }
+  });
+
+  $effect(() => {
+    if (!stageTextEl || phase === 'feedback') return;
+    const observer = new ResizeObserver(() => {
+      if ($isMobile && phase === 'topics') updateTopicsModelFit();
+    });
+    observer.observe(stageTextEl);
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    if (!stageRightEl || phase === 'feedback') return;
+    const observer = new ResizeObserver(() => {
+      if ($isMobile && phase === 'topics' && mobileCardsVisible) updateTopicsModelFit();
+    });
+    observer.observe(stageRightEl);
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    if (phase !== 'topics' || !$isMobile) return;
+    currentTopic;
+    mobileCardsVisible;
+    scheduleTopicsModelFit();
+  });
+
+  $effect(() => {
+    if (phase !== 'topics' || !$isMobile) return;
+    const onResize = () => updateTopicsModelFit();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   });
 
   onMount(() => {
@@ -901,6 +1004,7 @@ function exitTopicsMode() {
     <div class="stage" class:is-visible={phase === 'topics'} class:m-cards-visible={mobileCardsVisible}>
       <div
         class="stage__text"
+        bind:this={stageTextEl}
         role="button"
         tabindex="0"
         onclick={() => { if ($isMobile) setMobileCards(!mobileCardsVisible); }}
@@ -911,7 +1015,7 @@ function exitTopicsMode() {
 
       <div class="stage__center" aria-hidden="true"></div>
 
-      <div class="stage__right" class:no-pointer={phase !== 'topics'}>
+      <div class="stage__right" class:no-pointer={phase !== 'topics'} bind:this={stageRightEl}>
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
         <div class="stage__right-scroll" data-lenis-prevent bind:this={cardsScrollRef}>
           <CardStack
@@ -930,7 +1034,7 @@ function exitTopicsMode() {
     <!-- ── "Continua" CTA ── -->
     <button
       class="continue"
-      class:is-visible={phase === 'topics'}
+      class:is-visible={phase === 'topics' && (!$isMobile || mobileCardsVisible)}
       disabled={!anyLiked}
       onclick={goNext}
       aria-label={currentTopic === lastTopic ? 'Conferma le tue scelte' : 'Continua al prossimo argomento'}
