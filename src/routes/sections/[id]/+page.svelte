@@ -143,6 +143,24 @@
     const outY = next ? -40 : 40;
     const inY = next ? 40 : -40;
 
+    // Approach A (continuous): glide the model to its new mode scale/position
+    // across the WHOLE crossfade (fade-out + fade-in) so it never freezes then
+    // lunges. Scale eases the whole time; the fit band (position) only re-anchors
+    // once we've flipped to the new mode, so it doesn't chase the sliding text.
+    // Knobs: the two fade durations + the ease below.
+    const modelScaleTarget = topicsScaleTarget(next);
+    gsap.killTweensOf(topicsScaleTween);
+    const modelSettle = gsap.to(topicsScaleTween, {
+      value: modelScaleTarget,
+      duration: fadeOutDuration + fadeInDuration,
+      ease: 'power2.inOut',
+      onUpdate: () => {
+        scene3d?.setScale(topicsScaleTween.value);
+        // only re-anchor position after the mode flip (avoids chasing moving text)
+        if (mobileCardsVisible === next) updateTopicsModelFit({ soft: true });
+      }
+    });
+
     if (next) {
       await gsap.to(textTargets, {
         opacity: 0,
@@ -172,24 +190,8 @@
     await tick();
 
     gsap.set(textTargets, { y: 0, opacity: 0 });
-    // Approach A: instead of snapping the model to its new mode scale/position
-    // (which read as a teleport/pop), glide it there DURING the content fade-in.
-    const modelScaleTarget = topicsScaleTarget(mobileCardsVisible);
     updateTopicsModelFit({ soft: true }); // re-anchor the fit band for the new mode
     await tick();
-
-    // Model scale+fit tween, run concurrently with the fade-in below. Knobs:
-    // fadeInDuration (sync with text/cards) and the ease.
-    gsap.killTweensOf(topicsScaleTween);
-    const modelSettle = gsap.to(topicsScaleTween, {
-      value: modelScaleTarget,
-      duration: fadeInDuration,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        scene3d?.setScale(topicsScaleTween.value);
-        updateTopicsModelFit({ soft: true });
-      }
-    });
 
     if (next) {
       gsap.set('.stage__right', { opacity: 0 });
