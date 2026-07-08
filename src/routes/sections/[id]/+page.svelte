@@ -73,6 +73,16 @@
     return el.scrollTop < 8;
   }
 
+  let commentsAtScrollEnd = $state(true);
+
+  function syncCommentsScrollMask() {
+    commentsAtScrollEnd = cardsScrollAtBottom();
+  }
+
+  function onCommentsScroll() {
+    syncCommentsScrollMask();
+  }
+
   // Toggle mobile topics A/B: cross-fade text (desktop topic style) + animated scale/pulse on the model.
   async function setMobileCards(next: boolean) {
     if (next === mobileCardsVisible || textFading || cardsScrollAnimating) return;
@@ -83,7 +93,6 @@
 
     const textTargets = '.stage__text';
     const outY = next ? -32 : 32;
-    const inY = next ? 32 : -32;
 
     await gsap.to(textTargets, {
       opacity: 0,
@@ -94,24 +103,32 @@
 
     if (next) {
       mobileCardsVisible = true;
-      await tick();
-      await applyTopicsScale(true, true);
-      await cardStack?.animateIn();
     } else {
       await cardStack?.animateOut();
       mobileCardsVisible = false;
       if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
-      await tick();
-      await applyTopicsScale(true, false);
     }
+    await tick();
 
-    gsap.set(textTargets, { y: inY });
-    await gsap.to(textTargets, {
-      opacity: 1,
-      y: 0,
-      duration: 0.46,
-      ease: 'power2.out'
-    });
+    // Compact/expanded layout applied, y reset — model fit measures the real text box.
+    gsap.set(textTargets, { y: 0, opacity: 0 });
+    await tick();
+
+    if (next) {
+      await Promise.all([
+        applyTopicsScale(true, true),
+        gsap.to(textTargets, { opacity: 1, duration: 0.46, ease: 'power2.out' }),
+        (async () => {
+          await cardStack?.animateIn();
+          syncCommentsScrollMask();
+        })()
+      ]);
+    } else {
+      await Promise.all([
+        applyTopicsScale(true, false),
+        gsap.to(textTargets, { opacity: 1, duration: 0.46, ease: 'power2.out' })
+      ]);
+    }
 
     textFading = false;
     cardsScrollAnimating = false;
@@ -756,6 +773,11 @@ function exitTopicsMode() {
     currentTopic;
     mobileCardsVisible;
     scheduleTopicsModelFit();
+    if (mobileCardsVisible) {
+      void tick().then(syncCommentsScrollMask);
+    } else {
+      commentsAtScrollEnd = true;
+    }
   });
 
   $effect(() => {
@@ -1194,7 +1216,13 @@ function exitTopicsMode() {
 
       <div class="stage__right" class:no-pointer={phase !== 'topics'} bind:this={stageRightEl}>
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
-        <div class="stage__right-scroll" data-lenis-prevent bind:this={cardsScrollRef}>
+        <div
+          class="stage__right-scroll"
+          class:is-scroll-end={commentsAtScrollEnd}
+          data-lenis-prevent
+          bind:this={cardsScrollRef}
+          onscroll={onCommentsScroll}
+        >
           <CardStack
             bind:api={cardStack}
             comments={shuffledComments[currentTopic]}
@@ -1538,7 +1566,13 @@ function exitTopicsMode() {
       mask-image: linear-gradient(
         to bottom, #000 calc(100% - var(--spacing-section-comments-fade)), transparent 100%
       );
-}
+    }
+
+    /* At scroll bottom the last card keeps a crisp edge (no fade on nothing). */
+    .stage.m-cards-visible .stage__right-scroll.is-scroll-end {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
 
 .continue__label {
       font: var(--text-caption-font);
