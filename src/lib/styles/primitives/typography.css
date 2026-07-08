@@ -14,8 +14,8 @@
 @font-face {
   font-family: 'Supreme';
   src:
-    url('/fonts/SupremeVariable.ttf') format('truetype-variations'),
-    url('/fonts/SupremeVariable.ttf') format('truetype');
+    url('/fonts/SupremeVariable.ttf?v=2') format('truetype'),
+    url('/fonts/SupremeVariable.ttf?v=2') format('truetype-variations');
   font-weight: 100 800;
   font-style: normal;
   font-display: swap;
@@ -24,8 +24,8 @@
 @font-face {
   font-family: 'PP Formula Condensed';
   src:
-    url('/fonts/PPFormulaCondensedVariable.ttf') format('truetype-variations'),
-    url('/fonts/PPFormulaCondensedVariable.ttf') format('truetype');
+    url('/fonts/PPFormulaCondensedVariable.ttf?v=2') format('truetype'),
+    url('/fonts/PPFormulaCondensedVariable.ttf?v=2') format('truetype-variations');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
