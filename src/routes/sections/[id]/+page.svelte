@@ -1946,6 +1946,16 @@ function exitTopicsMode() {
     animation: continue-bounce 1.6s ease-in-out infinite;
   }
 
+  /* Mobile mode A (expanded text, no comments): show ONLY the down arrow, not the
+     "Continua" label — a disabled text label there looked off. The arrow keeps its
+     centered position and still disables with the button. Mode B (.m-cards-visible)
+     restores the full label + arrow. .continue is a sibling that follows .stage. */
+  @media (max-width: 768px) {
+    .stage:not(.m-cards-visible) ~ .continue .continue__label {
+      display: none;
+    }
+  }
+
   .feedback {
     position: absolute;
     inset: 0;
