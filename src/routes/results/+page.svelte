@@ -14,11 +14,11 @@
   // Fixed mountain view used as the page background (no whiteout in this range)
   const RESULT_MOUNTAIN_PROGRESS = 0.15;
 
-  // Per-model fit factor — tuned so all three read balanced and slightly larger.
+  // Per-model fit factor, tuned by eye so the three read balanced
   const FIT_FACTOR: Record<SectionId, number> = {
-    sustainability: 0.98,
-    sport: 1.18,
-    infrastructure: 1.12
+    sustainability: 0.80,
+    sport:  1.0,
+    infrastructure: 0.98
   };
 
   // OpinionState -> model file variant (same scheme as the section page)
@@ -170,35 +170,28 @@
 
   .results__models {
     position: fixed;
-    inset: 0;
+    left: 50%;
+    top: 38%; /* lifted up */
+    transform: translate(-50%, -50%);
     z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: clamp(12px, 2vw, var(--spacing-md));
-    width: 100%;
-    max-width: min(1320px, 94vw);
-    height: min(78vh, 820px);
-    margin: auto;
-    padding: 0 var(--page-gutter);
-    box-sizing: border-box;
+    gap: var(--spacing-md);
+    width: min(1320px, 94vw);
+    height: min(66vh, 720px);
     pointer-events: none;
   }
 
   .results__model {
-    flex: 1 1 0;
+    flex: 1;
     height: 100%;
     min-width: 0;
-    max-width: 33%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     pointer-events: auto;
   }
 
-  .results__model :global(.model-viewer) {
-    width: 100%;
-    height: 100%;
+  .results__model:first-child {
+    transform: translateX(3vw); /* nudge the plant toward the others, without resizing */
   }
 
   .results__quote {
@@ -279,25 +272,5 @@
     color: var(--color-text-primary);
     font-weight: var(--font-weight-bold);
     opacity: 1;
-  }
-
-  @media (max-width: 768px) {
-    .results__models {
-      height: min(62vh, 560px);
-      max-width: 96vw;
-      gap: 8px;
-      padding-top: 8vh;
-      padding-bottom: 0;
-    }
-
-    .results__quote {
-      bottom: 200px;
-      font-size: clamp(16px, 4.1vw, 22px);
-    }
-
-    .results__ctas {
-      flex-direction: column;
-      gap: var(--spacing-sm);
-    }
   }
 </style>
