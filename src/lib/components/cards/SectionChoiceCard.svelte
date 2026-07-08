@@ -14,6 +14,7 @@
 <script lang="ts">
   import CardModel from '$lib/components/cards/CardModel.svelte';
   import type { Section } from '$lib/types';
+  import { homeDarkModeEnabled } from '$lib/stores/theme';
 
   interface Props {
     section: Section;
@@ -24,6 +25,7 @@
 
   let computedHref = $derived(href ?? `/sections/${section.id}`);
   let isHovered = $state(false);
+  let isHomeDark = $derived($homeDarkModeEnabled);
 </script>
 
 <article
@@ -38,7 +40,12 @@
     <div class="section-choice-card__object" aria-hidden="true">
       <div class="section-choice-card__glow" aria-hidden="true"></div>
       <div class="section-choice-card__scene">
-        <CardModel src={section.glbPath} paused={isHovered} fitFactor={section.cardFitFactor} />
+        <CardModel
+          src={section.glbPath}
+          paused={isHovered}
+          fitFactor={section.cardFitFactor}
+          theme={isHomeDark ? 'dark' : 'light'}
+        />
       </div>
     </div>
 
@@ -256,5 +263,10 @@
     .section-choice-card__title {
       text-shadow: 0 0 18px rgba(255, 255, 255, 0.9), 0 0 6px rgba(255, 255, 255, 0.9);
     }
+  }
+
+  :global(body.theme-dark-home) .section-choice-card__surface {
+    background: rgba(0, 0, 0, 0.46);
+    border: 2px solid var(--color-text-primary);
   }
 </style>

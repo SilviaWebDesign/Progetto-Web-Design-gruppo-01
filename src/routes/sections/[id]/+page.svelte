@@ -13,7 +13,7 @@
 -->
 
 <script lang="ts">
-  import { onMount, tick, untrack } from 'svelte';
+  import { onMount, tick, untrack, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
   import { afterNavigate, goto } from '$app/navigation';
   import gsap from 'gsap';
@@ -38,12 +38,25 @@
   import type { PageData } from './$types';
   import { overlayVisible } from '$lib/stores/pageTransition';
   import { sectionState } from '$lib/stores/sectionState';
+  import { homeDarkModeEnabled } from '$lib/stores/theme';
 
   interface Props {
     data: PageData;
   }
   let { data }: Props = $props();
   let section = $derived(data.section);
+
+  const isHomeDarkMode = $derived($homeDarkModeEnabled);
+
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('theme-dark-sections', isHomeDarkMode);
+  });
+
+  onDestroy(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.remove('theme-dark-sections');
+  });
 
   let scrollArea = $state<HTMLDivElement | null>(null);
   let sceneEl = $state<HTMLDivElement | null>(null);
@@ -1439,6 +1452,7 @@ function exitTopicsMode() {
     <div class="layer layer--model">
       <Scene3D
         modelSrc={section.glbPath}
+        theme={isHomeDarkMode ? 'dark' : 'light'}
         fitFactor={section.modelFitFactor}
         resultScale={section.resultScale}
         resultPaths={resultPaths}
@@ -1566,6 +1580,11 @@ function exitTopicsMode() {
     background-position: center;
     opacity: 0.10;
     pointer-events: none;
+  }
+
+  /* Dark sections: put the background image in "negative". */
+  :global(body.theme-dark-sections) .layer--bg {
+    filter: grayscale(1) invert(1);
   }
 
   .layer--frost {

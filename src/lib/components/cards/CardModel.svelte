@@ -9,9 +9,10 @@
     paused?: boolean; // stop auto-rotation (e.g. on hover)
     tilt?: number; // camera elevation in radians (slight view from above)
     fitFactor?: number; // how much of the frame the model fills (0..1)
+    theme?: 'light' | 'dark';
   }
 
-  let { src, paused = false, tilt = 0.22, fitFactor = 0.65 }: Props = $props();
+  let { src, paused = false, tilt = 0.22, fitFactor = 0.65, theme = 'light' }: Props = $props();
 
   // gray metallic look (matches the prototype card object)
   const MATERIAL_COLOR = 0x8a8d94;
@@ -46,17 +47,36 @@
     object.position.sub(center);
   }
 
+  function modelColorHex(): number {
+    return theme === 'dark' ? 0xffffff : MATERIAL_COLOR;
+  }
+
+  function modelMetalness(): number {
+    return theme === 'dark' ? 0.0 : MATERIAL_METALNESS;
+  }
+
+  function modelRoughness(): number {
+    return theme === 'dark' ? 0.35 : MATERIAL_ROUGHNESS;
+  }
+
   function applyMetallic(object: THREE.Object3D) {
     object.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       mesh.material = new THREE.MeshStandardMaterial({
-        color: MATERIAL_COLOR,
-        metalness: MATERIAL_METALNESS,
-        roughness: MATERIAL_ROUGHNESS
+        color: modelColorHex(),
+        metalness: modelMetalness(),
+        roughness: modelRoughness()
       });
     });
   }
+
+  $effect(() => {
+    // Force dependency tracking on `theme` so materials update when toggling.
+    void theme;
+    if (!modelRoot) return;
+    applyMetallic(modelRoot);
+  });
 
   function setupLights(s: THREE.Scene) {
     s.add(new THREE.AmbientLight(0xe8eaef, 0.6));
