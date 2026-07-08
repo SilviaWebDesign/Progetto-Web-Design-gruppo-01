@@ -1,9 +1,9 @@
 <script>
-  import FactCard from './FactCard.svelte';
-  import { getHotspotPathIndex, ABOUT_HOTSPOT_PATH } from './aboutHotspots.js';
+  import FactCard from '$lib/components/about/FactCard.svelte';
+  import { getHotspotPathIndex, ABOUT_HOTSPOT_PATH } from '$lib/components/3d/aboutHotspots.js';
 
   /** @type {{
-   *   hotspot: import('./aboutHotspots.js').AboutHotspot;
+   *   hotspot: import('$lib/components/3d/aboutHotspots.js').AboutHotspot;
    *   onprev?: () => void;
    *   onnext?: () => void;
    * }} */

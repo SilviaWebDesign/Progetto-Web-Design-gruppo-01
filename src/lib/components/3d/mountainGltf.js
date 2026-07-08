@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { createGltfLoader } from '$lib/utils/gltf';
 
-export const MOUNTAIN_GLB_URL = '/oggetti/snow_mountain.glb';
+export const MOUNTAIN_GLB_URL = '/models/snow-mountain.glb';
 /** Rotazione sul piano orizzontale (asse Y), in radianti — leggermente a destra rispetto a 90° */
 export const MOUNTAIN_ROTATION_Y = Math.PI / 2 + 0.12;
 
@@ -21,7 +21,7 @@ export function preloadMountainGltf() {
 
   if (!loadPromise) {
     loadPromise = new Promise((resolve, reject) => {
-      const loader = new GLTFLoader();
+      const loader = createGltfLoader();
       loader.load(MOUNTAIN_GLB_URL, resolve, undefined, (err) => {
         loadPromise = null;
         reject(err);

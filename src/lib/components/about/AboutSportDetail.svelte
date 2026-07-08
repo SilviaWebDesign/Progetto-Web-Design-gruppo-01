@@ -1,9 +1,9 @@
 <script>
   import { tick, onMount } from 'svelte';
-  import { getHotspotPathIndex, ABOUT_HOTSPOT_PATH } from './aboutHotspots.js';
+  import { getHotspotPathIndex, ABOUT_HOTSPOT_PATH } from '$lib/components/3d/aboutHotspots.js';
 
   /** @type {{
-   *   hotspot: import('./aboutHotspots.js').AboutHotspot;
+   *   hotspot: import('$lib/components/3d/aboutHotspots.js').AboutHotspot;
    *   onclose: () => void;
    *   onnext?: () => void;
    * }} */
@@ -253,6 +253,8 @@
   >
     <div
       class="sport-panel-scroll"
+      role="region"
+      aria-labelledby="sport-detail-title"
       bind:this={scrollEl}
       onscroll={syncSlider}
       onwheel={onPanelWheel}

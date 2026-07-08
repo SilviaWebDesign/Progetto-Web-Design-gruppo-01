@@ -1,18 +1,17 @@
 <script>
   import { onMount } from 'svelte';
-  import ExplorableMountainScene from '$lib/materiali-home/ExplorableMountainScene.svelte';
-  import AboutSportDetail from '$lib/materiali-home/AboutSportDetail.svelte';
-  import AboutHotspotCard from '$lib/materiali-home/AboutHotspotCard.svelte';
-  import Navbar from '$lib/materiali-home/Navbar.svelte';
-  import AboutFooter from '$lib/materiali-home/AboutFooter.svelte';
-  import { preloadMountainGltf } from '$lib/materiali-home/mountainGltf.js';
-  import { getNextHotspot, getPrevHotspot } from '$lib/materiali-home/aboutHotspots.js';
+  import ExplorableMountainScene from '$lib/components/3d/ExplorableMountainScene.svelte';
+  import AboutSportDetail from '$lib/components/about/AboutSportDetail.svelte';
+  import AboutHotspotCard from '$lib/components/cards/AboutHotspotCard.svelte';
+  import AboutFooter from '$lib/components/layout/AboutFooter.svelte';
+  import { preloadMountainGltf } from '$lib/components/3d/mountainGltf.js';
+  import { getNextHotspot, getPrevHotspot } from '$lib/components/3d/aboutHotspots.js';
   import { overlayVisible } from '$lib/stores/pageTransition';
   import { browser } from '$app/environment';
 
-  /** @type {import('$lib/materiali-home/aboutHotspots.js').AboutHotspot | null} */
+  /** @type {import('$lib/components/3d/aboutHotspots.js').AboutHotspot | null} */
   let selectedHotspot = $state(null);
-  /** @type {import('$lib/materiali-home/aboutHotspots.js').AboutHotspot | null} */
+  /** @type {import('$lib/components/3d/aboutHotspots.js').AboutHotspot | null} */
   let hoveredHotspot = $state(null);
   let introDismissed = $state(false);
   let introProgress = $state(0);
@@ -234,8 +233,6 @@
     <AboutFooter enabled bind:visible={footerVisible} bind:height={footerHeight} />
   {/if}
 </div>
-
-<Navbar alwaysVisible />
 
 <style>
   .about-page {

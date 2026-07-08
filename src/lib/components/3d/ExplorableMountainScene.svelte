@@ -44,7 +44,7 @@
     updateMarkerParticlePulse,
     updateMarkerParticleScatter,
     resetMarkerParticleScatter
-  } from './aboutMarkerModels.js';
+  } from '$lib/components/about/aboutMarkerModels.js';
 
   const FOCUS_CAMERA_ZOOM = 1.08;
   /** Su mobile: quasi nessuno zoom aggiuntivo al focus. */

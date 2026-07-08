@@ -1,5 +1,5 @@
 <script>
-  /** @type {{ hotspot: import('./aboutHotspots.js').AboutHotspot }} */
+  /** @type {{ hotspot: import('$lib/components/3d/aboutHotspots.js').AboutHotspot }} */
   let { hotspot } = $props();
 
   const title = $derived(hotspot.title ?? hotspot.label);
