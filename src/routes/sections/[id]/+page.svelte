@@ -106,7 +106,10 @@
   }
 
   // Toggle mobile topics A/B: topic-style crossfade + instant layout/scale while hidden.
-  async function setMobileCards(next: boolean) {
+  // `applyChange` (optional) runs a topic change WHILE the text is faded out, so
+  // "scroll up from topic N" can land on topic N-1 already in mode B with a SINGLE
+  // crossfade (no mode-A flash / scattino). Without it, behaves exactly as before.
+  async function setMobileCards(next: boolean, applyChange?: () => void) {
     if (next === mobileCardsVisible || textFading || cardsScrollAnimating) return;
     textFading = true;
     cardsScrollAnimating = true;
@@ -128,6 +131,12 @@
         ease: 'power2.in'
       });
       mobileCardsVisible = true;
+      if (applyChange) {
+        // topic changed while invisible → the previous topic lands fresh in mode B
+        applyChange();
+        if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
+        cardStack?.resetHidden();
+      }
     } else {
       // B→A: same crossfade as topic change (no card slide-out).
       await gsap.to([textTargets, cardTargets], {
@@ -219,8 +228,12 @@
       if (!mobileCardsVisible && currentTopic > 0) {
         wheelLock = true;
         // Error prevention: land on the previous topic already in mode B (its comments),
-        // not in mode A — otherwise scrolling up feels like it "lost" the comments.
-        void goPrev().then(() => setMobileCards(true)).finally(() => {
+        // not in mode A. Single crossfade — the topic change happens inside
+        // setMobileCards' fade-out, so there's no mode-A flash / scattino.
+        void setMobileCards(true, () => {
+          scene3d?.resetPulse();
+          currentTopic -= 1;
+        }).finally(() => {
           setTimeout(() => { wheelLock = false; }, 1000);
         });
         return;
@@ -586,7 +599,10 @@
   }
 
   async function goNext() {
-    if (!anyLiked || isTransitioning) return;
+    // Mobile mode A: the CTA is active by default (no like needed to advance).
+    // Everywhere else the like-gate stays (you must like before continuing).
+    const likeRequired = !($isMobile && !mobileCardsVisible);
+    if ((likeRequired && !anyLiked) || isTransitioning) return;
     if (currentTopic === lastTopic) {
       enterFeedbackPhase();
       return;
@@ -1523,7 +1539,7 @@ function exitTopicsMode() {
     <button
       class="continue"
       class:is-visible={phase === 'topics'}
-      disabled={!anyLiked}
+      disabled={$isMobile && !mobileCardsVisible ? false : !anyLiked}
       onclick={goNext}
       aria-label={currentTopic === lastTopic ? 'Conferma le tue scelte' : 'Continua al prossimo argomento'}
     >
@@ -1944,16 +1960,6 @@ function exitTopicsMode() {
 
   .continue.is-visible:not(:disabled) .continue__arrow {
     animation: continue-bounce 1.6s ease-in-out infinite;
-  }
-
-  /* Mobile mode A (expanded text, no comments): show ONLY the down arrow, not the
-     "Continua" label — a disabled text label there looked off. The arrow keeps its
-     centered position and still disables with the button. Mode B (.m-cards-visible)
-     restores the full label + arrow. .continue is a sibling that follows .stage. */
-  @media (max-width: 768px) {
-    .stage:not(.m-cards-visible) ~ .continue .continue__label {
-      display: none;
-    }
   }
 
   .feedback {
