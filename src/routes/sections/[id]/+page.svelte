@@ -290,6 +290,23 @@
     scene3d?.setRotationY(0);
   }
 
+  /** Clear GSAP inline state on the topics stage so a later re-entry can animate in cleanly. */
+  function teardownTopicsStageForExit() {
+    gsap.killTweensOf([
+      '.stage__text',
+      '.stage__heading',
+      '.continue',
+      '.card-stack__item'
+    ]);
+    cardStack?.resetHidden();
+    gsap.set('.stage__text', { opacity: 0, y: 8 });
+    if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
+    gsap.set(['.stage__text', '.stage__heading', '.card-stack__item'], {
+      clearProps: 'opacity,transform'
+    });
+    gsap.set('.continue', { clearProps: 'opacity' });
+  }
+
   // Mobile topics 3D fit: bottom third for the model in mode A; model anchored low in its band.
   const TOPICS_MODEL_MARGIN = 20;
   const MOBILE_MODEL_BOTTOM_MARGIN = 16;
@@ -574,11 +591,16 @@
   function enterTopicsMode() {
     if (phase !== 'intro' || suppressTopicsEnter) return;
     phase = 'topics';
+    isTransitioning = false;
+    textFading = false;
+    cardsScrollAnimating = false;
     resetMobileTopicLayout();
     topicsScaleTween.value = topicsScaleTarget(false);
     get(lenisStore)?.stop();
     scene3d?.setTransitionProgress(1);
-    scene3d?.lockMobileFit();
+    if (get(isMobile)) scene3d?.lockMobileFit();
+    gsap.killTweensOf(['.stage__text', '.stage__heading', '.card-stack__item', '.continue']);
+    cardStack?.resetHidden();
     gsap.set('.stage__text', { opacity: 0, y: 8 });
     if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
     void (async () => {
@@ -597,21 +619,25 @@
 
 function exitTopicsMode() {
     if (phase !== 'topics') return;
+    isTransitioning = false;
+    textFading = false;
+    cardsScrollAnimating = false;
     phase = 'intro';
     scene3d?.clearMobileFit();
-    gsap.set('.stage__text', { opacity: 0, y: 8 });
-    if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
+    teardownTopicsStageForExit();
     get(lenisStore)?.start();
   }
 
   async function exitTopicsToIntro() {
-    if (phase !== 'topics' || isTransitioning) return;
+    if (phase !== 'topics') return;
     isTransitioning = true;
+    textFading = false;
+    cardsScrollAnimating = false;
     suppressTopicsEnter = true;
     resetMobileTopicLayout();
     phase = 'intro';
     scene3d?.clearMobileFit();
-    gsap.set('.stage__text, .stage__heading', { opacity: 0, clearProps: 'transform' });
+    teardownTopicsStageForExit();
 
     const lenis = get(lenisStore);
     lenis?.start();
@@ -757,14 +783,7 @@ function exitTopicsMode() {
     phase = 'intro';
     syncIntroSceneBaseline();
     scene3d?.resetOrientation();
-    cardStack?.resetHidden();
-
-    gsap.set('.stage__text', { opacity: 0, y: 8 });
-    if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
-    gsap.set(['.stage__text', '.stage__heading', '.card-stack__item'], {
-      clearProps: 'opacity,transform'
-    });
-    gsap.set('.continue', { clearProps: 'opacity' });
+    teardownTopicsStageForExit();
     await tick();
 
     const lenis = get(lenisStore);
@@ -957,7 +976,6 @@ function exitTopicsMode() {
             // Keep scrubbing while rewinding; only block auto-enter into topics.
             if (suppressTopicsEnter) return;
             if (progress >= 0.999) enterTopicsMode();
-            else if (particleT < 1 && phase === 'topics' && !get(isMobile)) exitTopicsMode();
           },
           onLeaveBack: () => {
             syncIntroSceneBaseline();
