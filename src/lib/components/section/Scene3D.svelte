@@ -46,6 +46,8 @@
     morphToResult: (path: string, onDone: () => void) => void;
     /** Abort an in-flight result morph without firing its onDone callback. */
     cancelMorph: () => void;
+    /** Re-fit the result model to the current layout (fonts/resize/orientation). */
+    reframeResult: () => void;
     returnToParticles: () => void;
     setMobileFit: (topPx: number, bottomPx: number, options?: MobileFitOptions) => void;
     setMobileLayoutBlend: (t: number) => void;
@@ -329,6 +331,9 @@
       },
       preloadResultModels,
       morphToResult,
+      reframeResult: () => {
+        if (currentResultGroup) frameResultGroup(currentResultGroup);
+      },
       cancelMorph: () => {
         morphDoneCallback = null;
         morphState = 'none';
@@ -764,30 +769,18 @@
     return { topFrac, bottomFrac };
   }
 
-  function buildResultGroup(source: THREE.Group): THREE.Group | null {
-    if (!camera || !modelGroup) return null;
+  const RESULT_BOX_FILL = 0.9; // how much of the box height the model fills
+  const RESULT_BOX_WIDTH_FILL = 0.86; // how much of the screen width it may use
+  const RESULT_BOX_LIFT = 0; // optional optical nudge (fraction of viewport height)
 
-    // Outer group = placed in the box and scaled. Inner = the geometry, shifted so its
-    // visual centre sits on the outer group's origin. Without this the spinner rotates
-    // an off-centre group, so the model ORBITS instead of spinning in place — which is
-    // why its position looked different (and never right) at every angle.
-    const resultGroup = new THREE.Group();
-    const inner = source.clone();
-    resultGroup.add(inner);
-    resultGroup.updateMatrixWorld(true);
+  /** The result group currently in the scene, so it can be re-framed on layout change. */
+  let currentResultGroup: THREE.Group | null = null;
 
-    const RESULT_BOX_FILL = 0.9; // how much of the box height the model fills
-    const RESULT_BOX_WIDTH_FILL = 0.86; // how much of the screen width it may use
-    const RESULT_BOX_LIFT = 0; // optional optical nudge (fraction of viewport height)
-
-    // measure in local units (scale is still 1 here)
-    const box = new THREE.Box3().setFromObject(inner);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-
-    // the model spins around Y, so its worst-case horizontal extent is the XZ diagonal
-    const horizExtent = Math.max(Math.hypot(size.x, size.z), 1e-6);
-    const vertExtent = Math.max(size.y, 1e-6);
+  /** (Re)compute scale + position of a result group from the CURRENT layout. */
+  function frameResultGroup(group: THREE.Group) {
+    if (!camera) return;
+    const horizExtent = (group.userData.horizExtent as number) || 1;
+    const vertExtent = (group.userData.vertExtent as number) || 1;
 
     const fov = camera.fov * (Math.PI / 180);
     const visibleH = 2 * Math.tan(fov / 2) * camera.position.z; // world height at z = 0
@@ -805,9 +798,34 @@
         (visibleW * RESULT_BOX_WIDTH_FILL) / horizExtent
       ) * resultScale;
 
-    resultGroup.scale.setScalar(scale);
+    group.scale.setScalar(scale);
+    group.position.set(0, worldCenterY + RESULT_BOX_LIFT * visibleH, 0);
+  }
+
+  function buildResultGroup(source: THREE.Group): THREE.Group | null {
+    if (!camera || !modelGroup) return null;
+
+    // Outer group = placed in the box and scaled. Inner = the geometry, shifted so its
+    // visual centre sits on the outer group's origin. Without this the spinner rotates
+    // an off-centre group, so the model ORBITS instead of spinning in place — which is
+    // why its position looked different (and never right) at every angle.
+    const resultGroup = new THREE.Group();
+    const inner = source.clone();
+    resultGroup.add(inner);
+    resultGroup.updateMatrixWorld(true);
+
+    // measure in local units (scale is still 1 here)
+    const box = new THREE.Box3().setFromObject(inner);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    // the model spins around Y, so its worst-case horizontal extent is the XZ diagonal
+    resultGroup.userData.horizExtent = Math.max(Math.hypot(size.x, size.z), 1e-6);
+    resultGroup.userData.vertExtent = Math.max(size.y, 1e-6);
+
     inner.position.sub(center); // recentre the geometry on the rotation pivot
-    resultGroup.position.set(0, worldCenterY + RESULT_BOX_LIFT * visibleH, 0);
+    frameResultGroup(resultGroup); // scale + place from the current layout
+    currentResultGroup = resultGroup;
 
     resultModelMaterials = [];
     resultGroup.traverse((node) => {

@@ -738,6 +738,10 @@ function exitTopicsMode() {
         gsap.fromTo('.feedback__heading', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' });
         gsap.fromTo('.feedback__body', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.15 });
         gsap.fromTo('.feedback__cta', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.25 });
+        // The model was built BEFORE these texts entered the DOM, so it was framed
+        // against a fallback box. Re-frame it against the real layout now — this is what
+        // previously required a page reload to look right.
+        requestAnimationFrame(() => requestAnimationFrame(() => scene3d?.reframeResult()));
       });
     });
   }
@@ -1317,7 +1321,9 @@ function exitTopicsMode() {
     }
 
     const onFeedbackResize = () => {
-      if (phase === 'feedback') fitFeedbackBody();
+      if (phase !== 'feedback') return;
+      fitFeedbackBody(); // may move the body, so re-frame the model after it
+      scene3d?.reframeResult();
     };
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('resize', onFeedbackResize);
