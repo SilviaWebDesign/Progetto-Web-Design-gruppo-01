@@ -280,6 +280,16 @@
   const INTRO_PHRASE_BEAT = 0.75;
   const INTRO_SCROLL_COMMIT = 1.65;
 
+  /** Reset the 3D scene to the pre-reveal intro baseline (hidden model, no particles). */
+  function syncIntroSceneBaseline() {
+    scene3d?.setTransitionProgress(0);
+    scene3d?.setMobileLayoutBlend(0);
+    scene3d?.setOpacity(0);
+    scene3d?.setScale(INTRO_MODEL_SCALE);
+    scene3d?.setPositionY(INTRO_MODEL_Y_OFFSET);
+    scene3d?.setRotationY(0);
+  }
+
   // Mobile topics 3D fit: bottom third for the model in mode A; model anchored low in its band.
   const TOPICS_MODEL_MARGIN = 20;
   const MOBILE_MODEL_BOTTOM_MARGIN = 16;
@@ -601,7 +611,6 @@ function exitTopicsMode() {
     resetMobileTopicLayout();
     phase = 'intro';
     scene3d?.clearMobileFit();
-    scene3d?.setMobileLayoutBlend(0);
     gsap.set('.stage__text, .stage__heading', { opacity: 0, clearProps: 'transform' });
 
     const lenis = get(lenisStore);
@@ -612,15 +621,20 @@ function exitTopicsMode() {
 
     await new Promise<void>((resolve) => {
       lenis?.scrollTo(targetY, {
-        duration: 0.9,
+        duration: 0.85,
         force: true,
         onComplete: () => {
-          scene3d?.setTransitionProgress(0);
-          scene3d?.setScale(INTRO_MODEL_SCALE);
+          syncIntroSceneBaseline();
           ScrollTrigger.update();
-          isTransitioning = false;
-          suppressTopicsEnter = false;
-          resolve();
+          requestAnimationFrame(() => {
+            ScrollTrigger.update();
+            isTransitioning = false;
+            // Brief guard so a parked scroll position cannot bounce back into topics.
+            setTimeout(() => {
+              suppressTopicsEnter = false;
+            }, 450);
+            resolve();
+          });
         }
       });
     });
@@ -726,9 +740,7 @@ function exitTopicsMode() {
       topicLikes = section.topics.map(() => ({}));
       progress.clearSection(section.id);
       phase = 'intro';
-      scene3d?.setScale(INTRO_MODEL_SCALE); // reset from TOPICS_SCALE so the intro model isn't stuck small
-      scene3d?.setTransitionProgress(0);
-      scene3d?.setMobileLayoutBlend(0);
+      syncIntroSceneBaseline();
       scene3d?.resetOrientation(); // reset any rotation done in the feedback (S5)
       gsap.set('.stage__text', { opacity: 0, y: 8 });
       if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
@@ -923,20 +935,18 @@ function exitTopicsMode() {
           end: 'bottom bottom',
           scrub: 1.2,
           onUpdate: (self) => {
-            // Ignore the auto-enter while rewinding to the intro: the scroll can
-            // still be parked near the bottom (progress ~1) and would bounce us
-            // straight back into topics (jumps / lock / ghost CTA).
-            if (returningToStart || suppressTopicsEnter) return;
+            if (returningToStart) return;
             const progress = self.progress;
             const particleT = particleProgressFromScroll(progress);
             scene3d?.setTransitionProgress(particleT);
             updateTopicsScrollLayout(particleT);
+            // Keep scrubbing while rewinding; only block auto-enter into topics.
+            if (suppressTopicsEnter) return;
             if (progress >= 0.999) enterTopicsMode();
             else if (particleT < 1 && phase === 'topics' && !get(isMobile)) exitTopicsMode();
           },
           onLeaveBack: () => {
-            scene3d?.setTransitionProgress(0);
-            scene3d?.setMobileLayoutBlend(0);
+            syncIntroSceneBaseline();
             exitTopicsMode();
           }
         }
@@ -1042,8 +1052,8 @@ function exitTopicsMode() {
     let touchLastY = 0;
 
     // --- intro snap: settle the frost/phrase scroll onto rest beats ---
-    const INTRO_SNAP_IDLE_MS = 150;
-    const INTRO_COMMIT_FRAC = 0.2;
+    const INTRO_SNAP_IDLE_MS = 180;
+    const INTRO_COMMIT_FRAC = 0.12;
     let introSnapTimer: ReturnType<typeof setTimeout> | null = null;
     let introDir = 1; // last intro wheel direction: 1 = down, -1 = up
 
@@ -1078,11 +1088,9 @@ function exitTopicsMode() {
         const progress = (y - title) / (phraseY - title || 1); // 0..1 within the gap
         if (introDir > 0) {
           target = progress > INTRO_COMMIT_FRAC ? phraseY : title;
-        } else if (y >= phraseY - 8) {
-          // At the phrase beat, swipe up always returns to the title.
-          target = title;
         } else {
-          target = progress < 1 - INTRO_COMMIT_FRAC ? title : phraseY;
+          // Swiping up between title and phrase always settles on the title.
+          target = title;
         }
       } else {
         // past the phrase, in the run-up to the 3D reveal:
@@ -1214,31 +1222,6 @@ function exitTopicsMode() {
 
     function onTouchEnd(e: TouchEvent) {
       if (phase === 'intro') {
-        if (e.changedTouches.length === 1) {
-          const touch = e.changedTouches[0];
-          const dx = touch.clientX - touchStartX;
-          const dy = touchStartY - touch.clientY;
-          const vh = window.innerHeight;
-          const y = window.scrollY;
-          const phraseY = vh * INTRO_PHRASE_BEAT;
-          const commitY = vh * INTRO_SCROLL_COMMIT;
-
-          if (Math.abs(dy) > MOBILE_SWIPE_THRESHOLD && Math.abs(dy) > Math.abs(dx) && dy > 0) {
-            introDir = -1;
-            const lenis = get(lenisStore);
-            const easing = (t: number) => Math.sin((t * Math.PI) / 2);
-            if (y > commitY) {
-              lenis?.scrollTo(phraseY, { duration: 0.85, easing });
-              if (introSnapTimer) clearTimeout(introSnapTimer);
-              return;
-            }
-            if (y >= phraseY - 12) {
-              lenis?.scrollTo(0, { duration: 0.7, easing });
-              if (introSnapTimer) clearTimeout(introSnapTimer);
-              return;
-            }
-          }
-        }
         if (introSnapTimer) clearTimeout(introSnapTimer);
         introSnapTimer = setTimeout(introSnap, INTRO_SNAP_IDLE_MS);
         return;
