@@ -85,11 +85,19 @@ export const ABOUT_HOTSPOT_PATH = [
     label: 'Partenza',
     title: 'Il progetto',
     template: 'sport',
-    body: `“Quante facce ha una medaglia?” è un progetto realizzato per il Laboratorio di Web e Digital Design, del Corso di Laurea in Design della Comunicazione del Politecnico di Milano. L’obiettivo è quello di creare un’esperienza digitale in grado di raccontare le Olimpiadi Invernali di Milano-Cortina 2026 come spazio narrativo: tra aspettative, pressioni, successi e fallimenti. Atleti, istituzioni e luoghi diventano protagonisti di storie che rendono l’evento sportivo un momento memorabile.
+    body: `“Quante facce ha una medaglia?” è un progetto 
+realizzato per il Laboratorio di Web e Digital Design, 
+del Corso di Laurea in Design della Comunicazione 
+del Politecnico di Milano. L’obiettivo è quello di creare un’esperienza digitale in grado di raccontare 
+le Olimpiadi Invernali di Milano-Cortina 2026 tra aspettative, pressioni, successi e fallimenti. Atleti, istituzioni e luoghi diventano protagonisti di storie 
+che rendono l’evento sportivo un momento memorabile.
 
-“Quante facce ha una medaglia?” nasce come provocazione di fronte al binomio buoni-cattivi, risultato di uno storytelling di intrattenimento che riduce le informazioni a dicotomie e schieramenti estremamente polarizzati. Lo scopo del sito è dimostrare che la formazione di questa polarità non è un processo oggettivo e naturale, ma dipende sempre dal contesto sociale, dalla costruzione mediatica e dal punto di vista di ogni singolo individuo: uno stesso evento può plasmare molteplici realtà, tutte contemporaneamente vere perché interpretazioni di fatti oggettivi.
+Il progetto nasce come provocazione di fronte 
+al binomio buoni-cattivi, risultato di uno storytelling d’intrattenimento che riduce le informazioni a 
+dicotomie polarizzate. Lo scopo del sito è dimostrare 
+che questi schieramenti non sono oggettivi e naturali, ma dipendono sempre dal contesto sociale e dal punto di vista di ogni individuo: uno stesso evento può plasmare molteplici realtà, tutte ugualmente veritiere perché interpretazioni di fatti oggettivi.
 
-L’intento non è quello di chiudere il dibattito sugli “eroi” e i “cattivi” delle Olimpiadi, ma di stimolare una riflessione riguardo al processo di creazione di protagonisti e antagonisti, idoli e capri espiatori, frutto dell’approccio estremizzante della comunicazione di massa.`,
+L’intento non è chiudere il dibattito sugli “eroi” e i “cattivi” delle Olimpiadi, ma di stimolare una riflessione riguardo al processo di creazione di protagonisti e antagonisti, idoli e capri espiatori, frutto dell’approccio estremizzante della comunicazione di massa.`,
     sources: 'fonte placeholder',
     modelSrc: '/oggetti/snowboardlady.glb'
   },
@@ -100,13 +108,30 @@ L’intento non è quello di chiudere il dibattito sugli “eroi” e i “catti
     label: 'Ricerca quantitativa',
     title: 'Ricerca quantitativa',
     template: 'sport',
-    body: `Come primo passaggio di ricerca sociale abbiamo condotto un sondaggio anonimo online, raccogliendo le opinioni di più di 130 soggetti campione, in modo da avere una visione d’insieme su come il pubblico generale ha visto e interpretato gli eventi dei Giochi.
+    body: `Come primo passaggio di ricerca sociale abbiamo condotto
+un sondaggio anonimo online, raccogliendo le opinioni di
+più di 130 soggetti campione, in modo da avere
+una visione d’insieme su come il pubblico medio
+ha interpretato gli eventi dei Giochi.
 
-La maggioranza delle risposte che abbiamo ricevuto provenivano da giovani adulti (18-25 anni) residenti a Milano o in zone di hinterland, questa categoria demografica identifica i soggetti che hanno vissuto sulla propria pelle l’organizzazione e lo svolgimento delle Olimpiadi Invernali senza esserne direttamente coinvolti in prima persona.
+La maggioranza delle risposte provengono da giovani adulti
+(18-25 anni) residenti a Milano o in zone di
+hinterland, categoria demografica che identifica
+i soggetti che hanno vissuto sulla propria pelle l’organizzazione
+e lo svolgimento delle Olimpiadi
+senza esserne coinvolti in prima persona.
 
-I canali di informazione privilegiati sono stati i mezzi di comunicazione di massa (TV, giornali e social media), mentre i contenuti più discussi e ricordati riguardano gare, medaglie, storie personali degli atleti, ma anche proteste e controversie. La maggior parte del campione individuato ha visto i Giochi come portatori di una legacy positiva in ambito infrastrutturale e di immagine pubblica del Paese, mentre l’impatto su ambiente, territorio e residenti delle aree coinvolte è ritenuto critico.
+Gran parte del campione individuato ha visto i Giochi
+come portatori di una legacy positiva in ambito infrastrutturale,
+mentre l’impatto su ambiente
+e territorio è ritenuto critico.
 
-Dal sondaggio sono emersi diversi “eroi” e “cattivi”, individuati tra molteplici categorie. Talvolta, uno stesso soggetto è risultato essere sia positivo che negativo, sulla base delle differenti risposte. Tali dati sono andati a confermare la nostra tesi di duplice natura della realtà, ponendo la base per la realizzazione di questo progetto.`,
+Dal sondaggio sono emersi diversi “eroi” e “cattivi”,
+individuati tra molteplici categorie. Talvolta, uno stesso soggetto
+è risultato essere sia positivo che negativo,
+in base alle differenti risposte. Tali dati hanno
+quindi confermato la nostra tesi di duplice natura della realtà,
+ponendo la base per la realizzazione di questo progetto.`,
     sources: 'fonte placeholder',
     modelSrc: '/oggetti/bobsled.glb'
   },
@@ -117,13 +142,16 @@ Dal sondaggio sono emersi diversi “eroi” e “cattivi”, individuati tra mo
     label: 'Ricerca qualitativa',
     title: 'Ricerca qualitativa',
     template: 'sport',
-    body: `Per comprendere a livello specifico i profili degli utenti e le motivazioni che li hanno spinti a percepire un determinato fatto o soggetto come buono o cattivo abbiamo svolto interviste con diverse persone scelte per rappresentare le idee del campione demografico di riferimento in relazione con le loro posizioni sulle Olimpiadi Milano Cortina 2026, basate sulle diverse categorie di individui emerse dal sondaggio preliminare.
+    body: `Per comprendere a livello specifico i punti di vista 
+degli utenti medi e le motivazioni che li hanno spinti 
+a percepire un determinato soggetto come “buono” 
+o “cattivo”, abbiamo condotto interviste qualitative 
+a individui selezionati per rappresentare gli archetipi emersi dal sondaggio preliminare.
 
-Al fine di creare i commenti relativi ad ogni fatto delle 3 sezioni del sito sono state quindi poste domande aperte a 3 persone tra i 20 e 25 anni residenti a Milano ognuna con un punto di vista diverso sull’evento che volontariamente si sono sottoposte ad un intervista frontale in contesto privato.
+Al fine di redigere le opinioni relative ad ogni argomento presentato sono state quindi poste domande aperte, 
+più specifiche di quelle presenti nel sondaggio, a Chiara, Arianna, e Nicolò: tre giovani adulti tra i 20 e i 25 anni, residenti a Milano, che volontariamente si sono sottoposti ad un’intervista frontale in contesto privato.
 
-In particolare Chiara, attivista e scrittrice laureata in Economia e Scienze Politiche; Arianna, studentessa e sportiva socialmente attiva; Nicolò, studente di ingegneria entusiasta per le opportunità create.
-
-Attraverso le loro risposte abbiamo individuato pensieri e opinioni per ogni evento presentato nel sito in modo tale che l’utente possa confrontare e scegliere tra le diverse posizioni presentate.`,
+Ognuno di loro ci ha presentato una visione diversa dell’evento, in questo modo ogni utente può confrontarle e identificarsi nelle diverse posizioni presentate.`,
     sources: 'fonte placeholder',
     modelSrc: '/oggetti/ice_hockey_player.glb'
   },
@@ -134,16 +162,18 @@ Attraverso le loro risposte abbiamo individuato pensieri e opinioni per ogni eve
     label: 'Divergenza',
     title: 'Chi siamo – Divergenza',
     template: 'sport',
-    body: `“Divergenza” è un gruppo di sei studenti del Politecnico di Milano, al secondo anno del Corso di Laurea in Design della Comunicazione.
+    body: `“Divergenza” è un gruppo di sei studenti del Politecnico 
+di Milano, al secondo anno del Corso di Laurea in Design 
+della Comunicazione.
 
-Crediamo nella duplice essenza del Design: sia emotivo che funzionale. Per noi i progetti di comunicazione visiva, analogici o digitali che siano, hanno il compito di provocare nel fruitore una riflessione, sia interiore che rispetto al mondo che lo circonda.
+Crediamo nella duplice essenza del Design: sia emotivo 
+che funzionale. Per noi i progetti di comunicazione 
+visiva, analogici o digitali che siano, hanno il compito 
+di provocare nel fruitore una riflessione, sia interiore 
+che rispetto al mondo che lo circonda.
 
-Silvia La Mastra: implementazione e coding;
-Chiara Moretti: implementazione e coding;
-Letizia Neri: design system, prototipazione, copywriting;
-Giovanni Palladino: supporto a identità visiva;
-Siyu Yang: supporto a prototipazione;
-Jieni Ye: modellazione 3D.`,
+Silvia La Mastra, Chiara Moretti, Letizia Neri, 
+Giovanni Palladino, Siyu Yang, Jieni Ye.`,
     sources: 'fonte placeholder',
     modelSrc: '/oggetti/scii.glb'
   }
