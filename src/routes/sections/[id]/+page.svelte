@@ -692,16 +692,24 @@ function exitTopicsMode() {
   const FEEDBACK_BODY_MAX_FONT = 24; 
   const FEEDBACK_BODY_MIN_FONT = 14; 
   const FEEDBACK_BODY_LINE_HEIGHT = 1.5;
+  // Mobile: the column is narrow, so allow more lines at a smaller size. With the
+  // desktop 3-line cap the text would shrink to the floor and still overflow.
+  const FEEDBACK_BODY_MAX_LINES_MOBILE = 7;
+  const FEEDBACK_BODY_MAX_FONT_MOBILE = 18;
+  const FEEDBACK_BODY_MIN_FONT_MOBILE = 13;
 
   function fitFeedbackBody() {
     const el = document.querySelector<HTMLElement>('.feedback__body');
     if (!el) return;
-    let fs = FEEDBACK_BODY_MAX_FONT;
+    const mobile = get(isMobile);
+    const maxLines = mobile ? FEEDBACK_BODY_MAX_LINES_MOBILE : FEEDBACK_BODY_MAX_LINES;
+    const minFont = mobile ? FEEDBACK_BODY_MIN_FONT_MOBILE : FEEDBACK_BODY_MIN_FONT;
+    let fs = mobile ? FEEDBACK_BODY_MAX_FONT_MOBILE : FEEDBACK_BODY_MAX_FONT;
     el.style.fontSize = `${fs}px`;
     // step down 1px at a time until it fits in <= max lines or hits the floor
-    while (fs > FEEDBACK_BODY_MIN_FONT) {
+    while (fs > minFont) {
       const lines = Math.round(el.scrollHeight / (fs * FEEDBACK_BODY_LINE_HEIGHT));
-      if (lines <= FEEDBACK_BODY_MAX_LINES) break;
+      if (lines <= maxLines) break;
       fs -= 1;
       el.style.fontSize = `${fs}px`;
     }
@@ -1866,6 +1874,31 @@ function exitTopicsMode() {
     font-size: 24px;
     line-height: 1.5;
     color: var(--color-text-primary);
+  }
+
+  /* ── Mobile (≤768px) feedback: the body is a fixed 1000px column on desktop, which
+     overflows a phone. Make it fluid and use the mobile CTA size. The 3D result is
+     framed by Scene3D's own box constants. ── */
+  @media (max-width: 768px) {
+    .feedback__heading {
+      top: 12vh;
+      width: 100%;
+      padding: 0 var(--page-gutter);
+      box-sizing: border-box;
+      white-space: pre-line; /* let the desktop breaks wrap instead of overflowing */
+    }
+
+    .feedback__body {
+      width: 100%;
+      max-width: none;
+      padding: 0 var(--page-gutter);
+      bottom: calc(var(--cta-bottom) + 64px); /* clears the CTA */
+      text-wrap: pretty;
+    }
+
+    .feedback__cta-label {
+      font-size: clamp(0.75rem, 3.33vw, 0.9rem); /* same as the other mobile CTAs */
+    }
   }
 
   .feedback__cta {
