@@ -88,8 +88,28 @@
 
   let commentsAtScrollEnd = $state(true);
 
+  // C3: custom vertical scrollbar (mobile mode B). Read-only indicator synced to
+  // the comments scroll position; hidden when the list doesn't overflow.
+  let scrollbarTrackEl = $state<HTMLElement | null>(null);
+  let commentsThumbY = $state(0);
+  let commentsScrollable = $state(false);
+
+  function updateCommentsScrollbar() {
+    const el = cardsScrollRef;
+    const track = scrollbarTrackEl;
+    if (!el || !track) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    commentsScrollable = maxScroll > 8;
+    if (!commentsScrollable) { commentsThumbY = 0; return; }
+    // thumb length lives in one place, the CSS knob --sb-thumb-len
+    const thumbLen = parseFloat(getComputedStyle(track).getPropertyValue('--sb-thumb-len')) || 66;
+    const travel = Math.max(0, track.clientHeight - thumbLen);
+    commentsThumbY = (el.scrollTop / maxScroll) * travel;
+  }
+
   function syncCommentsScrollMask() {
     commentsAtScrollEnd = cardsScrollAtBottom();
+    updateCommentsScrollbar();
   }
 
   function onCommentsScroll() {
@@ -1515,22 +1535,36 @@ function exitTopicsMode() {
 
       <div class="stage__right" class:no-pointer={phase !== 'topics'} bind:this={stageRightEl}>
         <h2 class="stage__heading">Metti like alle opinioni con cui sei d'accordo</h2>
-        <div
-          class="stage__right-scroll"
-          class:is-scroll-end={commentsAtScrollEnd}
-          data-lenis-prevent
-          bind:this={cardsScrollRef}
-          onscroll={onCommentsScroll}
-        >
-          <CardStack
-            bind:api={cardStack}
-            comments={shuffledComments[currentTopic]}
-            sectionId={section.id}
-            likes={topicLikes[currentTopic]}
-            onToggleLike={toggleLike}
-            topicId={topic.id}
-            active={phase === 'topics'}
-          />
+        <div class="stage__comments">
+          <div
+            class="stage__right-scroll"
+            class:is-scroll-end={commentsAtScrollEnd}
+            data-lenis-prevent
+            bind:this={cardsScrollRef}
+            onscroll={onCommentsScroll}
+          >
+            <CardStack
+              bind:api={cardStack}
+              comments={shuffledComments[currentTopic]}
+              sectionId={section.id}
+              likes={topicLikes[currentTopic]}
+              onToggleLike={toggleLike}
+              topicId={topic.id}
+              active={phase === 'topics'}
+            />
+          </div>
+
+          <!-- C3: custom vertical scrollbar, mobile mode B only. -->
+          {#if $isMobile && mobileCardsVisible}
+            <div
+              class="stage__scrollbar"
+              class:is-hidden={!commentsScrollable}
+              bind:this={scrollbarTrackEl}
+              aria-hidden="true"
+            >
+              <div class="stage__scrollbar-thumb" style:transform="translateY({commentsThumbY}px)"></div>
+            </div>
+          {/if}
         </div>
       </div>
     </div>
@@ -1855,10 +1889,20 @@ function exitTopicsMode() {
       min-height: 0;
     }
 
-    .stage.m-cards-visible .stage__right-scroll {
+    /* C3: wrapper is layout-transparent by default (desktop unchanged); only in
+       mobile mode B it becomes the flex box + positioning context for the scrollbar. */
+    .stage__comments { display: contents; }
+
+    .stage.m-cards-visible .stage__comments {
+      display: block;
+      position: relative;
       flex: 1;
       min-height: 0;
-      height: auto;
+    }
+
+    .stage.m-cards-visible .stage__right-scroll {
+      height: 100%;               /* fill .stage__comments (was flex:1 directly) */
+      min-height: 0;
       padding: 4px var(--spacing-section-comments-scroll-inset);
       overflow-y: auto;
       overscroll-behavior: contain;
@@ -1871,6 +1915,31 @@ function exitTopicsMode() {
       mask-image: linear-gradient(
         to bottom, #000 calc(100% - var(--spacing-section-comments-fade)), transparent 100%
       );
+    }
+
+    /* C3: custom vertical scrollbar. Track ends where the bottom fade starts (same
+       token as the mask). Figma: 2px track (neutral-200), 66px thumb (neutral-600),
+       rounded ends. Read-only for now (pointer-events:none). */
+    .stage.m-cards-visible .stage__scrollbar {
+      --sb-thumb-len: 66px;                          /* Figma thumb length; tune here */
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: var(--spacing-section-comments-fade);  /* stop where the blur begins */
+      width: 2px;
+      border-radius: var(--radius-pill, 999px);
+      background: var(--neutral-200);
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .stage.m-cards-visible .stage__scrollbar.is-hidden { opacity: 0; }
+
+    .stage.m-cards-visible .stage__scrollbar-thumb {
+      width: 100%;
+      height: var(--sb-thumb-len);
+      border-radius: var(--radius-pill, 999px);
+      background: var(--neutral-600);
+      will-change: transform;
     }
 
     /* At scroll bottom the last card keeps a crisp edge (no fade on nothing). */
