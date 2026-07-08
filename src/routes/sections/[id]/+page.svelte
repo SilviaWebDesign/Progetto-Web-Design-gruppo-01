@@ -125,7 +125,9 @@
     });
   }
 
-  // Toggle mobile topics A/B: topic-style crossfade + instant layout/scale while hidden.
+  // Toggle mobile topics A/B: text crossfade + an eased model glide that
+  // repositions/resizes the model from its start band to the destination band
+  // (computed up-front, then interpolated — like the intro settle).
   // `applyChange` (optional) runs a topic change WHILE the text is faded out, so
   // "scroll up from topic N" can land on topic N-1 already in mode B with a SINGLE
   // crossfade (no mode-A flash / scattino). Without it, behaves exactly as before.
@@ -133,8 +135,6 @@
     if (next === mobileCardsVisible || textFading || cardsScrollAnimating) return;
     textFading = true;
     cardsScrollAnimating = true;
-    scene3d?.unlockMobileFit();
-    scene3d?.setMobileFitLerp(MOBILE_FIT_LERP_ANIMATING);
 
     const textTargets = '.stage__text';
     const cardTargets = '.card-stack__item';
@@ -143,24 +143,13 @@
     const outY = next ? -40 : 40;
     const inY = next ? 40 : -40;
 
-    // Approach A (continuous): glide the model to its new mode scale/position
-    // across the WHOLE crossfade (fade-out + fade-in) so it never freezes then
-    // lunges. Scale eases the whole time; the fit band (position) only re-anchors
-    // once we've flipped to the new mode, so it doesn't chase the sliding text.
-    // Knobs: the two fade durations + the ease below.
-    const modelScaleTarget = topicsScaleTarget(next);
-    gsap.killTweensOf(topicsScaleTween);
-    const modelSettle = gsap.to(topicsScaleTween, {
-      value: modelScaleTarget,
-      duration: fadeOutDuration + fadeInDuration,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        scene3d?.setScale(topicsScaleTween.value);
-        // only re-anchor position after the mode flip (avoids chasing moving text)
-        if (mobileCardsVisible === next) updateTopicsModelFit({ soft: true });
-      }
-    });
+    // Capture where the model STARTS (band + scale of the current mode) before we
+    // touch anything. The fit stays locked so nothing lerps on its own.
+    scene3d?.lockMobileFit();
+    const startBand = computeTopicsModelBand(mobileCardsVisible);
+    const startScale = topicsScaleTween.value;
 
+    // 1) Fade the current content out.
     if (next) {
       await gsap.to(textTargets, {
         opacity: 0,
@@ -187,12 +176,51 @@
       if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
       cardStack?.resetHidden();
     }
-    await tick();
 
+    // 2) New mode's layout is in the DOM now (text at opacity 0, settled at y:0),
+    //    so we can measure the exact DESTINATION band + scale.
     gsap.set(textTargets, { y: 0, opacity: 0 });
-    updateTopicsModelFit({ soft: true }); // re-anchor the fit band for the new mode
     await tick();
+    const endBand = computeTopicsModelBand(mobileCardsVisible);
+    const endScale = topicsScaleTarget(mobileCardsVisible);
 
+    // 3) Glide the model from start→end with ONE eased tween (like the intro
+    //    settle): position + scale interpolated together, fit kept locked so we
+    //    drive spinner.y directly (no constant-rate lerp = no fast-start lunge).
+    //    Knob: MOBILE_MODE_SETTLE_DURATION + the ease.
+    const settle = { t: 0 };
+    gsap.killTweensOf(topicsScaleTween);
+    gsap.killTweensOf(settle);
+    const modelSettle =
+      startBand && endBand
+        ? gsap.to(settle, {
+            t: 1,
+            duration: MOBILE_MODE_SETTLE_DURATION,
+            ease: 'power2.inOut',
+            onUpdate: () => {
+              const k = settle.t;
+              const topPx = startBand.topPx + (endBand.topPx - startBand.topPx) * k;
+              const bottomPx = startBand.bottomPx + (endBand.bottomPx - startBand.bottomPx) * k;
+              const centerBias =
+                startBand.centerBias + (endBand.centerBias - startBand.centerBias) * k;
+              topicsScaleTween.value = startScale + (endScale - startScale) * k;
+              scene3d?.setScale(topicsScaleTween.value);
+              scene3d?.setModelBaseYOffset(0);
+              // fit is locked → setMobileFit snaps spinner.y to this interpolated band
+              scene3d?.setMobileFit(topPx, bottomPx, {
+                centerBias,
+                viewportHeightPx: endBand.vh
+              });
+            }
+          })
+        : gsap.to(topicsScaleTween, {
+            value: endScale,
+            duration: MOBILE_MODE_SETTLE_DURATION,
+            ease: 'power2.inOut',
+            onUpdate: () => scene3d?.setScale(topicsScaleTween.value)
+          });
+
+    // 4) Fade the new content in, concurrently with the model glide.
     if (next) {
       gsap.set('.stage__right', { opacity: 0 });
       gsap.set(cardTargets, { opacity: 0, y: 0 });
@@ -202,8 +230,7 @@
           opacity: 1,
           y: 0,
           duration: fadeInDuration,
-          ease: 'power2.out',
-          onUpdate: () => updateTopicsModelFit({ soft: true })
+          ease: 'power2.out'
         }),
         gsap.to('.stage__right', {
           opacity: 1,
@@ -226,8 +253,7 @@
           opacity: 1,
           y: 0,
           duration: fadeInDuration,
-          ease: 'power2.out',
-          onUpdate: () => updateTopicsModelFit({ soft: true })
+          ease: 'power2.out'
         })
       ]);
     }
@@ -394,6 +420,8 @@
   const MOBILE_TEXT_SCALE_DURATION = 0.52;
   const MOBILE_LAYOUT_PULSE_AMPLITUDE = 0.14;
   const MOBILE_FIT_LERP_ANIMATING = 0.09;
+  // A↔B model reposition/resize glide duration (eased tween, like the intro settle).
+  const MOBILE_MODE_SETTLE_DURATION = 0.55;
   const MOBILE_MODE_B_MODEL_FRACTION = 0.30;
   const MOBILE_MODE_B_COMMENTS_FRACTION = 0.46;
   const MOBILE_MODE_B_MIN_MODEL_BAND = 64;
@@ -499,12 +527,12 @@
     return $isMobile && mobileCardsVisible;
   }
 
-  function updateTopicsModelFit(options: { duringScroll?: boolean; soft?: boolean } = {}) {
-    if (!scene3d || !stageTextEl || phase === 'feedback') return;
-    if (!get(isMobile)) return;
-    if (phase !== 'topics' && !options.duringScroll) return;
+  type ModelBand = { topPx: number; bottomPx: number; centerBias: number; vh: number };
 
-    const cardsActive = topicsCardsActive();
+  // Pure geometry: where the model band sits for a given mode (A = false, B = true).
+  // Single source of truth so both the live fit and the A↔B glide agree.
+  function computeTopicsModelBand(cardsActive: boolean): ModelBand | null {
+    if (!scene3d || !stageTextEl) return null;
     const textRect = stageTextEl.getBoundingClientRect();
     const vh = mobileTopicsViewportHeightPx();
     let topPx: number;
@@ -538,9 +566,22 @@
     }
 
     if (bottomPx - topPx < 48) bottomPx = topPx + 48;
+    return { topPx, bottomPx, centerBias, vh };
+  }
+
+  function updateTopicsModelFit(options: { duringScroll?: boolean; soft?: boolean } = {}) {
+    if (!scene3d || !stageTextEl || phase === 'feedback') return;
+    if (!get(isMobile)) return;
+    if (phase !== 'topics' && !options.duringScroll) return;
+
+    const band = computeTopicsModelBand(topicsCardsActive());
+    if (!band) return;
 
     scene3d.setModelBaseYOffset(0);
-    scene3d.setMobileFit(topPx, bottomPx, { centerBias, viewportHeightPx: vh });
+    scene3d.setMobileFit(band.topPx, band.bottomPx, {
+      centerBias: band.centerBias,
+      viewportHeightPx: band.vh
+    });
     if (options.duringScroll || options.soft) return;
     scene3d.setMobileLayoutBlend(1);
     scene3d.snapMobileFit();
