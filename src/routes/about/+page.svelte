@@ -4,11 +4,15 @@
   import AboutSportDetail from '$lib/components/about/AboutSportDetail.svelte';
   import AboutHotspotCard from '$lib/components/cards/AboutHotspotCard.svelte';
   import AboutFooter from '$lib/components/layout/AboutFooter.svelte';
-  import { preloadMountainGltf } from '$lib/components/3d/mountainGltf.js';
+  import Preloader from '$lib/components/layout/Preloader.svelte';
+  import { preloadAssets } from '$lib/utils/preloadAssets';
   import { getNextHotspot, getPrevHotspot } from '$lib/components/3d/aboutHotspots.js';
   import { overlayVisible } from '$lib/stores/pageTransition';
   import { headerState, resetHeaderState } from '$lib/stores/header';
   import { browser } from '$app/environment';
+
+  const MOUNTAIN_GLB = '/models/snow-mountain.glb';
+  const PRELOAD_MIN_MS = 1400;
 
   /** @type {import('$lib/components/3d/aboutHotspots.js').AboutHotspot | null} */
   let selectedHotspot = $state(null);
@@ -20,6 +24,10 @@
   let isMobileExplore = $state(false);
   let footerVisible = $state(false);
   let footerHeight = $state(0);
+  let preloadProgress = $state(0);
+  let preloading = $state(true);
+  let mountainReady = $state(false);
+  let revealed = $state(false);
 
   let hintVisible = $derived(!!hoveredHotspot && !isMobileExplore);
   let showDesktopFooter = $derived(introDismissed && !isMobileExplore && !selectedHotspot);
@@ -36,7 +44,10 @@
     }
   });
 
-  /** @param {number} value */
+  /** @param {number} value
+   *  @param {number} min
+   *  @param {number} max
+   */
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
   }
@@ -93,7 +104,6 @@
     // About usa una scena "intro" senza scroll reale: forziamo la navbar visibile
     // come nelle altre pagine che non innescano lo scroll globale.
     headerState.update((s) => ({ ...s, forceVisible: true }));
-    preloadMountainGltf();
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
     const mobileMq = window.matchMedia('(max-width: 900px)');
@@ -107,6 +117,28 @@
     window.addEventListener('touchstart', onTouchStart, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: true });
     window.addEventListener('keydown', onIntroKeydown);
+
+    preloadProgress = 0;
+    preloading = true;
+    const start = performance.now();
+    let realProgress = 0;
+    void preloadAssets([MOUNTAIN_GLB], (p) => (realProgress = p));
+
+    const tick = () => {
+      const timed = clamp((performance.now() - start) / PRELOAD_MIN_MS, 0, 1);
+      preloadProgress = Math.min(
+        timed,
+        Math.max(realProgress, timed * 0.15 + realProgress * 0.85)
+      );
+
+      if (preloadProgress < 1 || !mountainReady) {
+        requestAnimationFrame(tick);
+      } else {
+        preloading = false;
+        requestAnimationFrame(() => (revealed = true));
+      }
+    };
+    requestAnimationFrame(tick);
 
     return () => {
       mobileMq.removeEventListener('change', syncMobileExplore);
@@ -148,13 +180,24 @@
 
 <div
   class="about-page"
+  class:is-revealed={revealed}
   class:footer-open={footerVisible}
-  class:intro-active={!introDismissed}
+  class:intro-active={!introDismissed && !preloading}
   style="--mountain-lift: {footerVisible ? footerHeight : 0}px"
 >
-  {#if browser}
-    <ExplorableMountainScene bind:selectedHotspot bind:hoveredHotspot />
-  {/if}
+  <div
+    class="about-page__scene"
+    class:is-ready={mountainReady}
+    style="--scene-opacity: {preloading ? Math.max(0.08, preloadProgress * 0.92) : 1}"
+  >
+    {#if browser}
+      <ExplorableMountainScene
+        bind:selectedHotspot
+        bind:hoveredHotspot
+        onReady={() => (mountainReady = true)}
+      />
+    {/if}
+  </div>
 
   {#if introDismissed && !selectedHotspot}
     <div
@@ -191,7 +234,7 @@
     {/if}
   {/if}
 
-  {#if !introDismissed}
+  {#if !preloading && !introDismissed}
     <section
       class="intro-screen"
       onwheel={onWheelDismiss}
@@ -239,13 +282,37 @@
   {/if}
 </div>
 
+<Preloader progress={preloadProgress} visible={preloading} />
+
 <style>
   .about-page {
     position: fixed;
     inset: 0;
     background: #ffffff;
     overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.8s ease;
     --panel-padding-x: clamp(24px, 5.23vw, 79px);
+  }
+
+  .about-page.is-revealed {
+    opacity: 1;
+  }
+
+  .about-page__scene {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: var(--scene-opacity, 0);
+    transition: opacity 0.6s ease;
+  }
+
+  .about-page__scene.is-ready {
+    opacity: var(--scene-opacity, 1);
+  }
+
+  .about-page.is-revealed .about-page__scene.is-ready {
+    opacity: 1;
   }
 
   .about-page :global(.three-canvas) {
