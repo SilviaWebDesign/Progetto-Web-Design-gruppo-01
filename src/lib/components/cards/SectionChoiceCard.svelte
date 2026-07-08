@@ -85,8 +85,10 @@
     transition: opacity 0.35s ease;
   }
 
-  .section-choice-card:hover .section-choice-card__halo {
-    opacity: 1;
+  @media (hover: hover) {
+    .section-choice-card:hover .section-choice-card__halo {
+      opacity: 1;
+    }
   }
 
   /* Glass surface (the visible card) */
@@ -103,11 +105,13 @@
     transition: box-shadow 0.35s ease;
   }
 
-  .section-choice-card:hover .section-choice-card__surface {
-    box-shadow:
-      0 0 24px color-mix(in srgb, var(--color-border) 12%, transparent),
-      0 0 48px color-mix(in srgb, var(--color-border) 7%, transparent),
-      0 0 80px color-mix(in srgb, var(--color-border) 4%, transparent);
+  @media (hover: hover) {
+    .section-choice-card:hover .section-choice-card__surface {
+      box-shadow:
+        0 0 24px color-mix(in srgb, var(--color-border) 12%, transparent),
+        0 0 48px color-mix(in srgb, var(--color-border) 7%, transparent),
+        0 0 80px color-mix(in srgb, var(--color-border) 4%, transparent);
+    }
   }
 
   /* 3D object box, centered in the upper area */
@@ -141,8 +145,10 @@
     transition: opacity 0.35s ease;
   }
 
-  .section-choice-card:hover .section-choice-card__glow {
-    opacity: 1;
+  @media (hover: hover) {
+    .section-choice-card:hover .section-choice-card__glow {
+      opacity: 1;
+    }
   }
 
   .section-choice-card__scene {

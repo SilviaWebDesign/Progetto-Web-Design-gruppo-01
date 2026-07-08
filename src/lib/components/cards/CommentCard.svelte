@@ -138,23 +138,37 @@
     background-image: var(--gradient-comment-hover)
   }
 
-  .comment-card:hover::before {
-    opacity: 1;
+  @media (hover: hover) {
+    .comment-card:hover::before {
+      opacity: 1;
+    }
   }
 
   .comment-card[data-liked='true']::before {
     opacity: 0;
   }
 
-  .comment-card[data-liked='true']:hover::before {
-    opacity: 1;
+  @media (hover: hover) {
+    .comment-card[data-liked='true']:hover::before {
+      opacity: 1;
+    }
   }
 
   /* ============================================================
      HOVER — lift, border, outline, glow
      ============================================================ */
 
- .comment-card:hover {
+ @media (hover: hover) {
+    .comment-card:hover {
+      transform: translateY(-0.5px);
+      border-color: var(--color-border);
+      outline-color: var(--color-border);
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.10),
+        inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    }
+  }
+  .comment-card:hover {
     transform: translateY(-0.5px);
     border-color: var(--color-border);
     outline-color: var(--color-border);
@@ -230,8 +244,10 @@
   }
 
   /* Hover (whether liked or not): grow uniformly, no distortion. */
-  .comment-card:hover .comment-card__heart {
-    transform: scale(1.1);
+  @media (hover: hover) {
+    .comment-card:hover .comment-card__heart {
+      transform: scale(1.1);
+    }
   }
 
   .comment-card__heart-shape {
