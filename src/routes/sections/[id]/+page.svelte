@@ -692,24 +692,22 @@ function exitTopicsMode() {
   const FEEDBACK_BODY_MAX_FONT = 24; 
   const FEEDBACK_BODY_MIN_FONT = 14; 
   const FEEDBACK_BODY_LINE_HEIGHT = 1.5;
-  // Mobile: the column is narrow, so allow more lines at a smaller size. With the
-  // desktop 3-line cap the text would shrink to the floor and still overflow.
-  const FEEDBACK_BODY_MAX_LINES_MOBILE = 7;
-  const FEEDBACK_BODY_MAX_FONT_MOBILE = 18;
-  const FEEDBACK_BODY_MIN_FONT_MOBILE = 13;
 
   function fitFeedbackBody() {
     const el = document.querySelector<HTMLElement>('.feedback__body');
     if (!el) return;
-    const mobile = get(isMobile);
-    const maxLines = mobile ? FEEDBACK_BODY_MAX_LINES_MOBILE : FEEDBACK_BODY_MAX_LINES;
-    const minFont = mobile ? FEEDBACK_BODY_MIN_FONT_MOBILE : FEEDBACK_BODY_MIN_FONT;
-    let fs = mobile ? FEEDBACK_BODY_MAX_FONT_MOBILE : FEEDBACK_BODY_MAX_FONT;
+    // Mobile: the size is a scalable clamp in CSS (16px @390). Clear any inline size
+    // left behind by the desktop fit, otherwise it would win over the stylesheet.
+    if (get(isMobile)) {
+      el.style.fontSize = '';
+      return;
+    }
+    let fs = FEEDBACK_BODY_MAX_FONT;
     el.style.fontSize = `${fs}px`;
     // step down 1px at a time until it fits in <= max lines or hits the floor
-    while (fs > minFont) {
+    while (fs > FEEDBACK_BODY_MIN_FONT) {
       const lines = Math.round(el.scrollHeight / (fs * FEEDBACK_BODY_LINE_HEIGHT));
-      if (lines <= maxLines) break;
+      if (lines <= FEEDBACK_BODY_MAX_LINES) break;
       fs -= 1;
       el.style.fontSize = `${fs}px`;
     }
@@ -1886,6 +1884,8 @@ function exitTopicsMode() {
       padding: 0 var(--page-gutter);
       box-sizing: border-box;
       white-space: pre-line; /* let the desktop breaks wrap instead of overflowing */
+      font-size: clamp(1.1rem, 5.13vw, 1.35rem); /* 20px @390 */
+      font-weight: var(--font-weight-bold);
     }
 
     .feedback__body {
@@ -1894,6 +1894,8 @@ function exitTopicsMode() {
       padding: 0 var(--page-gutter);
       bottom: calc(var(--cta-bottom) + 64px); /* clears the CTA */
       text-wrap: pretty;
+      font-size: clamp(0.9rem, 4.1vw, 1.05rem); /* 16px @390 */
+      font-weight: var(--font-weight-regular);
     }
 
     .feedback__cta-label {
