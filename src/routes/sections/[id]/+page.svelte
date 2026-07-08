@@ -78,6 +78,8 @@
     if (next === mobileCardsVisible || textFading || cardsScrollAnimating) return;
     textFading = true;
     cardsScrollAnimating = true;
+    scene3d?.unlockMobileFit();
+    scene3d?.setMobileFitLerp(MOBILE_FIT_LERP_ANIMATING);
 
     const textTargets = '.stage__text';
     const outY = next ? -32 : 32;
@@ -93,16 +95,14 @@
     if (next) {
       mobileCardsVisible = true;
       await tick();
-      applyTopicsScale(true, true);
-      updateTopicsModelFit();
+      await applyTopicsScale(true, true);
       await cardStack?.animateIn();
     } else {
       await cardStack?.animateOut();
       mobileCardsVisible = false;
       if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
       await tick();
-      applyTopicsScale(true, false);
-      updateTopicsModelFit();
+      await applyTopicsScale(true, false);
     }
 
     gsap.set(textTargets, { y: inY });
@@ -126,7 +126,7 @@
     scene3d?.setScale(topicsScaleTween.value);
   }
 
-  // Mobile topics scroll nav: swipe toggles A↔B only. Topic changes via Continua button.
+  // Mobile topics scroll nav: swipe toggles A↔B; swipe up in mode A goes to previous topic.
   function handleTopicsForwardNavigation() {
     if (wheelLock || isTransitioning || textFading || cardsScrollAnimating) return;
     if ($isMobile) {
@@ -141,7 +141,15 @@
   function handleTopicsBackwardNavigation() {
     if (wheelLock || isTransitioning || textFading || cardsScrollAnimating) return;
     if ($isMobile) {
-      if (mobileCardsVisible && cardsScrollAtTop()) setMobileCards(false);
+      if (mobileCardsVisible && cardsScrollAtTop()) {
+        setMobileCards(false);
+        return;
+      }
+      if (!mobileCardsVisible && currentTopic > 0) {
+        wheelLock = true;
+        goPrev();
+        setTimeout(() => { wheelLock = false; }, 1000);
+      }
       return;
     }
     if (currentTopic === 0) {
@@ -215,6 +223,7 @@
   const MOBILE_TOPIC_COMPACT_RATIO = 24 / 36;
   const MOBILE_TEXT_SCALE_DURATION = 0.4;
   const MOBILE_LAYOUT_PULSE_AMPLITUDE = 0.14;
+  const MOBILE_FIT_LERP_ANIMATING = 0.22;
   const MOBILE_MODE_B_MODEL_FRACTION = 0.30;
   const MOBILE_MODE_B_COMMENTS_FRACTION = 0.46;
   const MOBILE_MODE_B_MIN_MODEL_BAND = 64;
@@ -254,32 +263,38 @@
     return scale;
   }
 
-  function applyTopicsScale(animate = false, cardsMode = mobileCardsVisible) {
-    if (!scene3d || phase !== 'topics') return;
+  function applyTopicsScale(animate = false, cardsMode = mobileCardsVisible): Promise<void> {
+    if (!scene3d || phase !== 'topics') return Promise.resolve();
     const target = topicsScaleTarget(cardsMode);
     gsap.killTweensOf(topicsScaleTween);
     if (animate && get(isMobile)) {
+      scene3d.unlockMobileFit();
+      scene3d.setMobileFitLerp(MOBILE_FIT_LERP_ANIMATING);
       scene3d.pulse(MOBILE_LAYOUT_PULSE_AMPLITUDE);
-      gsap.to(topicsScaleTween, {
-        value: target,
-        duration: MOBILE_TEXT_SCALE_DURATION,
-        ease: 'power2.inOut',
-        onUpdate: () => {
-          scene3d?.setScale(topicsScaleTween.value);
-          scene3d?.unlockMobileFit();
-          updateTopicsModelFit();
-          scene3d?.snapMobileFit();
-        },
-        onComplete: () => {
-          updateTopicsModelFit();
-          scene3d?.snapMobileFit();
-          scene3d?.lockMobileFit();
-        }
+      return new Promise((resolve) => {
+        gsap.to(topicsScaleTween, {
+          value: target,
+          duration: MOBILE_TEXT_SCALE_DURATION,
+          ease: 'power2.inOut',
+          onUpdate: () => {
+            scene3d?.setScale(topicsScaleTween.value);
+            updateTopicsModelFit({ soft: true });
+          },
+          onComplete: () => {
+            updateTopicsModelFit();
+            scene3d?.setMobileFitLerp(0.12);
+            requestAnimationFrame(() => {
+              scene3d?.snapMobileFit();
+              scene3d?.lockMobileFit();
+              resolve();
+            });
+          }
+        });
       });
-    } else {
-      topicsScaleTween.value = target;
-      scene3d.setScale(target);
     }
+    topicsScaleTween.value = target;
+    scene3d.setScale(target);
+    return Promise.resolve();
   }
 
   function updateTopicsScrollLayout(particleT: number) {
@@ -314,7 +329,7 @@
     return $isMobile && mobileCardsVisible;
   }
 
-  function updateTopicsModelFit(options: { duringScroll?: boolean } = {}) {
+  function updateTopicsModelFit(options: { duringScroll?: boolean; soft?: boolean } = {}) {
     if (!scene3d || !stageTextEl || phase === 'feedback') return;
     if (!get(isMobile)) return;
     if (phase !== 'topics' && !options.duringScroll) return;
@@ -356,7 +371,7 @@
 
     scene3d.setModelBaseYOffset(0);
     scene3d.setMobileFit(topPx, bottomPx, { centerBias, viewportHeightPx: vh });
-    if (options.duringScroll) return;
+    if (options.duringScroll || options.soft) return;
     scene3d.setMobileLayoutBlend(1);
     scene3d.snapMobileFit();
     scene3d.lockMobileFit();
@@ -1099,8 +1114,10 @@ function exitTopicsMode() {
           return;
         }
         handleTopicsForwardNavigation();
-      } else if (dy < 0 && mobileCardsVisible) {
-        if (cardsScrollRef?.contains(e.target as Node) && !cardsScrollAtTop()) return;
+      } else if (dy < 0) {
+        if (mobileCardsVisible && cardsScrollRef?.contains(e.target as Node) && !cardsScrollAtTop()) {
+          return;
+        }
         handleTopicsBackwardNavigation();
       }
     }
@@ -1529,6 +1546,16 @@ function exitTopicsMode() {
       text-align: center;
       line-height: var(--line-height-tight);
     }
+
+    .continue,
+    .feedback__cta {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .continue:focus:not(:focus-visible),
+    .feedback__cta:focus:not(:focus-visible) {
+      outline: none;
+    }
   }
 
    .continue {
@@ -1566,8 +1593,14 @@ function exitTopicsMode() {
     cursor: default;
   }
 
-  .continue:hover:not(:disabled) {
-    transform: translateX(-50%) scale(1.05); /* grow label + arrow together */
+  @media (hover: hover) {
+    .continue:hover:not(:disabled) {
+      transform: translateX(-50%) scale(1.05); /* grow label + arrow together */
+    }
+
+    .continue:hover .continue__arrow {
+      transform: scale(1.05);
+    }
   }
 
   .continue__label {
@@ -1584,10 +1617,6 @@ function exitTopicsMode() {
     width: 25px;
     height: 10px;
     transition: transform 0.2s ease;
-  }
-
-  .continue:hover .continue__arrow {
-    transform: scale(1.05);
   }
 
   .continue.is-visible:not(:disabled) .continue__arrow {
@@ -1653,9 +1682,11 @@ function exitTopicsMode() {
     color: var(--color-text-primary);
     pointer-events: auto;
   }
-  
-   .feedback__cta:hover {
-    transform: translateX(-50%) scale(1.08);
+
+  @media (hover: hover) {
+    .feedback__cta:hover {
+      transform: translateX(-50%) scale(1.08);
+    }
   }
 
   .feedback__cta-label {

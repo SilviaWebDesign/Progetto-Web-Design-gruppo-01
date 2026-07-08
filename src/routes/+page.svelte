@@ -560,8 +560,10 @@
     text-transform: uppercase;
     transition: transform 0.2s ease;
   }
-  .home__final-cta:hover {
-    transform: translateX(-50%) scale(1.08); /* keep centering while growing */
+  @media (hover: hover) {
+    .home__final-cta:hover {
+      transform: translateX(-50%) scale(1.08); /* keep centering while growing */
+    }
   }
 
   /* ── Mobile (≤768px): typography calibrated so it matches the Figma sizes at the
@@ -596,6 +598,10 @@
     .home__final-cta {
       font: var(--text-caption-font);
       text-transform: var(--text-caption-text-transform);
+    }
+
+    .home__final-cta {
+      -webkit-tap-highlight-color: transparent;
     }
   }
 </style>

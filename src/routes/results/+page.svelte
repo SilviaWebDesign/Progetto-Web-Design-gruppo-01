@@ -242,12 +242,11 @@
     transition: opacity 0.25s ease, transform 0.2s ease;
   }
 
-  .results__cta:hover {
-    transform: scale(1.05);
-  }
-
-  .results__cta:hover {
-    opacity: 1;
+  @media (hover: hover) {
+    .results__cta:hover {
+      transform: scale(1.05);
+      opacity: 1;
+    }
   }
 
   .results__cta-label {

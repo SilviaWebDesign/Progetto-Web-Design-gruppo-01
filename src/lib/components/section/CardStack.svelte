@@ -198,5 +198,10 @@
     .card-stack {
       gap: var(--spacing-comment-card-stack-gap);
     }
+
+    /* Last comment reads as the closing beat of the stack. */
+    .card-stack__item:last-child :global(.comment-card__body) {
+      font-weight: var(--font-weight-black);
+    }
   }
 </style>

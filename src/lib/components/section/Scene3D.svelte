@@ -47,6 +47,7 @@
     returnToParticles: () => void;
     setMobileFit: (topPx: number, bottomPx: number, options?: MobileFitOptions) => void;
     setMobileLayoutBlend: (t: number) => void;
+    setMobileFitLerp: (t: number) => void;
     setModelBaseYOffset: (vhFraction: number) => void;
     snapMobileFit: () => void;
     lockMobileFit: () => void;
@@ -171,7 +172,8 @@
   let mobileLayoutBlend = 0;
   let mobileFitLocked = false;
   let modelBaseYOffsetVh = 0;
-  const MOBILE_FIT_LERP = 0.12;
+  let mobileFitLerp = 0.12;
+  const MOBILE_FIT_LERP_DEFAULT = 0.12;
 
   function getCameraVisibleH(): number {
     if (!camera) return 0;
@@ -204,6 +206,7 @@
         mobileLayoutBlend = 0;
         mobileFitFinalOffsetY = 0;
         modelBaseYOffsetVh = 0;
+        mobileFitLerp = MOBILE_FIT_LERP_DEFAULT;
         if (spinner) {
           spinner.rotation.y = 0;
           spinner.position.y = 0;
@@ -369,6 +372,9 @@
         if (mobileFitLocked) return;
         mobileLayoutBlend = Math.max(0, Math.min(1, t));
       },
+      setMobileFitLerp: (t) => {
+        mobileFitLerp = Math.max(0.01, Math.min(1, t));
+      },
       setModelBaseYOffset: (vh) => {
         modelBaseYOffsetVh = vh;
       },
@@ -390,6 +396,7 @@
         mobileLayoutBlend = 0;
         mobileFitFinalOffsetY = 0;
         modelBaseYOffsetVh = 0;
+        mobileFitLerp = MOBILE_FIT_LERP_DEFAULT;
         if (spinner) spinner.position.y = 0;
       }
     };
@@ -1149,7 +1156,7 @@
       mobileFitActive
     ) {
       const targetY = mobileFitFinalOffsetY * mobileLayoutBlend + getModelBaseYOffset();
-      spinner.position.y += (targetY - spinner.position.y) * MOBILE_FIT_LERP;
+      spinner.position.y += (targetY - spinner.position.y) * mobileFitLerp;
     }
     if (controls?.enabled) controls.update();
 
