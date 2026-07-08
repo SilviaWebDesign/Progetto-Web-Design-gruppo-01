@@ -218,8 +218,11 @@
       }
       if (!mobileCardsVisible && currentTopic > 0) {
         wheelLock = true;
-        goPrev();
-        setTimeout(() => { wheelLock = false; }, 1000);
+        // Error prevention: land on the previous topic already in mode B (its comments),
+        // not in mode A — otherwise scrolling up feels like it "lost" the comments.
+        void goPrev().then(() => setMobileCards(true)).finally(() => {
+          setTimeout(() => { wheelLock = false; }, 1000);
+        });
         return;
       }
       if (!mobileCardsVisible && currentTopic === 0) {
@@ -1519,7 +1522,7 @@ function exitTopicsMode() {
     <!-- ── "Continua" CTA ── -->
     <button
       class="continue"
-      class:is-visible={phase === 'topics' && (!$isMobile || mobileCardsVisible)}
+      class:is-visible={phase === 'topics'}
       disabled={!anyLiked}
       onclick={goNext}
       aria-label={currentTopic === lastTopic ? 'Conferma le tue scelte' : 'Continua al prossimo argomento'}
