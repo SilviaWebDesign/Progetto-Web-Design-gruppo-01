@@ -56,6 +56,7 @@
   // (compact text + comments visible, object shrunk between them). Desktop ignores it.
   let mobileCardsVisible = $state(false);
   let textFading = false;
+  let cardsScrollAnimating = false;
   let cardsScrollRef = $state<HTMLElement | null>(null);
   let stageTextEl = $state<HTMLElement | null>(null);
   let stageRightEl = $state<HTMLElement | null>(null);
@@ -72,43 +73,62 @@
     return el.scrollTop < 8;
   }
 
-  // Toggle mobile topics A/B with a CROSS-FADE (smart-animate feel): fade the
-  // text out, swap the size class while it's invisible, fade back in. No
-  // font-size transition -> no visible scaling/sliding.
-  function setMobileCards(next: boolean) {
-    if (next === mobileCardsVisible || textFading) return;
+  // Toggle mobile topics A/B: cross-fade text (desktop topic style) + animated scale/pulse on the model.
+  async function setMobileCards(next: boolean) {
+    if (next === mobileCardsVisible || textFading || cardsScrollAnimating) return;
     textFading = true;
-    gsap.to('.stage__text', {
+    cardsScrollAnimating = true;
+
+    const textTargets = '.stage__text';
+    const outY = next ? -32 : 32;
+    const inY = next ? 32 : -32;
+
+    await gsap.to(textTargets, {
       opacity: 0,
-      duration: 0.22,
-      ease: 'power2.in',
-      onComplete: () => {
-        mobileCardsVisible = next;
-        if (!next && cardsScrollRef) cardsScrollRef.scrollTop = 0;
-        requestAnimationFrame(() => {
-          gsap.to('.stage__text', {
-            opacity: 1,
-            duration: 0.28,
-            ease: 'power2.out',
-            onComplete: () => {
-              textFading = false;
-              scheduleTopicsModelFit();
-            }
-          });
-        });
-      }
+      y: outY,
+      duration: 0.34,
+      ease: 'power2.in'
     });
+
+    if (next) {
+      mobileCardsVisible = true;
+      await tick();
+      applyTopicsScale(true, true);
+      updateTopicsModelFit();
+      await cardStack?.animateIn();
+    } else {
+      await cardStack?.animateOut();
+      mobileCardsVisible = false;
+      if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
+      await tick();
+      applyTopicsScale(true, false);
+      updateTopicsModelFit();
+    }
+
+    gsap.set(textTargets, { y: inY });
+    await gsap.to(textTargets, {
+      opacity: 1,
+      y: 0,
+      duration: 0.46,
+      ease: 'power2.out'
+    });
+
+    textFading = false;
+    cardsScrollAnimating = false;
+    scheduleTopicsModelFit();
   }
 
   function resetMobileTopicLayout() {
     if (!$isMobile) return;
     mobileCardsVisible = false;
     if (cardsScrollRef) cardsScrollRef.scrollTop = 0;
+    topicsScaleTween.value = TOPICS_SCALE;
+    scene3d?.setScale(TOPICS_SCALE);
   }
 
   // Mobile topics scroll nav: swipe toggles A↔B only. Topic changes via Continua button.
   function handleTopicsForwardNavigation() {
-    if (wheelLock || isTransitioning || textFading) return;
+    if (wheelLock || isTransitioning || textFading || cardsScrollAnimating) return;
     if ($isMobile) {
       if (!mobileCardsVisible) setMobileCards(true);
       return;
@@ -119,7 +139,7 @@
   }
 
   function handleTopicsBackwardNavigation() {
-    if (wheelLock || isTransitioning || textFading) return;
+    if (wheelLock || isTransitioning || textFading || cardsScrollAnimating) return;
     if ($isMobile) {
       if (mobileCardsVisible && cardsScrollAtTop()) setMobileCards(false);
       return;
@@ -190,6 +210,82 @@
   const MOBILE_MODEL_BAND_FRACTION = 1 / 3;
   const MOBILE_THEME_CENTER_BIAS = 0.4;
   const MOBILE_CARDS_CENTER_BIAS = 0.42;
+  const PARTICLE_SCROLL_START = 0.58;
+  const PARTICLE_SCROLL_END = 0.98;
+  const MOBILE_LAYOUT_START = 0.55;
+  const MOBILE_TOPIC_COMPACT_RATIO = 24 / 36;
+  const MOBILE_TEXT_SCALE_DURATION = 0.4;
+  const topicsScaleTween = { value: TOPICS_SCALE };
+
+  function particleProgressFromScroll(scrollProgress: number): number {
+    if (scrollProgress <= PARTICLE_SCROLL_START) return 0;
+    return Math.min(
+      1,
+      (scrollProgress - PARTICLE_SCROLL_START) / (PARTICLE_SCROLL_END - PARTICLE_SCROLL_START)
+    );
+  }
+
+  function topicsLayoutBlendFromParticleT(particleT: number): number {
+    if (particleT <= MOBILE_LAYOUT_START) return 0;
+    return Math.min(1, (particleT - MOBILE_LAYOUT_START) / (1 - MOBILE_LAYOUT_START));
+  }
+
+  function topicsScaleTarget(cardsMode: boolean): number {
+    if (!get(isMobile)) return TOPICS_SCALE;
+    return cardsMode ? TOPICS_SCALE * MOBILE_TOPIC_COMPACT_RATIO : TOPICS_SCALE;
+  }
+
+  function applyTopicsScale(animate = false, cardsMode = mobileCardsVisible) {
+    if (!scene3d || phase !== 'topics') return;
+    const target = topicsScaleTarget(cardsMode);
+    gsap.killTweensOf(topicsScaleTween);
+    if (animate && get(isMobile)) {
+      scene3d.pulse();
+      gsap.to(topicsScaleTween, {
+        value: target,
+        duration: MOBILE_TEXT_SCALE_DURATION,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          scene3d?.setScale(topicsScaleTween.value);
+          scene3d?.unlockMobileFit();
+          updateTopicsModelFit();
+          scene3d?.snapMobileFit();
+        },
+        onComplete: () => {
+          updateTopicsModelFit();
+          scene3d?.snapMobileFit();
+          scene3d?.lockMobileFit();
+        }
+      });
+    } else {
+      topicsScaleTween.value = target;
+      scene3d.setScale(target);
+    }
+  }
+
+  function updateTopicsScrollLayout(particleT: number) {
+    if (!scene3d || !stageTextEl || phase === 'feedback' || !get(isMobile)) return;
+    scene3d.unlockMobileFit();
+    updateTopicsModelFit({ duringScroll: true });
+    scene3d.setMobileLayoutBlend(topicsLayoutBlendFromParticleT(particleT));
+    scene3d.snapMobileFit();
+    if (particleT >= 1) scene3d.lockMobileFit();
+  }
+
+  function animateTopicsContentIn() {
+    gsap.fromTo(
+      '.stage__text',
+      { opacity: 0, y: 8 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power3.inOut' }
+    );
+    if (!get(isMobile)) {
+      gsap.fromTo(
+        '.stage__heading',
+        { opacity: 0 },
+        { opacity: 1, duration: 0.5, ease: 'power3.inOut', delay: 0.04 }
+      );
+    }
+  }
 
   function mobileTopicsViewportHeightPx(): number {
     return sceneEl?.getBoundingClientRect().height ?? window.innerHeight;
@@ -199,9 +295,10 @@
     return $isMobile && mobileCardsVisible;
   }
 
-  function updateTopicsModelFit() {
+  function updateTopicsModelFit(options: { duringScroll?: boolean } = {}) {
     if (!scene3d || !stageTextEl || phase === 'feedback') return;
-    if (!$isMobile || phase !== 'topics') return;
+    if (!get(isMobile)) return;
+    if (phase !== 'topics' && !options.duringScroll) return;
 
     const cardsActive = topicsCardsActive();
     const textRect = stageTextEl.getBoundingClientRect();
@@ -228,6 +325,7 @@
 
     scene3d.setModelBaseYOffset(0);
     scene3d.setMobileFit(topPx, bottomPx, { centerBias, viewportHeightPx: vh });
+    if (options.duringScroll) return;
     scene3d.setMobileLayoutBlend(1);
     scene3d.snapMobileFit();
     scene3d.lockMobileFit();
@@ -237,8 +335,8 @@
     if (!$isMobile || phase !== 'topics') return;
     void tick().then(() => {
       updateTopicsModelFit();
-      requestAnimationFrame(updateTopicsModelFit);
-      setTimeout(updateTopicsModelFit, 450);
+      requestAnimationFrame(() => updateTopicsModelFit());
+      setTimeout(() => updateTopicsModelFit(), 450);
     });
   }
 
@@ -353,8 +451,12 @@
     if (phase !== 'intro') return;
     phase = 'topics';
     resetMobileTopicLayout();
+    topicsScaleTween.value = TOPICS_SCALE;
     get(lenisStore)?.stop();
-    scene3d?.settle();
+    scene3d?.setTransitionProgress(1);
+    scene3d?.lockMobileFit();
+    gsap.set('.stage__text', { opacity: 0, y: 8 });
+    if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
     void (async () => {
       await tick();
       // the CardStack api can bind a frame or two after phase flips to 'topics';
@@ -362,7 +464,8 @@
       for (let i = 0; i < 20 && !cardStack; i++) {
         await new Promise((r) => requestAnimationFrame(r));
       }
-      await cardStack?.animateIn();
+      animateTopicsContentIn();
+      if (!get(isMobile)) await cardStack?.animateIn();
       scheduleTopicsModelFit();
     })();
   }
@@ -372,7 +475,9 @@ function exitTopicsMode() {
     if (phase !== 'topics') return;
     phase = 'intro';
     scene3d?.clearMobileFit();
-    scene3d?.unsettle(() => get(lenisStore)?.start());
+    gsap.set('.stage__text', { opacity: 0, y: 8 });
+    if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
+    get(lenisStore)?.start();
   }
 
  
@@ -476,7 +581,11 @@ function exitTopicsMode() {
       progress.clearSection(section.id);
       phase = 'intro';
       scene3d?.setScale(INTRO_MODEL_SCALE); // reset from TOPICS_SCALE so the intro model isn't stuck small
+      scene3d?.setTransitionProgress(0);
+      scene3d?.setMobileLayoutBlend(0);
       scene3d?.resetOrientation(); // reset any rotation done in the feedback (S5)
+      gsap.set('.stage__text', { opacity: 0, y: 8 });
+      if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
       // Clear leftover GSAP inline styles from earlier topic crossfades so the
       // topic texts re-enter clean when the user scrolls back down.
       gsap.set(['.stage__text', '.stage__heading'], { clearProps: 'opacity,transform' });
@@ -490,18 +599,13 @@ function exitTopicsMode() {
       lenis?.scrollTo(0, { immediate: true, force: true });
       ScrollTrigger.update();
 
-      scene3d?.unsettle(() => {
-        lenis?.scrollTo(0, { immediate: true, force: true });
-        ScrollTrigger.update();
-        // release the suppression once we've settled at the very top
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            ScrollTrigger.update();
-            returningToStart = false;
-            isTransitioning = false;
-          })
-        );
-      });
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          ScrollTrigger.update();
+          returningToStart = false;
+          isTransitioning = false;
+        })
+      );
       return;
     }
 
@@ -557,8 +661,16 @@ function exitTopicsMode() {
 
     if (saved.phase === 'topics') {
       scene3d?.snapToParticles();
+      topicsScaleTween.value = TOPICS_SCALE;
+      scene3d?.setScale(TOPICS_SCALE);
       void tick().then(() => {
-        cardStack?.animateIn();
+        if (get(isMobile)) {
+          gsap.set('.stage__text', { opacity: 1, y: 0 });
+        } else {
+          cardStack?.animateIn();
+          gsap.set('.stage__text', { opacity: 1, y: 0 });
+          gsap.set('.stage__heading', { opacity: 1 });
+        }
         scheduleTopicsModelFit();
       });
     } else {
@@ -664,9 +776,18 @@ function exitTopicsMode() {
             // still be parked near the bottom (progress ~1) and would bounce us
             // straight back into topics (jumps / lock / ghost CTA).
             if (returningToStart) return;
-            if (self.progress >= 0.999) enterTopicsMode();
+            const progress = self.progress;
+            const particleT = particleProgressFromScroll(progress);
+            scene3d?.setTransitionProgress(particleT);
+            updateTopicsScrollLayout(particleT);
+            if (progress >= 0.999) enterTopicsMode();
+            else if (particleT < 1 && phase === 'topics' && !get(isMobile)) exitTopicsMode();
           },
-          onLeaveBack: () => exitTopicsMode()
+          onLeaveBack: () => {
+            scene3d?.setTransitionProgress(0);
+            scene3d?.setMobileLayoutBlend(0);
+            exitTopicsMode();
+          }
         }
       });
 
@@ -692,6 +813,9 @@ function exitTopicsMode() {
         { scale: TOPICS_SCALE, ease: 'power2.inOut', duration: 0.46, onUpdate: () => scene3d?.setScale(proxy.scale) },
         0.06
       );
+
+      gsap.set('.stage__text', { opacity: 0, y: 8 });
+      if (!get(isMobile)) gsap.set('.stage__heading', { opacity: 0 });
 
       ScrollTrigger.create({
         trigger: scrollArea,

@@ -35,6 +35,7 @@
     setPositionY: (val: number) => void;
     resetOrientation: () => void;
     setOpacity: (val: number) => void;
+    setTransitionProgress: (t: number) => void;
     settle: () => void;
     unsettle: (onDone?: () => void) => void;
     pulse: () => void;
@@ -131,6 +132,8 @@
   type TState = 'none' | 'in' | 'out' | 'done';
   let transitionState: TState = 'none';
   let transitionProgress = 0;
+  let scrollDrivenTransition = false;
+  let transitionPrepared = false;
   const TRANSITION_DURATION = 2.0;
 
   const SETTLE_PULSE_AMPLITUDE = 0.4;
@@ -221,7 +224,8 @@
           m.opacity = val;
         });
       },
-      settle: startTransition,
+      setTransitionProgress: (t) => applyTransitionProgress(t),
+      settle: () => applyTransitionProgress(1),
       unsettle: (onDone) => {
         if (transitionState === 'none' && !particleMesh?.visible) {
           onDone?.();
@@ -254,6 +258,8 @@
 
         transitionState = 'done';
         transitionProgress = 1;
+        scrollDrivenTransition = false;
+        transitionPrepared = false;
         morphState = 'none';
 
         for (let i = 0; i < COUNT; i++) {
@@ -849,18 +855,117 @@
     );
   }
 
-  function startTransition() {
-    if (transitionState !== 'none' || !particleMesh) return;
+  function resetToSolid() {
+    scrollDrivenTransition = false;
+    transitionPrepared = false;
+    transitionState = 'none';
+    transitionProgress = 0;
+    if (particleMesh) particleMesh.visible = false;
+    if (particleMat) {
+      particleMat.uniforms.uBaseOpacity.value = 0;
+      particleMat.uniforms.uPulse.value = 0;
+    }
+    materials.forEach((m) => {
+      m.visible = true;
+      m.transparent = true;
+      m.needsUpdate = true;
+    });
+  }
+
+  function ensureTransitionPrepared() {
+    if (transitionPrepared || !particleMesh || !modelGroup) return;
+    transitionPrepared = true;
     materials.forEach((m) => {
       if (!m.transparent) {
         m.transparent = true;
         m.needsUpdate = true;
       }
+      m.visible = true;
     });
-    transitionState = 'in';
-    transitionProgress = 0;
     particleCurrent.fill(0);
     particleMesh.visible = true;
+  }
+
+  function applyTransitionVisuals(p: number) {
+    if (!particleMesh || !particleMat || !iMatBuf) return;
+
+    if (scrollDrivenTransition) {
+      for (let i = 0; i < COUNT; i++) {
+        particleCurrent[i * 3] = particleTargets[i * 3] * p;
+        particleCurrent[i * 3 + 1] = particleTargets[i * 3 + 1] * p;
+        particleCurrent[i * 3 + 2] = particleTargets[i * 3 + 2] * p;
+        const b = i * 16 + 12;
+        iMatBuf[b] = particleCurrent[i * 3];
+        iMatBuf[b + 1] = particleCurrent[i * 3 + 1];
+        iMatBuf[b + 2] = particleCurrent[i * 3 + 2];
+      }
+    } else {
+      for (let i = 0; i < COUNT; i++) {
+        particleCurrent[i * 3] += (particleTargets[i * 3] - particleCurrent[i * 3]) * 0.04;
+        particleCurrent[i * 3 + 1] +=
+          (particleTargets[i * 3 + 1] - particleCurrent[i * 3 + 1]) * 0.04;
+        particleCurrent[i * 3 + 2] +=
+          (particleTargets[i * 3 + 2] - particleCurrent[i * 3 + 2]) * 0.04;
+        const b = i * 16 + 12;
+        iMatBuf[b] = particleCurrent[i * 3];
+        iMatBuf[b + 1] = particleCurrent[i * 3 + 1];
+        iMatBuf[b + 2] = particleCurrent[i * 3 + 2];
+      }
+    }
+    particleMesh.instanceMatrix.needsUpdate = true;
+
+    particleMat.uniforms.uPulse.value = Math.sin(p * Math.PI) * SETTLE_PULSE_AMPLITUDE;
+    particleMat.uniforms.uBaseOpacity.value = Math.min(0.85, p * 1.7 * 0.85);
+    materials.forEach((m) => {
+      m.opacity = Math.max(0, 1 - p);
+    });
+  }
+
+  function finalizeTransition() {
+    if (!particleMesh || !particleMat || !iMatBuf) return;
+    transitionState = 'done';
+    transitionProgress = 1;
+    scrollDrivenTransition = false;
+    for (let i = 0; i < COUNT; i++) {
+      const b = i * 16 + 12;
+      iMatBuf[b] = particleTargets[i * 3];
+      iMatBuf[b + 1] = particleTargets[i * 3 + 1];
+      iMatBuf[b + 2] = particleTargets[i * 3 + 2];
+    }
+    particleCurrent.set(particleTargets);
+    particleVel.fill(0);
+    physicsAsleep = true;
+    particleMesh.instanceMatrix.needsUpdate = true;
+    particleMat.uniforms.uBaseOpacity.value = 0.85;
+    particleMat.uniforms.uPulse.value = 0;
+    materials.forEach((m) => {
+      m.opacity = 0;
+      m.visible = false;
+    });
+  }
+
+  function applyTransitionProgress(t: number) {
+    const p = Math.max(0, Math.min(1, t));
+    if (p <= 0) {
+      resetToSolid();
+      return;
+    }
+
+    scrollDrivenTransition = true;
+    ensureTransitionPrepared();
+    transitionProgress = p;
+    transitionState = 'in';
+
+    if (p >= 1) {
+      finalizeTransition();
+      return;
+    }
+
+    applyTransitionVisuals(p);
+  }
+
+  function startTransition() {
+    applyTransitionProgress(1);
   }
 
   function triggerManualPulse() {
@@ -1047,44 +1152,13 @@
     if (controls?.enabled) controls.update();
 
     if (transitionState === 'in' && particleMesh && particleMat && iMatBuf) {
-      transitionProgress = Math.min(1, transitionProgress + dt / TRANSITION_DURATION);
-
-      for (let i = 0; i < COUNT; i++) {
-        particleCurrent[i * 3] += (particleTargets[i * 3] - particleCurrent[i * 3]) * 0.04;
-        particleCurrent[i * 3 + 1] +=
-          (particleTargets[i * 3 + 1] - particleCurrent[i * 3 + 1]) * 0.04;
-        particleCurrent[i * 3 + 2] +=
-          (particleTargets[i * 3 + 2] - particleCurrent[i * 3 + 2]) * 0.04;
-        const b = i * 16 + 12;
-        iMatBuf[b] = particleCurrent[i * 3];
-        iMatBuf[b + 1] = particleCurrent[i * 3 + 1];
-        iMatBuf[b + 2] = particleCurrent[i * 3 + 2];
+      if (!scrollDrivenTransition) {
+        transitionProgress = Math.min(1, transitionProgress + dt / TRANSITION_DURATION);
       }
-      particleMesh.instanceMatrix.needsUpdate = true;
-
-      particleMat.uniforms.uPulse.value = Math.sin(transitionProgress * Math.PI) * SETTLE_PULSE_AMPLITUDE;
-      particleMat.uniforms.uBaseOpacity.value = Math.min(0.85, transitionProgress * 1.7 * 0.85);
-      materials.forEach((m) => {
-        m.opacity = Math.max(0, 1 - transitionProgress);
-      });
+      applyTransitionVisuals(transitionProgress);
 
       if (transitionProgress >= 1) {
-        transitionState = 'done';
-        for (let i = 0; i < COUNT; i++) {
-          const b = i * 16 + 12;
-          iMatBuf[b] = particleTargets[i * 3];
-          iMatBuf[b + 1] = particleTargets[i * 3 + 1];
-          iMatBuf[b + 2] = particleTargets[i * 3 + 2];
-        }
-        particleCurrent.set(particleTargets);
-        particleVel.fill(0);
-        physicsAsleep = true;
-        particleMesh.instanceMatrix.needsUpdate = true;
-        particleMat.uniforms.uBaseOpacity.value = 0.85;
-        materials.forEach((m) => {
-          m.opacity = 0;
-          m.visible = false;
-        });
+        finalizeTransition();
       }
     }
 
