@@ -1011,7 +1011,7 @@ function exitTopicsMode() {
       // If the user stops scrolling just short of the end, finish the rotation for them
       // instead of leaving them stranded mid-spin. Below AUTO_COMPLETE_FROM we never
       // intervene, so whoever scrolls slowly to inspect the object stays in control.
-      const AUTO_COMPLETE_FROM = 0.75; // only near the end (0..1 of the reveal)
+      const AUTO_COMPLETE_FROM = 0.60; // only near the end (0..1 of the reveal)
       const AUTO_COMPLETE_IDLE_MS = 260; // pause after the scroll settles
       const AUTO_COMPLETE_DURATION = 1.4; // seconds; higher = softer/slower
       let autoCompleteTimer: ReturnType<typeof setTimeout> | null = null;
