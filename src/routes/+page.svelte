@@ -11,7 +11,8 @@
   import { isMobile } from '$lib/stores/viewport';
 
   const PRELOAD_URLS = ['/models/snow-mountain.glb', ...sections.map((s) => s.glbPath)];
-  const PRELOAD_MIN_MS = 1400; // minimum time the bar is shown (so it always fills)
+  const PRELOAD_MIN_MS = 1800; // minimum bar time; exit waits for assets + first mountain frame
+  const PRELOAD_MAX_MS = 12000; // never trap the user if WebGL stalls
   let preloadProgress = $state(0);
   let preloading = $state(true);
   let revealed = $state(false); // true one frame after preload ends -> enables fade-in
@@ -244,25 +245,37 @@
     preloadProgress = 0;
     preloading = true;
     revealed = false;
-    // animate the bar over at least PRELOAD_MIN_MS, and never faster than
-    // the real download; whichever finishes last hides the overlay
+    mountainReady = false;
+    // Bar fills over PRELOAD_MIN_MS; overlay stays until assets AND mountain first frame.
     const start = performance.now();
     let realProgress = 0;
-    const load = preloadAssets(PRELOAD_URLS, (p) => (realProgress = p));
+    void preloadAssets(PRELOAD_URLS, (p) => (realProgress = p));
 
     const tick = () => {
       const timed = clamp((performance.now() - start) / PRELOAD_MIN_MS, 0, 1);
-      preloadProgress = Math.min(timed, Math.max(realProgress, timed * 0.15 + realProgress * 0.85));
-      if (preloadProgress < 1) {
-        requestAnimationFrame(tick);
-      } else {
+      let p = Math.max(timed * 0.15 + realProgress * 0.85, timed);
+      // Hold the bar near-full while WebGL parses/renders the mountain (Safari-heavy).
+      if (realProgress >= 1 && !mountainReady) p = Math.min(p, 0.93);
+      if (mountainReady) p = Math.max(p, 0.97);
+      preloadProgress = Math.min(1, p);
+
+      const ready = timed >= 1 && realProgress >= 1 && mountainReady;
+      if (ready) {
+        preloadProgress = 1;
         preloading = false;
         requestAnimationFrame(() => (revealed = true));
+      } else {
+        requestAnimationFrame(tick);
       }
     };
-    load.finally(() => {}); // ensure caching proceeds
     requestAnimationFrame(tick);
+
+    const maxT = setTimeout(() => {
+      if (!mountainReady) mountainReady = true;
+    }, PRELOAD_MAX_MS);
+
     return () => {
+      clearTimeout(maxT);
       cancelAnimationFrame(rafId);
       if (snapTimer) clearTimeout(snapTimer);
       window.removeEventListener('wheel', onWheel);
@@ -280,9 +293,9 @@
 </svelte:head>
 
 <div class="home" class:is-revealed={revealed}>
-  <!-- 3D mountain background, driven by scrollProgress -->
+  <!-- Mount during preload (hidden behind overlay) so WebGL/GLB init finishes before reveal -->
   <div class="home__bg" class:is-ready={mountainReady} aria-hidden="true">
-    {#if !preloading}<MountainScene {scrollProgress} onReady={() => (mountainReady = true)} />{/if}
+    <MountainScene {scrollProgress} onReady={() => (mountainReady = true)} />
   </div>
 
   <section class="home__stage home__hero" style="opacity: {heroOpacity}; transform: translateY({heroLift}vh);" aria-hidden={heroOpacity < 0.05}>
