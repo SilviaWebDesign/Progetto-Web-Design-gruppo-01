@@ -718,7 +718,7 @@
     }
 
     .menu-overlay__link {
-      font-size: clamp(2.25rem, 12.82vw, 3.5rem); /* ~50px @390, scalable */
+      font-size: clamp(2rem, 10.5vw, 3rem); /* ~41px @390, scalable (fits long titles) */
     }
   }
 </style>
