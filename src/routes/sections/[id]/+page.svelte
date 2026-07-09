@@ -2184,7 +2184,7 @@ function exitTopicsMode() {
       width: 100%;
       max-width: none;
       padding: 0 var(--page-gutter);
-      bottom: calc(var(--cta-bottom) + 64px); /* clears the CTA */
+      bottom: calc(var(--cta-bottom) + var(--feedback-body-lift-m, 96px)); /* higher value = text more up; clears the CTA */
       text-wrap: pretty;
       font-size: clamp(0.9rem, 4.1vw, 1.05rem); /* 16px @390 */
       font-weight: var(--font-weight-regular);

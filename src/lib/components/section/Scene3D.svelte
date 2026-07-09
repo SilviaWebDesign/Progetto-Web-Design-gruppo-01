@@ -806,6 +806,7 @@
   // to move the model up/down and change its size. Desktop is unaffected.
   const RESULT_BOX_MOBILE_TOP = 0.18;
   const RESULT_BOX_MOBILE_BOTTOM = 0.5;
+  const RESULT_MODEL_SCALE_MOBILE = 2; // mobile only: multiply the fitted result size (~2x). Tune.
 
   function resultBoxFractions(): { topFrac: number; bottomFrac: number } {
     if (window.innerWidth <= 768) {
@@ -872,7 +873,9 @@
     const parentOffsetY = compensateParent && parent ? parent.position.y : 0;
 
     const lift = (window.innerWidth <= 768 ? RESULT_BOX_LIFT_MOBILE : RESULT_BOX_LIFT) * visibleH;
-    group.scale.setScalar(scale / parentScale);
+    // mobile: enlarge the fitted result model (desktop keeps mul = 1).
+    const modelScaleMul = window.innerWidth <= 768 ? RESULT_MODEL_SCALE_MOBILE : 1;
+    group.scale.setScalar((scale * modelScaleMul) / parentScale);
     group.position.set(0, (worldCenterY + lift - parentOffsetY) / parentScale, 0);
   }
 
