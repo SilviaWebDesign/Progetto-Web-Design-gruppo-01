@@ -1122,7 +1122,16 @@
     if (dx * dx + dy * dy > 36) return;
 
     const hotspot = pickHotspotAtClient(event.clientX, event.clientY);
-    if (hotspot) selectedHotspot = hotspot;
+    if (hotspot) {
+      selectedHotspot = hotspot;
+    } else if (selectedHotspot && !transitionActive) {
+      // Empty tap while a card is open → exit the focus. On mobile this is the ONLY
+      // way out (OrbitControls are locked during focus, so the desktop drag-to-dismiss
+      // never fires), matching the prototype's "tap the mountain / top area to close".
+      // The panel captures its own taps, so any tap that reaches the canvas is on the
+      // open mountain area. Reuses the smooth 1400ms unfocus transition.
+      selectedHotspot = null;
+    }
   }
 
   function dismissFocusByCameraMove() {

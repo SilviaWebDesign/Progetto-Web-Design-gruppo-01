@@ -37,4 +37,6 @@
   --font-size-section-intro-phrase:         clamp(1.6rem, 9.23vw, 2.25rem);   /* 36@390 — section intro phrase mobile */
   --font-size-section-comments-heading:     clamp(0.875rem, 3.59vw, 0.9375rem); /* 14@390 — "Metti like…" (sentence case) */
   --font-size-comment-body:                 clamp(0.875rem, 3.59vw, 0.9375rem); /* 14@390 — comment card body mobile */
+  --font-size-about-detail-title:           clamp(1.25rem, 6.15vw, 1.6rem);    /* 24@390 — About hotspot panel title (mobile) */
+  --font-size-about-detail-body:            clamp(0.9375rem, 4.10vw, 1.0625rem); /* 16@390 — About hotspot panel body (mobile) */
 }

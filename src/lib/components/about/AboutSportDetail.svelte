@@ -1,5 +1,7 @@
 <script>
   import { tick, onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
   import {
     getHotspotPathIndex,
     ABOUT_HOTSPOT_PATH,
@@ -34,6 +36,10 @@
   let thumbRatio = $state(1);
   let sliderTop = $state(0);
   let sliderTrackHeight = $state(0);
+  /** Length (px) of the top fade mask; 0 at the very top so the first line stays crisp,
+   * grows as the body scrolls up under the title header (long, soft dissolve). */
+  let topFade = $state(0);
+  const TOP_FADE_MAX = 48;
   let scrollAdvanceLockUntil = 0;
   let scrollAdvanceAccum = 0;
   let touchStartY = 0;
@@ -44,18 +50,19 @@
   const TOUCH_ADVANCE_THRESHOLD = 12;
 
   function measureSliderFrame() {
-    if (!scrollEl || !contentEl || !titleEl) return;
+    if (!scrollEl) return;
 
-    const contentStyles = getComputedStyle(contentEl);
-    const paddingTop = Number.parseFloat(contentStyles.paddingTop) || 0;
-    sliderTop = contentEl.offsetTop + paddingTop + titleEl.offsetTop;
-    sliderTrackHeight = Math.max(0, scrollEl.clientHeight - sliderTop);
+    // Title is now a header outside the scroll, so the slider simply spans the
+    // scroll viewport (offsetTop already accounts for the title's height).
+    sliderTop = scrollEl.offsetTop;
+    sliderTrackHeight = scrollEl.clientHeight;
   }
 
   function syncSlider() {
     if (!scrollEl) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollEl;
     const maxScroll = scrollHeight - clientHeight;
+    topFade = Math.min(scrollTop, TOP_FADE_MAX);
     canScroll = maxScroll > 4;
     scrollRatio = maxScroll > 0 ? scrollTop / maxScroll : 0;
     thumbRatio =
@@ -249,7 +256,7 @@
   }
 </script>
 
-<div class="sport-detail">
+<div class="sport-detail" out:fade={{ duration: 420, easing: cubicOut }}>
   <div class="sport-detail-gradients" aria-hidden="true">
     <div class="grad-side"></div>
     <div class="grad-mobile-halo"></div>
@@ -262,11 +269,16 @@
     ontouchstart={stopTouchPropagation}
     ontouchmove={stopTouchPropagation}
   >
+    {#key hotspot.id}
+      <h1 id="sport-detail-title" class="sport-title" bind:this={titleEl}>{title}</h1>
+    {/key}
+
     <div
       class="sport-panel-scroll"
       role="region"
       aria-labelledby="sport-detail-title"
       bind:this={scrollEl}
+      style:--top-fade="{topFade}px"
       onscroll={syncSlider}
       onwheel={onPanelWheel}
       ontouchstart={onPanelTouchStart}
@@ -275,7 +287,6 @@
     >
       <div class="sport-panel-content" bind:this={contentEl}>
         {#key hotspot.id}
-          <h1 id="sport-detail-title" class="sport-title" bind:this={titleEl}>{title}</h1>
           <div class="sport-body">
             {#each bodyLines as line, index}
               <p class:line-spacer={line.trim() === ''} class:line-first={index === 0}>
@@ -371,6 +382,10 @@
     max-width: 401px;
     max-height: calc(100vh - clamp(108px, 14vh, 136px));
     z-index: 10;
+    /* Title lives OUTSIDE the scroll (as a fixed header) so the body can fade under it
+       via a mask — no opaque backdrop box needed. Flex column keeps the scroll sized. */
+    display: flex;
+    flex-direction: column;
     /* Serve per evitare il taglio della "prima riga" (text-indent negativo). */
     overflow-x: visible;
     overflow-y: hidden;
@@ -382,7 +397,8 @@
 
   .sport-panel-scroll {
     position: relative;
-    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-x: visible;
     overflow-y: auto;
     scroll-behavior: smooth;
@@ -558,7 +574,8 @@
       /* Non compensiamo cambiando anche height: così il box scende davvero. */
       height: calc(50vh - 68px);
       max-height: calc(50vh - 68px);
-      display: block;
+      display: flex;
+      flex-direction: column;
       /* Evita taglio anche su mobile */
       overflow-x: visible;
       overflow-y: hidden;
@@ -569,13 +586,46 @@
     }
 
     .sport-panel-scroll {
-      height: 100%;
+      min-height: 0;
       overflow-x: visible;
       overflow-y: scroll;
       touch-action: pan-y;
       padding-right: calc(17px + var(--panel-padding-x));
       scrollbar-width: none;
       -ms-overflow-style: none;
+      /* Long, soft fade so the body dissolves gradually as it scrolls under the
+         (header) title and before the CONTINUA button — no hard cut, no opaque box.
+         --top-fade grows from 0 (crisp first line at rest) up to 48px while scrolling. */
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--top-fade, 0px),
+        #000 calc(100% - 48px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--top-fade, 0px),
+        #000 calc(100% - 48px),
+        transparent 100%
+      );
+    }
+
+    /* Title is a fixed header ABOVE the scroll (not inside it), so no backdrop is
+       needed — the body fades under it via the scroll mask. It sits outside
+       .sport-panel-content, so it must re-apply the same lateral padding to stay
+       aligned with the body text. */
+    .sport-title {
+      margin: 0;
+      padding: 20px var(--panel-padding-x) 0;
+      /* Figma mobile: 24@390, scalable */
+      font-size: var(--font-size-about-detail-title);
+    }
+
+    .sport-body p {
+      /* Figma mobile: 16@390, scalable */
+      font-size: var(--font-size-about-detail-body);
     }
 
     .sport-panel-scroll::-webkit-scrollbar {
@@ -628,6 +678,8 @@
     .sport-panel-content {
       position: relative;
       z-index: 1;
+      /* small gap under the header title (Figma); first line stays crisp because the
+         top fade is 0 at rest and only grows while scrolling */
       padding: 20px 0 72px var(--panel-padding-x);
       transform-origin: top center;
     }
