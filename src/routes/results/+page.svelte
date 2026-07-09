@@ -267,6 +267,8 @@
   .results__cta-arrow {
     width: 25px;
     height: 10px;
+    /* Same idle bounce as the section "Continua"/feedback CTAs. */
+    animation: results-arrow-bounce 1.6s ease-in-out infinite;
   }
 
   .results__cta--primary {
@@ -274,8 +276,27 @@
     opacity: 1;
   }
 
+  /* Primary chevron points UP (rotated). Its bounce keyframe keeps the rotate
+     (otherwise animating `transform` would drop it) so it bobs upward. */
   .results__cta--primary .results__cta-arrow {
     transform: rotate(180deg);
+    animation: results-arrow-bounce-up 1.6s ease-in-out infinite;
+  }
+
+  @keyframes results-arrow-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+
+  @keyframes results-arrow-bounce-up {
+    0%, 100% { transform: rotate(180deg) translateY(0); }
+    50% { transform: rotate(180deg) translateY(4px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .results__cta-arrow {
+      animation: none;
+    }
   }
 
   .results__cta--secondary {
