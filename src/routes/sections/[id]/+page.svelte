@@ -2130,7 +2130,7 @@ function exitTopicsMode() {
     font-family: var(--font-family-body);
     font-weight: var(--font-weight-bold);
     font-size: clamp(16px, 2.38vw, 36px);
-    line-height: 1.25;
+    line-height: normal; /* Figma: heading leading is "auto" (desktop + mobile) */
     color: var(--color-text-primary);
   }
 
