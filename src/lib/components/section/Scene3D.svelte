@@ -801,12 +801,19 @@
   const RESULT_BOX_FALLBACK_TOP = 0.24; // used only if the texts aren't in the DOM yet
   const RESULT_BOX_FALLBACK_BOTTOM = 0.68;
   const RESULT_BOX_PADDING = 0.02; // breathing room from the texts (fraction of vh)
+  // Desktop only: extra bottom padding on the box. The result models are visually
+  // bottom-heavy (their geometric centre sits low), so centred-in-box they read as
+  // "lowered". Trimming the box bottom lifts the box centre → the model rises a bit.
+  const RESULT_BOX_PADDING_BOTTOM = 0.06;
   // Mobile: the body text is anchored low, so a DOM-measured box drops the model to the
   // bottom. Use a fixed upper band instead (fractions of viewport height). Tune these two
   // to move the model up/down and change its size. Desktop is unaffected.
   const RESULT_BOX_MOBILE_TOP = 0.18;
   const RESULT_BOX_MOBILE_BOTTOM = 0.5;
   const RESULT_MODEL_SCALE_MOBILE = 2; // mobile only: multiply the fitted result size (~2x). Tune.
+  const RESULT_MODEL_SCALE_DESKTOP = 1.5; // desktop only: enlarge the fitted result models 1.5x.
+  // Infrastructure reads bigger than the others, so keep its desktop enlarge lower (1.2x).
+  const RESULT_MODEL_SCALE_DESKTOP_INFRA = 1.2;
 
   function resultBoxFractions(): { topFrac: number; bottomFrac: number } {
     if (window.innerWidth <= 768) {
@@ -821,7 +828,8 @@
     const body = document.querySelector<HTMLElement>('.feedback__body');
     if (!heading || !body || !vh) return fallback;
     const topFrac = heading.getBoundingClientRect().bottom / vh + RESULT_BOX_PADDING;
-    const bottomFrac = body.getBoundingClientRect().top / vh - RESULT_BOX_PADDING;
+    const bottomFrac =
+      body.getBoundingClientRect().top / vh - RESULT_BOX_PADDING - RESULT_BOX_PADDING_BOTTOM;
     if (!(bottomFrac > topFrac)) return fallback;
     return { topFrac, bottomFrac };
   }
@@ -873,8 +881,11 @@
     const parentOffsetY = compensateParent && parent ? parent.position.y : 0;
 
     const lift = (window.innerWidth <= 768 ? RESULT_BOX_LIFT_MOBILE : RESULT_BOX_LIFT) * visibleH;
-    // mobile: enlarge the fitted result model (desktop keeps mul = 1).
-    const modelScaleMul = window.innerWidth <= 768 ? RESULT_MODEL_SCALE_MOBILE : 1;
+    // enlarge the fitted result model (mobile 2x; desktop 1.5x, but infrastructure 1.2x).
+    const desktopMul = modelSrc.includes('infrastructure')
+      ? RESULT_MODEL_SCALE_DESKTOP_INFRA
+      : RESULT_MODEL_SCALE_DESKTOP;
+    const modelScaleMul = window.innerWidth <= 768 ? RESULT_MODEL_SCALE_MOBILE : desktopMul;
     group.scale.setScalar((scale * modelScaleMul) / parentScale);
     group.position.set(0, (worldCenterY + lift - parentOffsetY) / parentScale, 0);
   }
