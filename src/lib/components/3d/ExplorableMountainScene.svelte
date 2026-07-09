@@ -85,13 +85,13 @@
     target: new THREE.Vector3()
   };
 
-  /** Smoothstep 0→1 */
+  /** Smoothstep 0→1 @param {number} t */
   function smoothstep(t) {
     const x = THREE.MathUtils.clamp(t, 0, 1);
     return x * x * (3 - 2 * x);
   }
 
-  /** Easing più rapido per i passaggi tra sfere. */
+  /** Rapid easing @param {number} t */
   function easeOutCubic(t) {
     const x = THREE.MathUtils.clamp(t, 0, 1);
     return 1 - (1 - x) ** 3;
@@ -200,6 +200,7 @@
    *   duration: number;
    *   toFocus: boolean;
    * } | null} */
+  /** @type {any} */
   let cameraTransition = null;
   let mobileLayout = false;
   let panelMobileLayout = false;
@@ -210,6 +211,7 @@
 
   /** @param {THREE.Object3D} object */
   function hotspotFromObject(object) {
+    /** @type {THREE.Object3D | null} */
     let current = object;
     while (current) {
       if (current.userData?.hotspot) return current.userData.hotspot;
@@ -225,7 +227,7 @@
     controls.maxDistance = limits.max;
   }
 
-  /** Montagna opaca: occlusione corretta delle sfere dietro il mesh. */
+  /** blur and opacity for mountain @param {THREE.Object3D} object */
   function configureAboutMountainMaterials(object) {
     object.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
@@ -257,7 +259,7 @@
   function applyMountainFocusLook(amount) {
     const whiteMix = THREE.MathUtils.clamp(amount, 0, 1) * MOUNTAIN_FOCUS_WHITE_MAX;
     for (const [mat, base] of mountainBaseColors) {
-      mat.color.copy(base).lerp(_mountainWhite, whiteMix);
+      (/** @type {THREE.MeshStandardMaterial} */ (mat)).color.copy(base).lerp(_mountainWhite, whiteMix);
     }
     if (sceneFog) {
       sceneFog.density = MOUNTAIN_FOCUS_FOG_BASE + amount * MOUNTAIN_FOCUS_FOG_BOOST;
@@ -379,6 +381,7 @@
       return;
     }
 
+    if (!markerGroup || !snowMountainModel || !mountainBlurRT || !mountainBlurScene || !mountainBlurCamera) return;
     const markersWereVisible = markerGroup.visible;
     markerGroup.visible = false;
 
@@ -448,6 +451,7 @@
     return applyHomeHeroCamera(cam, orbitConfig, targetOut);
   }
 
+  /** @param {THREE.Vector3[]} markerPoints @param {number} [padding] */
   function fitHeroCameraToMarkers(markerPoints, padding = 0.1) {
     if (!camera || !controls || markerPoints.length === 0) return;
 
@@ -524,7 +528,7 @@
     controls.update();
   }
 
-  /** @param {OrbitControls} ctrl */
+  /** @param {any} ctrl — reaches OrbitControls private fields (_sphericalDelta, _panOffset, _scale) */
   function resetOrbitControlDeltas(ctrl) {
     ctrl._sphericalDelta.set(0, 0, 0);
     ctrl._panOffset.set(0, 0, 0);
@@ -554,6 +558,7 @@
     controls.maxPolarAngle = maxP;
   }
 
+  /** @param {number} t */
   function applyCameraTransitionPose(t) {
     if (!cameraTransition || !camera || !controls) return;
 
@@ -987,7 +992,7 @@
       const placement = getHotspotPlacement(hotspot, useMobileLayout);
       const worldPos = hotspotSnowPosition(
         worldBox,
-        snowMountainModel,
+        /** @type {THREE.Object3D} */ (snowMountainModel),
         { ...hotspot, ...placement },
         raycaster
       );

@@ -61,7 +61,7 @@
     // In dev `base` può essere '' o '.' (relativo): per gli assets in `static/` vogliamo sempre
     // un path assoluto dal root, altrimenti su `/sections/...` si rompe (404).
     const normalizedBase =
-      base === '' || base === '.'
+      base === '' 
         ? '/'
         : base.endsWith('/')
           ? base

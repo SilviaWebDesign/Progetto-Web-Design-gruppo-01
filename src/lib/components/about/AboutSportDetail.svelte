@@ -98,7 +98,7 @@
       const delta = moveEvent.clientY - startY;
       const scrollDelta =
         (delta / Math.max(trackHeightPx - thumbHeightPx, 1)) * maxScroll;
-      scrollEl.scrollTop = clamp(startScroll + scrollDelta, 0, maxScroll);
+      (/** @type {HTMLElement} */ (scrollEl)).scrollTop = clamp(startScroll + scrollDelta, 0, maxScroll);
       syncSlider();
     };
 

@@ -145,7 +145,7 @@ export function applyMarkerMaterial(object, active = false) {
   mat.uniforms.uBaseOpacity.value = active ? 0.95 : 0.88;
 }
 
-/** @param {THREE.Object3D} object */
+/** @param {THREE.Object3D} object @param {number} pulse */
 export function updateMarkerPulse(object, pulse) {
   const mat = object.userData?.particleMat;
   if (!mat) return;
@@ -168,12 +168,12 @@ export function preloadAboutMarkerModels() {
   return Promise.resolve();
 }
 
-/** @param {boolean} [active] */
+/** @param {string} _url @param {boolean} [active] */
 export async function cloneMarkerModel(_url, active = false) {
   return createParticleSphereMarker(active);
 }
 
-/** @param {THREE.Object3D} markerRoot @param {THREE.Vector3} worldPoint */
+/** @param {THREE.Object3D} markerRoot @param {string} _modelSrc @param {THREE.Vector3} worldPoint */
 export function orientMarkerTowardWorldPoint(markerRoot, _modelSrc, worldPoint) {
   const pos = markerRoot.position;
   const dx = worldPoint.x - pos.x;

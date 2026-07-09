@@ -137,7 +137,7 @@ function buildParticleSphereMesh(active = false) {
   return mesh;
 }
 
-/** @param {THREE.Object3D} markerRoot @param {string} [_modelSrc] @param {THREE.Vector3} worldPoint */
+/** @param {THREE.Object3D} markerRoot @param {string} _modelSrc @param {THREE.Vector3} worldPoint */
 export function orientMarkerTowardWorldPoint(markerRoot, _modelSrc, worldPoint) {
   const pos = markerRoot.position;
   const dx = worldPoint.x - pos.x;
@@ -193,7 +193,7 @@ export function updateMarkerCursorPhysics(object, camera, pointerNdc, hovering) 
     let hasCursor = false;
     if (hovering) {
       if (!state.hoverWasActive) prevNdc.copy(pointerNdc);
-      const sdx = (pointerNdc.x - prevNdc.x) * camera.aspect;
+      const sdx = (pointerNdc.x - prevNdc.x) * (/** @type {THREE.PerspectiveCamera} */ (camera)).aspect;
       const sdy = pointerNdc.y - prevNdc.y;
       state.cursorSpeed = Math.hypot(sdx, sdy);
       prevNdc.copy(pointerNdc);

@@ -235,6 +235,8 @@
   {/if}
 
   {#if !preloading && !introDismissed}
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <section
       class="intro-screen"
       onwheel={onWheelDismiss}

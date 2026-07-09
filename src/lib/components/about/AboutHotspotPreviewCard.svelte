@@ -89,6 +89,7 @@
     font: var(--text-comment-body-sm-font, 600 14px/1.3 'Supreme', sans-serif);
     display: -webkit-box;
     -webkit-line-clamp: 4;
+    line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
