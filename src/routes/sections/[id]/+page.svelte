@@ -131,7 +131,7 @@
   // `applyChange` (optional) runs a topic change WHILE the text is faded out, so
   // "scroll up from topic N" can land on topic N-1 already in mode B with a SINGLE
   // crossfade (no mode-A flash / scattino). Without it, behaves exactly as before.
-  async function setMobileCards(next: boolean, applyChange?: () => void) {
+  async function setMobileCards(next: boolean, applyChange?: () => void, navDir?: 1 | -1) {
     if (next === mobileCardsVisible || textFading || cardsScrollAnimating) return;
     textFading = true;
     cardsScrollAnimating = true;
@@ -142,8 +142,10 @@
     const fadeInDuration = 0.5;
     // Shared by the model glide AND the text fade-in so they start/move in sync.
     const SETTLE_EASE = 'power2.inOut';
-    const outY = next ? -40 : 40;
-    const inY = next ? 40 : -40;
+    // A↔B toggle slides by `next`; a topic nav (navDir) slides by direction like the
+    // desktop crossfade: forward (+1) exits up, backward (-1) exits down.
+    const outY = navDir ? (navDir === 1 ? -40 : 40) : (next ? -40 : 40);
+    const inY = navDir ? (navDir === 1 ? 40 : -40) : (next ? 40 : -40);
 
     // Capture where the model STARTS before we touch anything, and where its SCALE
     // must end (known immediately). The fit stays locked so nothing lerps on its own.
@@ -304,7 +306,7 @@
         void setMobileCards(true, () => {
           scene3d?.resetPulse();
           currentTopic -= 1;
-        }).finally(() => {
+        }, -1).finally(() => {
           setTimeout(() => { wheelLock = false; }, 1000);
         });
         return;
