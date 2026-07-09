@@ -573,7 +573,9 @@
   }
 
   function updateTopicsModelFit(options: { duringScroll?: boolean; soft?: boolean } = {}) {
-    if (!scene3d || !stageTextEl || phase === 'feedback') return;
+    // feedbackMounting = the morph into feedback has started but phase is still 'topics';
+    // stop re-fitting to the topics band or it overwrites the result model's position.
+    if (!scene3d || !stageTextEl || phase === 'feedback' || feedbackMounting) return;
     if (!get(isMobile)) return;
     if (phase !== 'topics' && !options.duringScroll) return;
 
@@ -870,6 +872,12 @@ function exitTopicsMode() {
     fitFeedbackBody();
     // hide the texts until the model has settled
     gsap.set(['.feedback__heading', '.feedback__body', '.feedback__cta'], { opacity: 0 });
+
+    // The earlier clearMobileFit() ran BEFORE the awaits above; a ResizeObserver
+    // (stage text/cards resizing during the exit) re-activated + re-locked the topics
+    // mobile-fit, dragging the spinner low again. Clear it once more here — now that
+    // feedbackMounting is true, the guard keeps it from coming back before the morph.
+    scene3d?.clearMobileFit();
 
     scene3d?.morphToResult(resultPathFor(result), () => {
       phase = 'feedback';
