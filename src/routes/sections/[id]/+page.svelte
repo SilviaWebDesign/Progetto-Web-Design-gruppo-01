@@ -1655,11 +1655,7 @@ function exitTopicsMode() {
     >
       <span class="continue__label">
         {#if currentTopic === lastTopic}
-          {#if $isMobile}
-            Conferma<br />le tue scelte
-          {:else}
-            Conferma le tue scelte
-          {/if}
+          Conferma le tue scelte
         {:else}
           Continua
         {/if}
@@ -2037,6 +2033,7 @@ function exitTopicsMode() {
       text-transform: var(--text-caption-text-transform);
       text-align: center;
       line-height: var(--line-height-tight);
+      white-space: nowrap; /* all mobile CTAs stay on a single line (Figma) */
     }
 
     .continue,
@@ -2183,6 +2180,7 @@ function exitTopicsMode() {
 
     .feedback__cta-label {
       font-size: clamp(0.75rem, 3.33vw, 0.9rem); /* same as the other mobile CTAs */
+      white-space: nowrap; /* single line on mobile (Figma) */
     }
   }
 
