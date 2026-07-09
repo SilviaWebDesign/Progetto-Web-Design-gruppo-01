@@ -306,7 +306,12 @@
       transform: none;
       max-width: 100%;
       padding: 0;
-      font-size: clamp(1.1rem, 5.13vw, 1.35rem); /* 20px @390, scalable */
+      /* Keep the manual <br/> breaks FIXED across every phone: nowrap stops the text
+         from wrapping on its own when space is tight. Instead of changing the line
+         breaks, the font scales down with the viewport (vw-based clamp), so the 5
+         designed lines always hold. Min lowered for headroom on narrow devices. */
+      white-space: nowrap;
+      font-size: clamp(0.95rem, 5.13vw, 1.35rem); /* 20px @390, scales to fit */
       line-height: 1.3;
     }
 
@@ -357,9 +362,7 @@
       font-size: var(--font-size-caption);
     }
 
-    /* Figma shows both arrows pointing DOWN; desktop rotates the primary one. */
-    .results__cta--primary .results__cta-arrow {
-      transform: none;
-    }
+    /* "Torna alla home" keeps its chevron pointing UP (back), like desktop —
+       it inherits the rotate(180deg) from .results__cta--primary. */
   }
 </style>
