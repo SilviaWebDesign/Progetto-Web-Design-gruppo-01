@@ -829,7 +829,7 @@
   const RESULT_BOX_FILL = 0.9; // how much of the box height the model fills
   const RESULT_BOX_WIDTH_FILL = 0.86; // how much of the screen width it may use
   const RESULT_BOX_LIFT = 0; // optical nudge on desktop (fraction of viewport height)
-  const RESULT_BOX_LIFT_MOBILE = 0; // fine nudge; the mobile band above sets the position
+  const RESULT_BOX_LIFT_MOBILE = -0.04; // fine nudge; the mobile band above sets the position
 
   /** The result group currently in the scene, so it can be re-framed on layout change. */
   let currentResultGroup: THREE.Group | null = null;
