@@ -56,7 +56,7 @@
   <div class="preloader" role="status" aria-live="polite" transition:fade={{ duration: 400 }}>
     <div class="preloader__inner">
       <p class="preloader__msg">
-        {LABEL}<span class="preloader__dots" aria-hidden="true"></span>
+        {LABEL}<span class="preloader__dots" aria-hidden="true">...</span>
       </p>
       <div class="preloader__bar">
         <div class="preloader__fill" style="width: {pct}%"></div>
@@ -94,18 +94,14 @@
     font-size: var(--font-size-lg);
   }
 
-  /* Three dots revealed one after another, then the cycle restarts.
+  /* Three typographic dots (real "." glyphs, so they match the label's font)
+     revealed one after another like a growing ellipsis, then the cycle restarts.
      They never move: `steps()` just uncovers one more dot each tick. */
   .preloader__dots {
     display: inline-block;
-    /* empty inline-block: its bottom edge lands on the text baseline,
-       so the dots rest on the same line as the label, like an ellipsis */
     vertical-align: baseline;
-    width: 1.4em; /* holds three dots: wider cells = more space between them */
-    aspect-ratio: 5.5; /* higher = smaller dots, so the gaps read wider */
-    margin-left: 0.18em;
-    background: radial-gradient(circle closest-side, currentColor 90%, transparent) 0 / calc(100% / 3)
-      100% space;
+    /* keep the three dots together and reserve their width (no reflow while hidden) */
+    white-space: pre;
     clip-path: inset(0 100% 0 0);
     animation: preloader-dots 0.9s steps(4) infinite; /* lower = faster */
   }
@@ -130,12 +126,12 @@
     height: 3px;
     border-radius: 999px;
     overflow: hidden;
-    background: color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+    background: var(--neutral-200); /* Figma: light track */
   }
   .preloader__fill {
     height: 100%;
     border-radius: 999px;
-    background: var(--color-text-primary);
+    background: var(--neutral-900); /* Figma: filled portion */
     transition: width 0.25s ease;
   }
   .preloader__pct {
@@ -144,5 +140,16 @@
     font-weight: var(--font-weight-bold);
     font-size: var(--font-size-sm);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Mobile (≤768px): Figma — bar ~258px (scalable), label ~16px bold. ── */
+  @media (max-width: 768px) {
+    .preloader__inner {
+      width: min(258px, 80vw); /* ~258px bar, shrinks on narrow screens */
+    }
+
+    .preloader__msg {
+      font-size: var(--font-size-sm); /* ~16px (was 20px) */
+    }
   }
 </style>
