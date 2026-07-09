@@ -709,4 +709,16 @@
     outline: 2px solid var(--color-text-primary);
     outline-offset: 4px;
   }
+
+  /* ── Mobile (≤768px): menu per Figma — ~50px links, ~60px gap, both scalable;
+     layout stays centered. Knobs: the two clamps below (reference frame 390px). ── */
+  @media (max-width: 768px) {
+    .menu-overlay__list {
+      gap: clamp(2.5rem, 15.38vw, 4rem); /* ~60px @390, scalable */
+    }
+
+    .menu-overlay__link {
+      font-size: clamp(2.25rem, 12.82vw, 3.5rem); /* ~50px @390, scalable */
+    }
+  }
 </style>
