@@ -590,7 +590,10 @@
       overflow-x: visible;
       overflow-y: scroll;
       touch-action: pan-y;
-      padding-right: calc(17px + var(--panel-padding-x));
+      /* No asymmetric right reserve: the custom slider overlays (native bar hidden),
+         so the scroll box spans the full width and the centered text box below can
+         sit perfectly centered in the viewport with equal side padding. */
+      padding: 0;
       scrollbar-width: none;
       -ms-overflow-style: none;
       /* Long, soft fade so the body dissolves gradually as it scrolls under the
@@ -617,8 +620,17 @@
        .sport-panel-content, so it must re-apply the same lateral padding to stay
        aligned with the body text. */
     .sport-title {
-      margin: 0;
-      padding: 20px var(--panel-padding-x) 0;
+      /* Title shares the SAME 262px centered box as the body, left-aligned, so its left
+         edge lines up exactly with the body text's left margin.
+         width:100% is required: as a flex item, `margin:0 auto` alone would shrink the
+         title to its text width and center THAT (short titles ended up shifted right).
+         Forcing the box to a fixed 262px keeps the left edge identical to the body. */
+      width: 100%;
+      max-width: 262px;
+      margin: 0 auto;
+      padding: 20px 0 0;
+      text-align: left;
+      box-sizing: border-box;
       /* Figma mobile: 24@390, scalable */
       font-size: var(--font-size-about-detail-title);
     }
@@ -678,9 +690,13 @@
     .sport-panel-content {
       position: relative;
       z-index: 1;
-      /* small gap under the header title (Figma); first line stays crisp because the
-         top fade is 0 at rest and only grows while scrolling */
-      padding: 20px 0 72px var(--panel-padding-x);
+      /* Focus text box: max 262px wide, centered in the viewport. margin auto keeps the
+         left/right padding identical on both sides. Horizontal padding is 0 (the box
+         width IS the 262px column); vertical spacing kept for the header/CONTINUA gaps. */
+      max-width: 262px;
+      margin: 0 auto;
+      padding: 20px 0 72px;
+      box-sizing: border-box;
       transform-origin: top center;
     }
 
