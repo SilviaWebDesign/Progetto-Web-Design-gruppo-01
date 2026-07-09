@@ -11,6 +11,9 @@
   const MIN_RAMP_MS = 900;
   const CATCHUP_FACTOR = 0.22;
   const MIN_STEP = 0.006;
+  // The time-based floor keeps the bar lively at the start, but is capped below
+  // 100% so the bar can ONLY reach 100% when the real progress does.
+  const FLOOR_CAP = 0.9;
   let animatedProgress = $state(0);
   let rampStart = $state(0);
   let rafId = 0;
@@ -24,7 +27,8 @@
   function step() {
     if (!visible) return;
     const elapsed = clamp01((performance.now() - rampStart) / MIN_RAMP_MS);
-    const floorProgress = elapsed;
+    // capped so the floor never fakes 100% before the real load is done
+    const floorProgress = Math.min(elapsed, FLOOR_CAP);
     const desired = Math.max(floorProgress, targetProgress);
     const delta = desired - animatedProgress;
     const next =
