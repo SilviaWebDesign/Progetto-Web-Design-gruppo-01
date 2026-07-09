@@ -270,7 +270,9 @@
       height: auto;
       min-height: var(--spacing-comment-card-min-height);
       box-sizing: border-box;
-      align-items: flex-start;
+      /* Center the text vertically in the box (short comments no longer stick to
+         the top); the card still grows for long ones. */
+      align-items: center;
     }
 
     .comment-card__body {

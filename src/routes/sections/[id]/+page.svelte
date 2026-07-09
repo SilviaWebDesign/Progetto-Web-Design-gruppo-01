@@ -1981,11 +1981,6 @@ function exitTopicsMode() {
       min-height: 0;
       padding: 4px var(--spacing-section-comments-scroll-inset);
       overflow-y: auto;
-      /* Center comments vertically when few; the card-stack's margin-block:auto
-         collapses to 0 once they overflow, so scrolling + the top comment are
-         never clipped. */
-      display: flex;
-      flex-direction: column;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;        /* hide the NATIVE bar — our custom one replaces it */
@@ -1998,12 +1993,6 @@ function exitTopicsMode() {
       mask-image: linear-gradient(
         to bottom, #000 calc(100% - var(--spacing-section-comments-fade)), transparent 100%
       );
-    }
-
-    /* Vertically center the comment list when it's shorter than the scroll area
-       (few comments); auto margins collapse to 0 when it overflows (many). */
-    .stage.m-cards-visible .stage__right-scroll :global(.card-stack) {
-      margin-block: auto;
     }
 
     /* C3: custom vertical scrollbar. Track ends where the bottom fade starts (same
