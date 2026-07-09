@@ -209,19 +209,7 @@
   {/if}
 
   <div class="header__right-controls">
-    <button
-      type="button"
-      class="header__dark-button"
-      aria-label="Dark mode"
-      aria-pressed={isHomeDarkMode}
-      onclick={onDarkModeButtonClick}
-      onmouseenter={() => (darkIconHover = true)}
-      onmouseleave={() => (darkIconHover = false)}
-    >
-      <span class="header__dark-icon" aria-hidden="true">
-        <img class="header__dark-icon-img" alt="" src={modeSrc} />
-      </span>
-    </button>
+    
 
     <button
       type="button"

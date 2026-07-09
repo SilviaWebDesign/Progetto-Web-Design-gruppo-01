@@ -167,6 +167,9 @@
   /** Pose hero salvata all'init — destinazione esatta della deselezione. */
   const _storedHeroCam = new THREE.Vector3();
   const _storedHeroTarget = new THREE.Vector3();
+  /** Zoom hero salvato insieme alla pose: va ripristinato all'uscita dal focus,
+   * altrimenti la camera resta allo zoom del focus e la vista sembra "bloccata". */
+  let _storedHeroZoom = 1;
   let heroPoseStored = false;
   const _camOffset = new THREE.Vector3();
   const _camSpherical = new THREE.Spherical();
@@ -523,6 +526,7 @@
 
     _storedHeroCam.copy(camera.position);
     _storedHeroTarget.copy(controls.target);
+    _storedHeroZoom = camera.zoom;
     heroPoseStored = true;
     resetOrbitControlDeltas(controls);
     controls.update();
@@ -614,7 +618,14 @@
       storedFocusPan.target.copy(cameraTransition.panTarget);
       applyFocusOrbitLimits();
     } else if (heroPoseStored) {
-      refreshAboutHeroCameraPose();
+      // Land EXACTLY on the stored hero pose (position, target AND zoom) after the
+      // smooth arc. We intentionally do NOT call refreshAboutHeroCameraPose() here:
+      // it re-derived the pose from the current camera and overwrote _storedHeroCam,
+      // which is what made the bug reappear on some exits.
+      camera.position.copy(_storedHeroCam);
+      controls.target.copy(_storedHeroTarget);
+      camera.zoom = _storedHeroZoom;
+      camera.updateProjectionMatrix();
       applyMountainOrbitLimits();
       setupOrbitPolarLimits();
       storedFocusPan.cam.set(0, 0, 0);
@@ -799,20 +810,6 @@
   function startCameraTransition(hotspot) {
     if (!camera || !controls || !homeOrbitConfig) return false;
 
-    if (!hotspot && heroPoseStored) {
-      cameraTransition = null;
-      transitionActive = false;
-      storedFocusPan.cam.set(0, 0, 0);
-      storedFocusPan.target.set(0, 0, 0);
-      refreshAboutHeroCameraPose();
-      applyMountainOrbitLimits();
-      setupOrbitPolarLimits();
-      syncControlsToCameraPose();
-      clampCameraAboveSnow({ pivot: _storedHeroTarget, clampCenter: true });
-      controls.enabled = true;
-      return true;
-    }
-
     const fromCam = camera.position.clone();
     const fromTarget = controls.target.clone();
     const fromZoom = camera.zoom;
@@ -886,6 +883,9 @@
       const hero = getHeroCameraPose();
       toCam = hero.cam;
       toTarget = hero.target;
+      // Return to the exact stored hero zoom (not the generic default) so the smooth
+      // exit lands on the same framing the user started from — no residual focus zoom.
+      if (heroPoseStored) toZoom = _storedHeroZoom;
       panCam.copy(storedFocusPan.cam);
       panTarget.copy(storedFocusPan.target);
       // fromCam/fromTarget includono già il pan del focus — usa la pose base per l'interp.
