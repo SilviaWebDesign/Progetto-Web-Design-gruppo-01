@@ -133,11 +133,12 @@
 
   <p class="results__quote">
     {#if $isMobile}
-      <!-- Figma mobile: shorter quote, broken over 4 lines (knobs = the <br/>) -->
+      <!-- Figma mobile: shorter quote, broken over 5 lines (knobs = the <br/>) -->
       La realtà non è mai unica<br />
       e uguale per tutti.<br />
-      Lo stesso evento può generare<br />
-      visioni differenti e soggettive.
+      Lo stesso evento può<br />
+      generare visioni<br />
+      differenti e soggettive.
     {:else}
       La realtà non è mai unica e uguale per tutti.<br />
       Lo stesso evento può generare visioni differenti e soggettive, in base alle opinioni di ognuno.
@@ -343,8 +344,10 @@
       bottom: var(--cta-bottom);
       transform: none;
       width: 100%;
-      justify-content: space-around;   /* the two CTAs spread like the Figma */
-      gap: var(--spacing-md);
+      /* Figma mobile: the two CTAs sit CLOSE together (centered), not spread to the
+         edges. ~40px gap between them via the design-system token (--spacing-xl = 40px). */
+      justify-content: center;
+      gap: var(--spacing-xl);
       z-index: 2;
     }
 

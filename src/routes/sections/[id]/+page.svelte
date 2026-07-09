@@ -608,6 +608,12 @@
 
   let inIntro = $derived(phase === 'intro');
   let lastTopic = $derived(section.topics.length - 1);
+  // The primary CTA only "confirms" when it actually finishes the section. In mobile
+  // mode A (text+model) it just opens the comments (mode B), so there it must stay
+  // "Continua" even on the last topic. It confirms in mode B (or on desktop).
+  let showConfirmCta = $derived(
+    currentTopic === lastTopic && (!$isMobile || mobileCardsVisible)
+  );
   // Shuffle each topic's comments once per session, so positive and negative
   // are interspersed (not always 3 positive then 3 negative). Likes are keyed
   // by comment id, so the reorder is purely visual.
@@ -1665,10 +1671,10 @@ function exitTopicsMode() {
       class:is-visible={phase === 'topics'}
       disabled={$isMobile && !mobileCardsVisible ? false : !anyLiked}
       onclick={onContinue}
-      aria-label={currentTopic === lastTopic ? 'Conferma le tue scelte' : 'Continua al prossimo argomento'}
+      aria-label={showConfirmCta ? 'Conferma le tue scelte' : 'Continua al prossimo argomento'}
     >
       <span class="continue__label">
-        {#if currentTopic === lastTopic}
+        {#if showConfirmCta}
           Conferma le tue scelte
         {:else}
           Continua

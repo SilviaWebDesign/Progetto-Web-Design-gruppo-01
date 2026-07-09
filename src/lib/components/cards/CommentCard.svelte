@@ -158,6 +158,9 @@
      HOVER — lift, border, outline, glow
      ============================================================ */
 
+ /* Guarded so touch devices never get a "sticky" hover: on mobile the hover state
+    would otherwise stay applied after a tap, leaving the wide border/outline visible
+    even after de-selecting the comment (until another card is tapped). */
  @media (hover: hover) {
     .comment-card:hover {
       transform: translateY(-0.5px);
@@ -167,14 +170,6 @@
         0 10px 30px rgba(0, 0, 0, 0.10),
         inset 0 1px 1px rgba(255, 255, 255, 0.5);
     }
-  }
-  .comment-card:hover {
-    transform: translateY(-0.5px);
-    border-color: var(--color-border);
-    outline-color: var(--color-border);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.10),
-      inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
 
   /* ============================================================
