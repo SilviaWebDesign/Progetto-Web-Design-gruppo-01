@@ -1160,8 +1160,12 @@ function exitTopicsMode() {
 
       const threeTl = gsap.timeline({
         scrollTrigger: {
+          // Start the model reveal right after the hero timeline ends (1.5vh) so there
+          // is no "dead"/blocked zone of empty scroll between the intro phrase leaving
+          // and the model appearing. The small 0.05vh buffer keeps text and model from
+          // overlapping (the phrase finishes fading out exactly at 1.5vh).
           trigger: scrollArea,
-          start: () => `top+=${window.innerHeight * 1.85} top`,
+          start: () => `top+=${window.innerHeight * 1.55} top`,
           end: 'bottom bottom',
           scrub: 1.2,
           onUpdate: (self) => {
