@@ -801,8 +801,16 @@
   const RESULT_BOX_FALLBACK_TOP = 0.24; // used only if the texts aren't in the DOM yet
   const RESULT_BOX_FALLBACK_BOTTOM = 0.68;
   const RESULT_BOX_PADDING = 0.02; // breathing room from the texts (fraction of vh)
+  // Mobile: the body text is anchored low, so a DOM-measured box drops the model to the
+  // bottom. Use a fixed upper band instead (fractions of viewport height). Tune these two
+  // to move the model up/down and change its size. Desktop is unaffected.
+  const RESULT_BOX_MOBILE_TOP = 0.18;
+  const RESULT_BOX_MOBILE_BOTTOM = 0.5;
 
   function resultBoxFractions(): { topFrac: number; bottomFrac: number } {
+    if (window.innerWidth <= 768) {
+      return { topFrac: RESULT_BOX_MOBILE_TOP, bottomFrac: RESULT_BOX_MOBILE_BOTTOM };
+    }
     const fallback = {
       topFrac: RESULT_BOX_FALLBACK_TOP,
       bottomFrac: RESULT_BOX_FALLBACK_BOTTOM
@@ -819,7 +827,8 @@
 
   const RESULT_BOX_FILL = 0.9; // how much of the box height the model fills
   const RESULT_BOX_WIDTH_FILL = 0.86; // how much of the screen width it may use
-  const RESULT_BOX_LIFT = 0; // optional optical nudge (fraction of viewport height)
+  const RESULT_BOX_LIFT = 0; // optical nudge on desktop (fraction of viewport height)
+  const RESULT_BOX_LIFT_MOBILE = 0; // fine nudge; the mobile band above sets the position
 
   /** The result group currently in the scene, so it can be re-framed on layout change. */
   let currentResultGroup: THREE.Group | null = null;
@@ -862,12 +871,9 @@
     const parentScale = compensateParent && parent ? parent.scale.x || 1 : 1;
     const parentOffsetY = compensateParent && parent ? parent.position.y : 0;
 
+    const lift = (window.innerWidth <= 768 ? RESULT_BOX_LIFT_MOBILE : RESULT_BOX_LIFT) * visibleH;
     group.scale.setScalar(scale / parentScale);
-    group.position.set(
-      0,
-      (worldCenterY + RESULT_BOX_LIFT * visibleH - parentOffsetY) / parentScale,
-      0
-    );
+    group.position.set(0, (worldCenterY + lift - parentOffsetY) / parentScale, 0);
   }
 
   function buildResultGroup(source: THREE.Group, compensateParent = true): THREE.Group | null {
